@@ -24,9 +24,11 @@ package org.cougaar.servicediscovery.util.yp;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.util.ArrayList;
 import java.util.Vector;
 
 import org.apache.xerces.parsers.DOMParser;
+
 import org.cougaar.core.agent.service.alarm.Alarm;
 import org.cougaar.core.component.ComponentSupport;
 import org.cougaar.core.service.AgentIdentificationService;
@@ -34,9 +36,11 @@ import org.cougaar.core.service.AlarmService;
 import org.cougaar.core.service.LoggingService;
 import org.cougaar.core.service.ThreadService;
 import org.cougaar.servicediscovery.util.UDDIConstants;
+import org.cougaar.util.StateMachine;
 import org.cougaar.yp.YPProxy;
 import org.cougaar.yp.YPService;
 import org.cougaar.yp.YPStateMachine;
+
 import org.uddi4j.datatype.tmodel.TModel;
 import org.uddi4j.response.AuthToken;
 import org.uddi4j.response.TModelDetail;
@@ -74,8 +78,10 @@ public class PublishTaxonomy extends ComponentSupport {
   private YPService myYPService;
 
   private Alarm myAlarm;
+  
+  private ArrayList myTModelNames;
 
-  public static String []TMODELNAMES = 
+  private static String []TMODELNAMES = 
      { UDDIConstants.MILITARY_SERVICE_SCHEME,
        UDDIConstants.MILITARY_ECHELON_SCHEME,
        UDDIConstants.ORGANIZATION_TYPES,
@@ -126,6 +132,11 @@ public class PublishTaxonomy extends ComponentSupport {
   public void initialize() {
     super.initialize();
 
+    myTModelNames = new ArrayList(TMODELNAMES.length);
+    for (int index = 0; index < TMODELNAMES.length; index++) {
+      addTModelName(TMODELNAMES[index]);
+    }
+
     // Don't mess around with community based lookup. 
     // Assume component loaded in the same agent as the YPServer
     myYPProxy = getYPService().getYP(getAgentIdentificationService().getMessageAddress());
@@ -153,6 +164,24 @@ public class PublishTaxonomy extends ComponentSupport {
     
     return myWarningCutoffTime;
   }
+
+  public void addTModelName(String tModelName) {
+    // Don't add if we've already started.
+    if (myStateMachine != null) {
+      StateMachine.State current = myStateMachine.getState();
+      if (!current.equals(StateMachine.UNINITIALIZED) && 
+	  !current.getKey().equals("START")) {
+	getLoggingService().warn("addTModelName: TModelName " + tModelName +
+				 " specified after the process of loading " +
+				 " taxonomies has started. Will not be added " + 
+				 " to the registry.");
+	return;
+      }
+    }
+
+    myTModelNames.add(tModelName);
+  }
+  
 
   private class PublishTaxonomyMachine extends YPStateMachine {
     protected final PublishTaxonomyCallback myCallback;
@@ -210,8 +239,8 @@ public class PublishTaxonomy extends ComponentSupport {
         });
       add(new SState("genTax0") {
           public void invoke() { 
-            if (gentaxi < TMODELNAMES.length) {
-              call("genTaxonomy", TMODELNAMES[gentaxi], "genTax1");
+            if (gentaxi < myTModelNames.size()) {
+              call("genTaxonomy", myTModelNames.get(gentaxi), "genTax1");
             } else {
               transit("doneTaxonomy");
             }
