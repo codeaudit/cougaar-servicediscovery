@@ -22,7 +22,7 @@
 package org.cougaar.servicediscovery.description;
 
 import org.cougaar.planning.ldm.plan.Role;
-import org.cougaar.glm.ldm.oplan.TimeSpan;
+import org.cougaar.util.TimeSpan;
 
 import java.io.Serializable;
 
@@ -50,18 +50,20 @@ public class AvailabilityChangeMessage implements Serializable {
   // Indicates whether the role is available or unavailable for the period
   private boolean available;
 
-  public AvailabilityChangeMessage(Role role, boolean registryUpdated) {
-    this.role = role;
-    this.registryUpdated = registryUpdated;
-    status = REQUESTED;
-  }
-
-  public AvailabilityChangeMessage(Role role, TimeSpan span, boolean available) {
+  public AvailabilityChangeMessage(Role role, boolean registryUpdated, TimeSpan span, boolean available) {
     this.role = role;
     this.span = span;
-    // TODO:  I don't know what this is used for --llg
+    this.registryUpdated = registryUpdated;
     status = REQUESTED;
     this.available = available;
+  }
+
+  // no-arg constructor
+  public AvailabilityChangeMessage() {
+  };
+
+  public void setRole(Role role) {
+    this.role = role;
   }
 
   public Role getRole() {
@@ -72,7 +74,7 @@ public class AvailabilityChangeMessage implements Serializable {
     this.registryUpdated = registryUpdated;
   }
 
-  public boolean registryUpdated() {
+  public boolean isRegistryUpdated() {
     return registryUpdated;
   }
 
@@ -97,18 +99,34 @@ public class AvailabilityChangeMessage implements Serializable {
   }
 
   public synchronized void setStatus(int status) {
-    this.status = status;
+    if (status == REQUESTED || status == PENDING || status == COMPLETED ||
+        status == DONE || status == ERROR) {
+      this.status = status;
+    }
+    else {
+      throw new IllegalArgumentException("Invalid status code " + status +"\t Valid codes are 1 - 5");
+    }
   }
 
   public int getStatus() {
     return status;
   }
 
+  public void setTimeSpan(TimeSpan span) {
+    this.span = span;
+  }
+
   public TimeSpan getTimeSpan() {
     return span;
+  }
+
+  public void setAvailable(boolean available) {
+    this.available = available;
   }
 
   public boolean isAvailable() {
     return available;
   }
+
+
 }
