@@ -134,12 +134,11 @@ public class SimpleSDClientPlugin extends ComponentPlugin {
   
   /** Release any services retrieved during load() -- in this case, the LoggingService. */
   public void unload() {
-    super.unload();
-
     if (myLoggingService != LoggingService.NULL) {
       getServiceBroker().releaseService(this, LoggingService.class, myLoggingService);
       myLoggingService = LoggingService.NULL;
     }
+    super.unload();
   }
 
   /**
