@@ -163,7 +163,15 @@ public class SimpleSDRegistrationPlugin extends ComponentPlugin {
     }
   }
 
-  private void initialRegister() {
+  /**
+   * Do the actual registration of this provider in the YP. Get the 
+   * ProviderDescription, and then invoke the UDDI4JRegistrationService, with
+   * a Callback to notify us when the registration completes (or fails).
+   *<p>
+   * Extenders might choose to over-ride this in an attempt to avoid
+   * using ProviderDescriptions at all.
+   */
+  protected void initialRegister() {
     // FIXME: Is this check necessary?
     if (!ypInfo.readyToRegister()) {
       if (log.isDebugEnabled()) {
@@ -250,8 +258,12 @@ public class SimpleSDRegistrationPlugin extends ComponentPlugin {
     } // end of try/catch that actually does the registration (via callback)
   } // end of initialRegister
 
-  //
-  private void findYPCommunity() {
+  /**
+   * Issue an asynchronous query to the CommunityService, looking for the
+   * YP Community named by {@link #getYPCommunityName(String)}, with a registered
+   * {@link org.cougaar.servicediscovery.plugin.SimpleSDRegistrationPlugin.YPCommunityResponseListener} to learn about changes.
+   */
+  protected void findYPCommunity() {
     Community ypCommunity = 
       communityService.getCommunity(getYPCommunityName(ypInfo.getAgentName()),
 				    new YPCommunityResponseListener(ypInfo));
@@ -273,8 +285,11 @@ public class SimpleSDRegistrationPlugin extends ComponentPlugin {
    * Create the YPInfo object for this instance.
    * Takes the first plugin parameter as the name of the agent hosting the YP that
    * we will register with.
+   *<p>
+   * Extenders might want a different mechanism for specifying the YP server
+   * to register with.
    */
-  private void initYPInfo() {
+  protected void initYPInfo() {
     Collection params = getParameters();
     
     if (params.isEmpty()) {
@@ -290,15 +305,33 @@ public class SimpleSDRegistrationPlugin extends ComponentPlugin {
       log.debug(": ypInfo = " + ypInfo);
   }
 
-  private String getYPCommunityName(String ypAgentName) {
+  /**
+   * Construct the name of the YP Community hosted at the given named agent. 
+   * This version produces &lt;AgentName&gt;-YPCOMMUNITY.
+   *<p>
+   * Extenders could use a different convention for naming YP Communities.
+   *
+   * @param ypAgentName String name of the agent hosting a YP Server
+   * @return String name of the YP Community to look for.
+   */
+  protected String getYPCommunityName(String ypAgentName) {
     // For now assume every YP represented by a YPCommunity called
     // <yp agent name>-YPCOMMUNITY
     return ypAgentName + "-YPCOMMUNITY";
   }
  
   
-  /** @return null if unable to parse the provider description */
-  private ProviderDescription getPD() {
+  /** 
+   * Get a ProviderDescription for this agent, us it to register in the YP. We do so by
+   * looking for a file in the {@link #getServiceProfileURL()} directory,
+   * named &lt;AgentName&gt;+{@link #OWL_IDENTIFIER}, and passing it through Jena.
+   *<p>
+   * Extenders could have an alternate mechanism for creating a ProviderDescription, including
+   * hard-coded content, messaging based, etc.
+   *
+   * @return ProviderDescription to register, null if unable to parse the provider description
+   */
+  protected ProviderDescription getPD() {
     if (provD == null) {
       if (log.isDebugEnabled()) {
 	log.debug(": getPD() parsing OWL.");
@@ -338,6 +371,10 @@ public class SimpleSDRegistrationPlugin extends ComponentPlugin {
     return provD;
   }
   
+  /**
+   * Get the time (in millis) after which startup errors should be logged at ERROR.
+   * @return real time in millis after which transient errors are logged loudly
+   */
   private long getWarningCutOffTime() {
     if (warningCutoffTime == 0) {
       warningCutoffTime = System.currentTimeMillis() + WARNING_SUPPRESSION_INTERVAL*60000;
@@ -346,12 +383,17 @@ public class SimpleSDRegistrationPlugin extends ComponentPlugin {
     return warningCutoffTime;
   }
   
-  
+  /**
+   * Log the given message, indicating we will retry, and set an Alarm to ensure we do. 
+   * When an error occurs, but we'll be retrying later, treat it as a DEBUG
+   * at first. After a while it becomes an error.
+   */
   private void retryErrorLog(String message) {
     retryErrorLog(message, null);
   }
   
   /**
+   * Log the given message and error, indicating we will retry, and set an Alarm to ensure we do. 
    * When an error occurs, but we'll be retrying later, treat it as a DEBUG
    * at first. After a while it becomes an error.
    */
@@ -377,12 +419,16 @@ public class SimpleSDRegistrationPlugin extends ComponentPlugin {
     }
   }
 
-  /** This agent is a provider if there is a provider file for it */
-  private boolean isProvider() {
+  /** 
+   * This agent is a provider if there is a provider file for it. 
+   */
+  protected boolean isProvider() {
     return getProviderFile().exists();
   }
   
-  /** Get the OWL service provider file named after this agent, if any */
+  /** 
+   * Get the OWL service provider file named after this agent, if any. 
+   */
   private File getProviderFile() {
     String owlFileName = getAgentIdentifier().toString() + OWL_IDENTIFIER;
     return new File(getServiceProfileURL().getFile() +
@@ -403,6 +449,9 @@ public class SimpleSDRegistrationPlugin extends ComponentPlugin {
     }
   }
   
+  /**
+   * Alarm used to retry registration when a previous error caused it to fail.
+   */
   private class RetryAlarm implements Alarm {
     private long expiresAt;
     private boolean expired = false;
@@ -432,6 +481,10 @@ public class SimpleSDRegistrationPlugin extends ComponentPlugin {
     }
   }   
 
+  /**
+   * Local store of all data related to a YP registration: the serve name, communinty,
+   * ChangeListender, and registration state.
+   */
   private class YPInfo {
     private String myYPAgentName;
     private Community myYPCommunity;
@@ -483,7 +536,6 @@ public class SimpleSDRegistrationPlugin extends ComponentPlugin {
       }
     }
 
-
     public void clearCommunity() {
       if (log.isDebugEnabled()) {
 	log.debug("removing listener for " + myYPCommunity);
@@ -522,6 +574,9 @@ public class SimpleSDRegistrationPlugin extends ComponentPlugin {
     }
   }
 
+  /**
+   * ResponseListener to listen for our CommunityService search for the YP Community.
+   */
   private class YPCommunityResponseListener 
     implements CommunityResponseListener {
     private YPInfo ypInfo;
@@ -543,6 +598,9 @@ public class SimpleSDRegistrationPlugin extends ComponentPlugin {
     }
   }
 
+  /**
+   * ChangeListener to watch for changes at the YP Community.
+   */
   private class YPCommunityChangeListener 
     implements CommunityChangeListener {
     private YPInfo ypInfo;
