@@ -71,8 +71,15 @@ used as a template.
 
         IMPORTANT: (CIP)servicediscovery/configs/common must be listed prior 
 	to the entry for(CIP)/configs/common
+
+7) If running from CSMART, edit CSMART.sh[bat] as follows:
+
+   Add the CIP/servicediscovery/configs/common path to MYCONFIGPATH
    
-7) Running from CSMART:
+   Example:
+   MYCONFIGPATH="-Dorg.cougaar.config.path=$COUGAAR_INSTALL_PATH/servicediscovery/configs/common/\;$COUGAAR_INSTALL_PATH/csmart/data/common/\;"
+   
+8) Running from CSMART:
  
 	(a) Use experiment SD-SMALL-1AD-TRANS-STUB.
  
