@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tModel>
+  <tModelKey>uuid:f0b01564-b8f0-b015-dad5-b49598339719</tModelKey>
+  <name>MilitaryServiceScheme</name>
+  <description>Echelon level of service</description>
+  <categoryBag>
+    <keyedReference
+      keyname="AircraftMaintenanceProvider"
+      keyValue="AircraftMaintenanceProvider">
+    </keyedReference>
+    <keyedReference
+      keyname="FixedWingAircraftMaintenanceProvider"
+      keyValue="FixedWingAircraftMaintenanceProvider">
+    </keyedReference>
+    <keyedReference
+      keyname="RotaryWingAircraftMaintenanceProvider"
+      keyValue="RotaryWingAircraftMaintenanceProvider">
+    </keyedReference> 
+    <keyedReference
+      keyname="GroundVehicleMaintenanceProvider"
+      keyValue="GroundVehicleMaintenanceProvider">
+    </keyedReference> 
+    <keyedReference
+      keyname="WheeledVehicleMaintenanceProvider"
+      keyValue="WheeledVehicleMaintenanceProvider">
+    </keyedReference>
+    <keyedReference
+      keyname="TrackedVehicleMaintenanceProvider"
+      keyValue="TrackedVehicleMaintenanceProvider">
+    </keyedReference>
+    <keyedReference
+      keyname="FuelSupplyProvider"
+      keyValue="FuelSupplyProvider">
+    </keyedReference>
+    <keyedReference
+      keyname="PackagedPOLSupplyProvider"
+      keyValue="PackagedPOLSupplyProvider">
+    </keyedReference>
+    <keyedReference  
+      keyname="SparePartsProvider"
+      keyValue="SparePartsProvider">
+    </keyedReference>
+    <keyedReference
+      keyname="SparePartsDistributor"
+      keyValue="SparePartsDistributor">
+    </keyedReference>
+    <keyedReference
+      keyname="SparePartsManufacturer"
+      keyValue="SparePartsManufacturer">
+    </keyedReference>
+    <keyedReference
+      keyname="SubsistenceSupplyProvider"
+      keyValue="SubsistenceSupplyProvider">
+    </keyedReference>
+    <keyedReference
+      keyname="WaterSupplyProvider"
+      keyValue="WaterSupplyProvider">
+    </keyedReference>
+    <keyedReference
+      keyname="FuelTransportProvider"
+      keyValue="FuelTransportProvider">
+    </keyedReference>
+    <keyedReference
+      keyname="StrategicTransportationProvider"
+      keyValue="StrategicTransportationProvider">
+    </keyedReference>
+    <keyedReference
+      keyname="WaterTransportProvider"
+      keyValue="WaterTransportProvider">
+    </keyedReference>
+    <keyedReference
+      keyname="AmmunitionTransportProvider"
+      keyValue="AmmunitionTransportProvider">
+    </keyedReference>
+    <keyedReference
+      keyname="DryCargoTransportProvider"
+      keyValue="DryCargoTransportProvider">
+    </keyedReference>
+    <keyedReference
+      keyname="MaterielTransportProvider"
+      keyValue="MaterielTransportProvider">
+    </keyedReference>
+  </categoryBag>
+</tModel>
+
+
+
+
+
+
+

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tModel>
+  <tModelKey>uuid:f0f45111-5af0-f451-8a06-0d5979065559</tModelKey>
+  <name>MilitaryEchelonScheme</name>
+  <description>Echelon level of service</description>
+  <categoryBag>
+    <keyedReference
+      keyName="JOINT"
+      keyValue="JOINT" >
+    </keyedReference>
+    <keyedReference	
+      keyName="US-ARMY"
+      keyValue="US-ARMY" >
+    </keyedReference>
+    <keyedReference
+      keyName="THEATER"
+      keyValue="THEATER" > 
+    </keyedReference>
+    <keyedReference 
+      keyName="CORPS"
+      keyValue="CORPS" >
+    </keyedReference>
+    <keyedReference
+      keyName="DIVISION"
+      keyValue="DIVISION" >
+    </keyedReference>
+    <keyedReference
+      keyName="BRIGADE"
+      keyValue="BRIGADE" >
+    </keyedReference>
+  </categoryBag>
+</tModel>
