@@ -201,6 +201,8 @@ public final class MatchmakerStubPlugin extends SimplePlugin {
       ServiceClassification classification = 
 	(ServiceClassification) iterator.next();
       if (classification.getClassificationSchemeName().equals(UDDIConstants.MILITARY_ECHELON_SCHEME)) {
+  // this should be getClassificationValue and not name.
+  // It works now since they are the same string in the registry.
 	String serviceEchelon = classification.getClassificationName();
 	
 	serviceEchelonOrder = 
