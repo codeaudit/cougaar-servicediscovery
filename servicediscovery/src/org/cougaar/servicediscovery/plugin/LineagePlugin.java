@@ -3,11 +3,11 @@
  *  Copyright 2002-2003 BBNT Solutions, LLC
  *  under sponsorship of the Defense Advanced Research Projects Agency (DARPA)
  *  and the Defense Logistics Agency (DLA).
- * 
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the Cougaar Open Source License as published by
  *  DARPA on the Cougaar Open Source Website (www.cougaar.org).
- * 
+ *
  *  THE COUGAAR SOFTWARE AND ANY DERIVATIVE SUPPLIED BY LICENSOR IS
  *  PROVIDED 'AS IS' WITHOUT WARRANTIES OF ANY KIND, WHETHER EXPRESS OR
  *  IMPLIED, INCLUDING (BUT NOT LIMITED TO) ALL IMPLIED WARRANTIES OF
@@ -40,6 +40,7 @@ import org.cougaar.util.UnaryPredicate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Vector;
 
 /**
  * LineagePlugin generates the LineageLists for the Agent.
@@ -60,7 +61,7 @@ public class LineagePlugin extends SimplePlugin
     public boolean execute(Object o) {
       if (o instanceof LineageList) {
 	if (myLoggingService.isDebugEnabled()) {
-	myLoggingService.debug(myAgentName + " lineage list: " + o +  
+	myLoggingService.debug(myAgentName + " lineage list: " + o +
 			       " type: " + o.getClass());
 	}
 	return true;
@@ -179,7 +180,7 @@ public class LineagePlugin extends SimplePlugin
 
     if (myLineageListSubscription.hasChanged()) {
       if (myLoggingService.isDebugEnabled()) {
-	myLoggingService.debug(myAgentName + 
+	myLoggingService.debug(myAgentName +
 			       " lineage list subscription has changed.");
       }
       updateSubordinates();
@@ -187,32 +188,6 @@ public class LineagePlugin extends SimplePlugin
   }
 
   protected void addSupportLineage(Task rfdTask) {
-    // Remove any existing support lineages
-    for (Iterator localListIterator = myLineageListSubscription.iterator();
-	 localListIterator.hasNext();) {
-      LineageList localLineage = (LineageList) localListIterator.next();
-      if (localLineage instanceof SupportLineageList) {
-	SupportLineageList localSupportLineage =
-	  (SupportLineageList) localLineage;
-	//Only room for 1
-	if (localSupportLineage.countHops(localSupportLineage.getLeaf(),
-					  localSupportLineage.getRoot()) == 1) {
-	  // Multiple direct command superiors
-	  myLoggingService.error(myAgentName +
-				 " has multiple support command relationships." +
-				 "  Replacing previous lineage - " +
-				 localSupportLineage);
-	} else {
-	  if (myLoggingService.isDebugEnabled()) {
-	    myLoggingService.debug(myAgentName +
-				   "Replacing previous support lineage - " +
-				   localSupportLineage);
-	  }
-	}
-
-	publishRemove(localSupportLineage);
-      }
-    }
 
     SupportLineageList supportLineage =
       mySDFactory.newSupportLineageList();
@@ -221,7 +196,7 @@ public class LineagePlugin extends SimplePlugin
     Asset superior =
       (Asset) findIndirectObject(rfdTask, Constants.Preposition.FOR);
     String scaName = superior.getClusterPG().getMessageAddress().toString();
-    // Okay to support oneself but don't add duplicate entries to the 
+    // Okay to support oneself but don't add duplicate entries to the
     // lineage
     if (!myAgentName.equals(scaName)) {
       supportLineage.add(superior.getClusterPG().getMessageAddress().toString());
@@ -230,11 +205,11 @@ public class LineagePlugin extends SimplePlugin
     publishAdd(supportLineage);
 
     if (myLoggingService.isDebugEnabled()) {
-      myLoggingService.debug("addSupportLineage: publishAdd of " + 
+      myLoggingService.debug("addSupportLineage: publishAdd of " +
 			     supportLineage.getUID());
     }
   }
-    
+
   protected void querySuperior(Task rfdTask) {
     // Missing command support logic - look at roles specified in the AS
     // prep.
@@ -250,40 +225,31 @@ public class LineagePlugin extends SimplePlugin
       LineageList relayLineage = (LineageList) relayListIterator.next();
       LineageList localLineage = null;
 
-
       for (Iterator localListIterator = myLineageListSubscription.iterator();
 	   localListIterator.hasNext();) {
 	LineageList lineage = (LineageList) localListIterator.next();
 	if (relayLineage.getType() == lineage.getType()) {
-	  localLineage = lineage;
-	  break;
+          if(relayLineage.getType() == LineageList.SUPPORT) {
+            if(lineage.getRoot().equals(relayLineage.getRoot())) {
+              localLineage = lineage;
+              break;
+            }
+          }
+          else {
+            localLineage = lineage;
+            break;
+          }
 	}
       }
 
       boolean existingLineage;
 
-      // Need to create a local lineage of the correct type
       if (localLineage == null) {
 	localLineage =
 	  mySDFactory.newLineageList(relayLineage.getType());
 	existingLineage = false;
       } else {
 	existingLineage = true;
-      }
-
-      if (localLineage instanceof SupportLineageList) {
-	// Ignore if agent has a direct support command relationship
-	if ((existingLineage) &&
-	    (localLineage.countHops(localLineage.getLeaf(),
-				    localLineage.getRoot()) == 1)) {
-	  if (myLoggingService.isDebugEnabled()) {
-	    myLoggingService.debug(myAgentName +
-				   "  has a direct support command relationship." +
-				   " Ignoring support lineage from superior: " +
-				   relayLineage);
-	  }
-	  return;
-	}
       }
 
       // update localLineage
@@ -308,11 +274,11 @@ public class LineagePlugin extends SimplePlugin
       LineageList localLineage = (LineageList) iterator.next();
       lineageLists.add(mySDFactory.copyLineageList(localLineage));
       if (myLoggingService.isDebugEnabled()) {
-	myLoggingService.debug(myAgentName + 
-			       ":updateSubordinates localLineage " + 
-			       localLineage + 
+	myLoggingService.debug(myAgentName +
+			       ":updateSubordinates localLineage " +
+			       localLineage +
 			       " type: " + localLineage.getClass());
-      }
+     }
     }
 
     relay.setLineageLists(lineageLists);
