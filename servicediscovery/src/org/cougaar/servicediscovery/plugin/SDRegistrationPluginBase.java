@@ -258,19 +258,52 @@ public abstract class SDRegistrationPluginBase extends ComponentPlugin {
     }
   }
   
+  /* ProviderDescription is big - release resources if we don't need it
+   * anymore.
+   */
+  protected  void clearPD() {
+    if ((provD != null) && 
+	(log.isDebugEnabled())) {
+      log.debug(getAgentIdentifier() + ": clearPD()");
+    }
+    
+    
+    provD = null;
+  }
+
   /* Returns null if unable to parse the provider description */
   protected  ProviderDescription getPD() {
     if (provD == null) {
+      if (log.isDebugEnabled()) {
+	log.debug(getAgentIdentifier() + ": getPD() parsing DAML.");
+      }
+      
       ProviderDescription pd = new ProviderDescriptionImpl();
       try {
 	boolean ok = pd.parseDAML(getAgentIdentifier() + DAML_IDENTIFIER);
-
+	
 	if (ok && (pd.getProviderName() != null)) {
+	  if (log.isDebugEnabled()) {
+	    log.debug(getAgentIdentifier() + 
+		      ": getPD() successfully parsed DAML.");
+	  }
+	  
 	  provD = pd;
+	} else {
+	  if (log.isDebugEnabled()) {
+	    log.debug(getAgentIdentifier() + 
+		      ": getPD() unable to parse DAML." +
+		      " ok = " + ok);
+	  }
 	}
       } catch (java.util.ConcurrentModificationException cme) {
 	// Jena can do a concurrent mod exception. See bug 3052
- 	// Leave provD uninitialized
+	// Leave provD uninitialized
+	if (log.isDebugEnabled()) {
+	  log.debug(getAgentIdentifier() + 
+		    ": getPD() ConcurrentModificationException - " +
+		    cme);
+	}
       }
     }
     return provD;
@@ -480,6 +513,10 @@ public abstract class SDRegistrationPluginBase extends ComponentPlugin {
 	  conf = 0.0;
 	}
       } else {
+	// ProviderDescription is big - release resources since we're
+	// done with registration
+	clearPD();
+
 	conf = 1.0;
       }
 

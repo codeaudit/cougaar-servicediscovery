@@ -187,13 +187,15 @@ public class SDCommunityBasedRegistrationPlugin extends SDRegistrationPluginBase
             scaInfo.setPendingRegistration(false);
 	    scaInfo.clearCommunity();
 
-	    retryAlarm = null;   // probably not safe
-            {
-              org.cougaar.core.service.BlackboardService bbs = getBlackboardService();
-              if (bbs != null) bbs.signalClientActivity();
-            }
+
+	    retryAlarm = null;
+
+	    org.cougaar.core.service.BlackboardService bbs = 
+	      getBlackboardService();
+	    if (bbs != null) { 
+	      bbs.signalClientActivity();
+	    }
 	  }
-	
           public void handle(Exception e) {
             scaInfo.setPendingRegistration(false); // okay to try again
             scaInfo.setIsRegistered(false);
@@ -299,6 +301,7 @@ public class SDCommunityBasedRegistrationPlugin extends SDRegistrationPluginBase
 	return false;
       }
     } 
+
 
     return true;
   }
