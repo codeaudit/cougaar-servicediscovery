@@ -37,21 +37,13 @@ import java.util.Collection;
 
 public class SupportLineageListImpl extends LineageListImpl implements SupportLineageList {
   private static Logger logger = Logging.getLogger(SupportLineageListImpl.class);
-  private String myEchelonOfSupport = Constants.MilitaryEchelon.UNDEFINED;
-
 
   public SupportLineageListImpl() {
     super(SUPPORT);
   }
   
-  public SupportLineageListImpl(String echelon) {
+  public SupportLineageListImpl(Collection c) {
     this();
-    
-    setEchelonOfSupport(echelon);
-  }
-
-  public SupportLineageListImpl(String echelon, Collection c) {
-    this(echelon);
     
     addAll(c);
   }
@@ -59,35 +51,7 @@ public class SupportLineageListImpl extends LineageListImpl implements SupportLi
   public SupportLineageListImpl(SupportLineageList lineage) {
     this();
     
-    myEchelonOfSupport = lineage.getEchelonOfSupport();
     unsafeUpdate(lineage);
-  }
-
-  /**
-   * @return a String specifying the echelon of support for the lineage
-   * Should be one of the values defined by 
-   * org.cougaar.servicediscovery.Constants.MilitaryEchelon
-   **/
-  public String getEchelonOfSupport() {
-    return myEchelonOfSupport;
-  }
-
-  /**
-   * @param the echelon of support for the lineage.
-   * Should be one of the values defined by 
-   * org.cougaar.servicediscovery.Constants.MilitaryEchelon
-   **/
-  public void setEchelonOfSupport(String echelon) {
-    if (!Constants.MilitaryEchelon.validMilitaryEchelon(echelon)) {
-      throw new IllegalArgumentException("Unrecognized military echelon: " + echelon);
-    }
-      
-    myEchelonOfSupport = echelon;
-  }
-
-  public String toString() {
-    return "echelonOfSupport: " + getEchelonOfSupport() + 
-      " " + super.toString();
   }
  }
 

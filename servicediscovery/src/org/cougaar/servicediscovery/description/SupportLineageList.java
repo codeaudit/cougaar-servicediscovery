@@ -31,20 +31,6 @@ package org.cougaar.servicediscovery.description;
  */
 
 public interface SupportLineageList extends LineageList {
-
-  /**
-   * @return a String specifying the echelon of support for the lineage
-   * Should be one of the values defined by 
-   * org.cougaar.servicediscovery.Constants.MilitaryEchelon
-   **/
-  public String getEchelonOfSupport();
-
-  /**
-   * @param the echelon of support for the lineage.
-   * Should be one of the values defined by 
-   * org.cougaar.servicediscovery.Constants.MilitaryEchelon
-   **/
-  public void setEchelonOfSupport(String echelon);
 }
 
 

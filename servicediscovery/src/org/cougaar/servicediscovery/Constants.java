@@ -46,12 +46,6 @@ public class Constants implements org.cougaar.planning.Constants {
 
     static {
       org.cougaar.planning.ldm.plan.Role.create("Support", RelationshipType.SUPERIOR);
-      org.cougaar.planning.ldm.plan.Role.create("BrigadeSupport", RelationshipType.SUPERIOR);
-      org.cougaar.planning.ldm.plan.Role.create("DivisionSupport", RelationshipType.SUPERIOR);
-      org.cougaar.planning.ldm.plan.Role.create("CorpsSupport", RelationshipType.SUPERIOR);
-      org.cougaar.planning.ldm.plan.Role.create("TheaterSupport", RelationshipType.SUPERIOR);
-      org.cougaar.planning.ldm.plan.Role.create("USArmySupport", RelationshipType.SUPERIOR);
-      org.cougaar.planning.ldm.plan.Role.create("JointSupport", RelationshipType.SUPERIOR);
       org.cougaar.planning.ldm.plan.Role.create("AircraftMaintenance", RelationshipType.PROVIDER);
       org.cougaar.planning.ldm.plan.Role.create("FixedWingAircraftMaintenance", RelationshipType.PROVIDER);
       org.cougaar.planning.ldm.plan.Role.create("RotaryWingAircraftMaintenance", RelationshipType.PROVIDER);
@@ -69,47 +63,6 @@ public class Constants implements org.cougaar.planning.Constants {
                                 RelationshipType.SUPERIOR_SUFFIX);
     public static final org.cougaar.planning.ldm.plan.Role SUPPORTSUBORDINATE =
       org.cougaar.planning.ldm.plan.Role.getRole("Support" +
-                                RelationshipType.SUBORDINATE_SUFFIX);
-
-    public static final org.cougaar.planning.ldm.plan.Role BRIGADESUPPORTSUPERIOR =
-      org.cougaar.planning.ldm.plan.Role.getRole("BrigadeSupport" +
-                                RelationshipType.SUPERIOR_SUFFIX);
-    public static final org.cougaar.planning.ldm.plan.Role BRIGADESUPPORTSUBORDINATE =
-      org.cougaar.planning.ldm.plan.Role.getRole("BrigadeSupport" +
-                                RelationshipType.SUBORDINATE_SUFFIX);
-    public static final org.cougaar.planning.ldm.plan.Role DIVISIONSUPPORTSUPERIOR =
-      org.cougaar.planning.ldm.plan.Role.getRole("DivisionSupport" +
-                                RelationshipType.SUPERIOR_SUFFIX);
-    public static final org.cougaar.planning.ldm.plan.Role DIVISIONSUPPORTSUBORDINATE =
-      org.cougaar.planning.ldm.plan.Role.getRole("DivisionSupport" +
-                                RelationshipType.SUBORDINATE_SUFFIX);
-
-    public static final org.cougaar.planning.ldm.plan.Role CORPSSUPPORTSUPERIOR =
-      org.cougaar.planning.ldm.plan.Role.getRole("CorpsSupport" +
-                                RelationshipType.SUPERIOR_SUFFIX);
-    public static final org.cougaar.planning.ldm.plan.Role CORPSSUPPORTSUBORDINATE =
-      org.cougaar.planning.ldm.plan.Role.getRole("CorpsSupport" +
-                                RelationshipType.SUBORDINATE_SUFFIX);
-
-    public static final org.cougaar.planning.ldm.plan.Role THEATERSUPPORTSUPERIOR =
-      org.cougaar.planning.ldm.plan.Role.getRole("TheaterSupport" +
-                                RelationshipType.SUPERIOR_SUFFIX);
-    public static final org.cougaar.planning.ldm.plan.Role THEATERSUPPORTSUBORDINATE =
-      org.cougaar.planning.ldm.plan.Role.getRole("TheaterSupport" +
-                                RelationshipType.SUBORDINATE_SUFFIX);
-
-    public static final org.cougaar.planning.ldm.plan.Role USARMYSUPPORTSUPERIOR =
-      org.cougaar.planning.ldm.plan.Role.getRole("USArmySupport" +
-                                RelationshipType.SUPERIOR_SUFFIX);
-    public static final org.cougaar.planning.ldm.plan.Role USARMYSUPPORTSUBORDINATE =
-      org.cougaar.planning.ldm.plan.Role.getRole("USArmySupport" +
-                                RelationshipType.SUBORDINATE_SUFFIX);
-
-    public static final org.cougaar.planning.ldm.plan.Role JOINTSUPPORTSUPERIOR =
-      org.cougaar.planning.ldm.plan.Role.getRole("JointSupport" +
-                                RelationshipType.SUPERIOR_SUFFIX);
-    public static final org.cougaar.planning.ldm.plan.Role JOINTSUPPORTSUBORDINATE =
-      org.cougaar.planning.ldm.plan.Role.getRole("JointSupport" +
                                 RelationshipType.SUBORDINATE_SUFFIX);
 
     public static final org.cougaar.planning.ldm.plan.Role AIRCRAFTMAINTENANCEPROVIDER =
@@ -211,27 +164,6 @@ public class Constants implements org.cougaar.planning.Constants {
       return -1;
     }
   }
- 
-  private static Object [][]SupportRolesWithEchelon = {
-    {Role.BRIGADESUPPORTSUBORDINATE, MilitaryEchelon.BRIGADE},
-    {Role.DIVISIONSUPPORTSUBORDINATE, MilitaryEchelon.DIVISION},
-    {Role.CORPSSUPPORTSUBORDINATE, MilitaryEchelon.CORPS},
-    {Role.THEATERSUPPORTSUBORDINATE, MilitaryEchelon.THEATER},
-    {Role.USARMYSUPPORTSUBORDINATE, MilitaryEchelon.USARMY},
-    {Role.JOINTSUPPORTSUBORDINATE, MilitaryEchelon.JOINT}
-  };
-
-
-  public static String getMilitaryEchelon(org.cougaar.planning.ldm.plan.Role role) {
-    for (int index = 0; index < SupportRolesWithEchelon.length; index++) {
-      if (role.equals(SupportRolesWithEchelon[index][0])) {
-        return (String) SupportRolesWithEchelon[index][1];
-      }
-    }
-
-    return MilitaryEchelon.UNDEFINED;
-  }
-
 }
 
 

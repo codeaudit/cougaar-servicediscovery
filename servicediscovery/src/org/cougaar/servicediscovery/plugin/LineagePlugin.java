@@ -127,12 +127,8 @@ public class LineagePlugin extends SimplePlugin
 	for (Iterator iterator = roles.iterator(); iterator.hasNext();) {
 	  Role role = (Role) iterator.next();
 
-	  String echelon = Constants.getMilitaryEchelon(role);
-
-	  if (!echelon.equals(Constants.MilitaryEchelon.UNDEFINED)) {
-	    addSupportLineage(echelon, task);
-	  } else {
-	    querySuperior(task);
+	  if (role.equals(Constants.Role.SUPPORTSUBORDINATE)) {
+	    addSupportLineage(task);
 	  }
 	}
       }
@@ -172,7 +168,7 @@ public class LineagePlugin extends SimplePlugin
     }
   }
 
-  protected void addSupportLineage(String echelon, Task rfdTask) {
+  protected void addSupportLineage(Task rfdTask) {
     // Remove any existing support lineages
     for (Iterator localListIterator = myLineageListSubscription.iterator();
 	 localListIterator.hasNext();) {
@@ -200,7 +196,7 @@ public class LineagePlugin extends SimplePlugin
       }
 
     SupportLineageList supportLineage =
-      mySDFactory.newSupportLineageList(echelon);
+      mySDFactory.newSupportLineageList();
     Asset superior =
       (Asset) findIndirectObject(rfdTask, Constants.Preposition.FOR);
     supportLineage.add(myAgentName);
@@ -261,9 +257,6 @@ public class LineagePlugin extends SimplePlugin
 				relayLineage);
 	  return;
 	}
-
-
-	((SupportLineageList) localLineage).setEchelonOfSupport(((SupportLineageList) relayLineage).getEchelonOfSupport());
       }
 
       // update localLineage

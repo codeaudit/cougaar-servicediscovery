@@ -129,22 +129,8 @@ public class SDFactory implements Factory {
   /** Generate a new SupportLineageList
     * @return SupportLineageList
     **/
-  public SupportLineageList newSupportLineageList(String echelon) {
-    if (!validMilitaryEchelon(echelon)) {
-      myLogger.error("Invalid military echelon: " + echelon);
-      return null;
-    }
+  public SupportLineageList newSupportLineageList(Collection lineage) {
     SupportLineageList supportLineageList = newSupportLineageList();
-    supportLineageList.setEchelonOfSupport(echelon);
-    return supportLineageList;
-  }
-
-  /** Generate a new SupportLineageList
-    * @return SupportLineageList
-    **/
-  public SupportLineageList newSupportLineageList(String echelon,
-						  Collection lineage) {
-    SupportLineageList supportLineageList = newSupportLineageList(echelon);
     supportLineageList.addAll(lineage);
     return supportLineageList;
   }
