@@ -104,6 +104,8 @@ public class LineagePlugin extends SimplePlugin
   }
       
   protected void setupSubscriptions() {
+    myAgentName = getBindingSite().getAgentIdentifier().toString();
+
     myReportForDutySubscription = 
       (IncrementalSubscription) subscribe(myReportForDutyPred);
     mySubordinateLineageListRelaySubscription = 
@@ -114,8 +116,6 @@ public class LineagePlugin extends SimplePlugin
       (IncrementalSubscription) subscribe(myLineageListWrapperPred);
 
     mySDFactory = (SDFactory) getFactory(SDDomain.SD_NAME);
-
-    myAgentName = getBindingSite().getAgentIdentifier().toString();
 
     // Add initial seed for command lineage?
     boolean addSeed = true;
