@@ -84,7 +84,7 @@ import org.cougaar.util.UnaryPredicate;
 public class SDClientPlugin extends SimplePlugin implements GLSConstants {
   private static int WARNING_SUPPRESSION_INTERVAL = 4;
   private static final String CLIENT_GRACE_PERIOD = 
-    "org.cougaar.servicediscovery.servicediscovery.plugin.ClientGracePeriod"; 
+    "org.cougaar.servicediscovery.plugin.ClientGracePeriod"; 
   private long myWarningCutoffTime = -1;
 
   private IncrementalSubscription mySelfOrgSubscription;
@@ -1000,6 +1000,44 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
     }
     
     return myWarningCutoffTime;
+  }
+
+  /**
+   * Returns true iff the role and preferences of the service contract
+   * are a subset of the service request.
+   *
+   * @param serviceContract the ServiceContract proposed for this relay.
+   * @return boolean true iff the service contract is a subset of the
+   * service request.
+   */
+  public boolean isContractCompatibleWithRequest(ServiceContract serviceContract) {
+    boolean compatible = getServiceRequest().getServiceRole().equals(serviceContract.getServiceRole());
+    if (compatible) {
+      Collection requestPreferences = getServiceRequest().getServicePreferences();
+      Collection contractPreferences = serviceContract.getServicePreferences();
+      double requestEnd = SDFactory.getPreference(requestPreferences, Preference.END_TIME);
+      double contractEnd = SDFactory.getPreference(contractPreferences, Preference.END_TIME);
+      
+      // Must specify end time preference
+      if ((requestEnd == -1) && (contractEnd == -1)) {
+	return false;
+      }
+
+      compatible = compatible && contractEnd <= requestEnd;
+
+      if(compatible) {
+        double requestStart = SDFactory.getPreference(requestPreferences, Preference.START_TIME);
+        double contractStart = SDFactory.getPreference(contractPreferences, Preference.START_TIME);
+
+	// Must specify start time preference
+	if ((requestStart == -1) && (contractStart == -1)) {
+	  return false;
+	}
+	
+        compatible = compatible && contractStart >= requestStart;
+      }
+    }
+    return compatible;
   }
 
 }
