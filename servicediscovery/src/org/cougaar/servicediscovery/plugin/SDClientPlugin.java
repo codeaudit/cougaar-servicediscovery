@@ -1414,10 +1414,11 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
       }
 
       if (obsolete) {
-	myLoggingService.debug(getAgentIdentifier() + 
-			       ": verifyOutstandingRequest() " + 
-			       " publish change MMQueryRequest = " + 
-			       request.getUID());
+	if (myLoggingService.isDebugEnabled()) 
+	  myLoggingService.debug(getAgentIdentifier() + 
+				 ": verifyOutstandingRequest() " + 
+				 " publish change MMQueryRequest = " + 
+				 request.getUID());
 	query.setObsolete(true);
 	publishChange(request);
       }
