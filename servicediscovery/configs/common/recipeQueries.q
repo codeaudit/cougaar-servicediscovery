@@ -15,7 +15,6 @@ recipeQuery127Agent=\
 recipeQueryDLAHQAgent=\
  SELECT COMPONENT_ALIB_ID FROM alib_component WHERE COMPONENT_TYPE = 'agent' AND COMPONENT_NAME='DLAHQ'
 
-#
 
 recipeQueryNCAAgent=\
  SELECT COMPONENT_ALIB_ID FROM alib_component WHERE COMPONENT_TYPE = 'agent' AND COMPONENT_NAME='NCA'
@@ -36,7 +35,7 @@ recipeQueryOSCAgent=\
 recipeQueryCCADAgent=\
  SELECT COMPONENT_ALIB_ID FROM alib_component WHERE COMPONENT_TYPE = 'agent' AND COMPONENT_NAME='CCAD'
 
- recipeQueryDLAAgent=\
+recipeQueryDLAAgent=\
  SELECT COMPONENT_ALIB_ID FROM alib_component WHERE COMPONENT_TYPE = 'agent' AND COMPONENT_NAME='DLA-AVIATION'
 
 recipeQueryARBNAgent=\
