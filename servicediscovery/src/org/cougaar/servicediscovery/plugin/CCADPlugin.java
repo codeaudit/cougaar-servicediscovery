@@ -70,7 +70,7 @@ import org.cougaar.util.UnaryPredicate;
  *
  *
  *@author    HSingh
- *@version   $Id: CCADPlugin.java,v 1.1 2003-01-20 19:32:24 mthome Exp $
+ *@version   $Id: CCADPlugin.java,v 1.2 2003-01-22 15:50:29 lgoldsto Exp $
  */
 public class CCADPlugin extends SimplePlugin {
 
@@ -266,13 +266,10 @@ public class CCADPlugin extends SimplePlugin {
 					 + nsn);
 			}
 
-			int[] aspects = {};
-			double[] results = {};
-			boolean isSuccess = true;
-			AllocationResult estAR = theLDMF.newAllocationResult(1.0,
-				isSuccess, aspects, results);
-			estAR.addAuxiliaryQueryInfo(AuxiliaryQueryType.PORT_NAME,
-				"Found NSN in CCAD stock.");
+      boolean isSuccess = true;
+      AllocationResult estAR = PluginHelper.createEstimatedAllocationResult(task, theLDMF, 1.0, isSuccess);
+      estAR.addAuxiliaryQueryInfo(AuxiliaryQueryType.PORT_NAME,
+                                  "Found NSN in CCAD stock.");
 
 			Disposition dis = getFactory().createDisposition(task.getPlan(), task, estAR);
 			requestTracker.remove(task);
@@ -327,11 +324,8 @@ public class CCADPlugin extends SimplePlugin {
 			}
 			if(!assigned) {
 				Task task = (Task) requestTracker.get(mmRequest.getUID());
-				int[] aspects = {};
-				double[] results = {};
 				boolean isSuccess = false;
-				AllocationResult estAR = getFactory().newAllocationResult(1.0,
-					isSuccess, aspects, results);
+        AllocationResult estAR = PluginHelper.createEstimatedAllocationResult(task, theLDMF, 1.0, isSuccess);
 				estAR.addAuxiliaryQueryInfo(AuxiliaryQueryType.FAILURE_REASON,
 					"Unable to find viable provider publishing unsuccessful disposition.");
 
@@ -409,11 +403,8 @@ public class CCADPlugin extends SimplePlugin {
 	 *      allocation.
 	 */
 	protected boolean assignTask(Asset providerOrg, Task task) {
-		int[] aspects = {};
-		double[] results = {};
-		boolean isSuccess = true;
-		AllocationResult estAR = getFactory().newAllocationResult(0.5,
-			isSuccess, aspects, results);
+    boolean isSuccess = true;
+    AllocationResult estAR = PluginHelper.createEstimatedAllocationResult(task, theLDMF, 0.5, isSuccess);
 		estAR.addAuxiliaryQueryInfo(AuxiliaryQueryType.PORT_NAME,
 			"Allocating task to ");
 		Allocation allocation = getFactory().createAllocation(task.getPlan(), task,
