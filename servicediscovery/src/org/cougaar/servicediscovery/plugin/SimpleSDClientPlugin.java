@@ -149,7 +149,7 @@ public class SimpleSDClientPlugin extends ComponentPlugin {
   protected void setupSubscriptions() {
     myMMRequestSubscription = (IncrementalSubscription) getBlackboardService().subscribe(MYMMREQUESTPREDICATE);
     myServiceContractRelaySubscription = (IncrementalSubscription) getBlackboardService().subscribe(MYSERVICECONTRACTRELAYPREDICATE);
-    myFindProvidersTaskSubscription = (IncrementalSubscription) getBlackboardService().subscribe(MYFINDPROVIDERSTASKPREDICATE);
+    myFindProvidersTaskSubscription = (IncrementalSubscription) getBlackboardService().subscribe(getFindProvidersPredicate());
   }
 
   /**
@@ -472,14 +472,22 @@ public class SimpleSDClientPlugin extends ComponentPlugin {
     }
   };
 
-  /** Extenders will probably over-ride this to point to their own Verb Constant */
-  protected static final UnaryPredicate MYFINDPROVIDERSTASKPREDICATE = new UnaryPredicate() {
-    public boolean execute(Object o) {
-      if (o instanceof Task) {
-        return ((Task) o).getVerb().equals(Constants.Verb.FindProviders);
-      } else {
-        return false;
-      }
-    }
-  };
+  /**
+   * Predicate to get the FindProviders Tasks. In the off-chance that your verb is 
+   * slightly different, you can over-ride this method to point to your
+   * domain-specific Verb Constant.
+   *<b>
+   * Note that it is not a constant, just so it can be over-ridden.
+   */ 
+  protected UnaryPredicate getFindProvidersPredicate() {
+    return new UnaryPredicate() {
+	public boolean execute(Object o) {
+	  if (o instanceof Task) {
+	    return ((Task) o).getVerb().equals(Constants.Verb.FindProviders);
+	  } else {
+	    return false;
+	  }
+	}
+      };
+  }
 }
