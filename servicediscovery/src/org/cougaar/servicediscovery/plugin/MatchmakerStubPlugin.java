@@ -361,8 +361,19 @@ public class MatchmakerStubPlugin extends SimplePlugin {
     // if there were exceptions talking to the YP.
 
     if (myQuiescenceReportService != null) {
-      if (myOutstandingRQs.isEmpty() && 
-	  myPendingRQs.isEmpty() && 
+      // Check if done with YP queries in synch blocks
+      // since callbacks may be running
+      boolean noOutRQs = false;
+      synchronized (myOutstandingRQs) {
+	noOutRQs = myOutstandingRQs.isEmpty();
+      }
+      boolean noPendRQs = false;
+      synchronized (myPendingRQs) {
+	noPendRQs = myPendingRQs.isEmpty();
+      }
+
+      if (noOutRQs && 
+	  noPendRQs && 
 	  myOutstandingAlarms == 0) {
 	// Nothing on the lists and no outstanding alarms - so we're done
 	myQuiescenceReportService.setQuiescentState();
@@ -381,12 +392,27 @@ public class MatchmakerStubPlugin extends SimplePlugin {
 	  myLoggingService.info(myAgentName + 
 				" has outstanding YP queries or answers. " +
 				"Not quiescent.");
-	if (myLoggingService.isDebugEnabled())
+	if (myLoggingService.isDebugEnabled()) {
+	  // Get the toStrings in synch blocks since callbacks
+	  // may currently be executing
+	  String outRQs = "";
+	  String pendRQs = "";
+	  synchronized (myOutstandingRQs) {
+	    outRQs = myOutstandingRQs.toString();
+	  }
+	  synchronized (myPendingRQs) {
+	    pendRQs = myPendingRQs.toString();
+	  }
+
 	  myLoggingService.debug("\tYP questions outstanding: " + 
-				 myOutstandingRQs.size() + 
+				 // AMH: Actually print the outstanding RQs
+				 //				 myOutstandingRQs.size() + 
+				 outRQs + 
 				 ". YP answers to process: " + 
-				 myPendingRQs.size() + 
+				 pendRQs + 
+				 //				 myPendingRQs.size() + 
 				 ". Outstanding alarms: " + myOutstandingAlarms);
+	}
       }
     }
   }
@@ -480,6 +506,11 @@ public class MatchmakerStubPlugin extends SimplePlugin {
       this.query = query;
       this.rq = rq;
       this.ypLineage = null;
+    }
+
+    // Verbose toString used when printing myOutstandingRQs in handleQuiescenceReport
+    public String toString() {
+      return "RQ for query <" + queryRequest.getUID() + ": ResultCode " + queryRequest.getResultCode() + ", query: " + query + "> using lineage " + ypLineage + ". Has exception? " + (exception == null ? "No" : "Yes") + ". Complete? " + complete + " getNextContextFailed? " + getNextContextFailed;
     }
   }
 
@@ -669,7 +700,13 @@ public class MatchmakerStubPlugin extends SimplePlugin {
 	  " to " +
 	  new Date(r.query.getTimeSpan().getEndTime());
 	IllegalStateException ise = new IllegalStateException();
-	retryErrorLog(r,errorMessage, ise);
+	// AMH: Don't retry here. Instead, let the while in execute()
+	// call handleException to do this.
+	r.exception = ise;
+	if (myLoggingService.isDebugEnabled())
+	  myLoggingService.debug(getAgentIdentifier() + "AMH: findServiceWithDistributedYP had no Operation Lineage, doing pendRQ with an IllegalStateException for RQ " + r);
+	pendRQ(r);
+	//	retryErrorLog(r,errorMessage, ise);
 	return;
       }
 
