@@ -35,6 +35,7 @@ import org.cougaar.planning.ldm.plan.AuxiliaryQueryType;
 import org.cougaar.planning.ldm.plan.Disposition;
 import org.cougaar.planning.ldm.plan.Task;
 import org.cougaar.planning.plugin.legacy.SimplePlugin;
+import org.cougaar.planning.plugin.util.PluginHelper;
 
 import org.cougaar.servicediscovery.util.Switch;
 
@@ -48,7 +49,7 @@ import org.cougaar.util.UnaryPredicate;
  * associated with the agent. http://&lt;hostname&gt;:&lt;port&gt;/$Agent/switchServlet
  *
  *@author    HSingh
- *@version   $Id: ODMPlugin.java,v 1.2 2003-01-22 17:30:43 mthome Exp $
+ *@version   $Id: ODMPlugin.java,v 1.3 2003-01-22 21:03:56 lgoldsto Exp $
  */
 public class ODMPlugin extends SimplePlugin {
 	private IncrementalSubscription mySupplyTaskSubscription;
@@ -120,11 +121,7 @@ public class ODMPlugin extends SimplePlugin {
 			}
 
 			boolean isSuccess = tempState;
-			int[] aspect_types = {};
-			double[] results = {};
-
-			AllocationResult estAR = getFactory().newAllocationResult(1.0,
-				isSuccess, aspect_types, results);
+      AllocationResult estAR = PluginHelper.createEstimatedAllocationResult(task, theLDMF, 1.0, isSuccess);
 			estAR.addAuxiliaryQueryInfo(AuxiliaryQueryType.PORT_NAME,
 				getAgentIdentifier().toString()
 				 + ": published disposition with result: " + tempState);
@@ -160,7 +157,7 @@ public class ODMPlugin extends SimplePlugin {
 	 * Looks up in odm_db to see whether the manufacturer can produce the nsn.
 	 *
 	 *@param nsn  NSN
-	 *@return
+	 *@return  true if the manufacturer can produce the nsn, else false
 	 */
 	protected boolean canProduce(String nsn) {
 		String me = getAgentIdentifier().toString();
