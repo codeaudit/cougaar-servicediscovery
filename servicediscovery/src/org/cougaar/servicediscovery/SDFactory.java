@@ -327,6 +327,38 @@ public class SDFactory implements Factory {
     return result;
   }
 
+  /** 
+   * Return the (long) value associated with a Time Preference with the
+   * specified AspectType, avoiding long->double->long type conversion.
+   *
+   * @param preferences Collection of Preferences (will ignore any in the Collection
+   * which are not Preferences)
+   * @param aspectType int specifying the AspectType of the Preference
+   * @return value, -1 if matching Preference not found.
+   */
+  static public long getTimePreference(Collection preferences, int aspectType) {
+    long result = -1;
+    Preference preference = null;
+
+    for (Iterator iterator = preferences.iterator(); iterator.hasNext();) {
+      Object next = iterator.next();
+
+      if (next instanceof Preference) {
+	Preference testPreference = (Preference) next;
+	if (testPreference.getAspectType() == aspectType) {
+	  preference = testPreference;
+	  break;
+	}
+      }
+    }
+
+    if (preference != null) {
+      // Because we know this is a time, treat the value as a long
+      result = preference.getScoringFunction().getBest().getAspectValue().longValue();
+    }
+    return result;
+  }
+
   static public Preference findPreference(Collection preferences, int aspectType){
     Preference preference = null;
 
@@ -346,8 +378,8 @@ public class SDFactory implements Factory {
   }
 
   public static TimeSpan getTimeSpanFromPreferences(Collection preferences) {
-    double preferenceStart = getPreference(preferences, Preference.START_TIME);
-    double preferenceEnd = getPreference(preferences, Preference.END_TIME);
+    long preferenceStart = getTimePreference(preferences, Preference.START_TIME);
+    long preferenceEnd = getTimePreference(preferences, Preference.END_TIME);
     
     if ((preferenceEnd == -1) ||
 	(preferenceStart == -1)) {
@@ -369,7 +401,7 @@ public class SDFactory implements Factory {
     }
 
     MutableTimeSpan timeSpan = new MutableTimeSpan();
-    timeSpan.setTimeSpan((long) preferenceStart, (long) preferenceEnd);
+    timeSpan.setTimeSpan(preferenceStart, preferenceEnd);
     
     return timeSpan;
   }
