@@ -54,45 +54,49 @@ import java.util.Vector;
  *
  */
 public class PublishTaxonomy extends ComponentSupport {
-  private LoggingService logger;
+  private LoggingService myLogger;
 
-  private static String userid;
-  private static String password;
+  private static String UDDI_USERID = "cougaar";
+  private static String UDDI_PASSWORD = "cougaarPass";
 
-  private YPProxy proxy;
-  private YPService ypService;
+  private YPProxy myYPProxy;
+  private YPService myYPService;
+  private AuthToken myAuthToken;
+
+  public static String []TMODELNAMES = 
+     { UDDIConstants.MILITARY_SERVICE_SCHEME,
+       UDDIConstants.MILITARY_ECHELON_SCHEME,
+       UDDIConstants.ORGANIZATION_TYPES,
+       UDDIConstants.SOURCING_CAPABILITY_SCHEME,
+       UDDIConstants.SUPPORT_COMMAND_ASSIGNMENT };
 
   public void initialize() {
     super.initialize();
 
     ServiceBroker sb = getServiceBroker();
-    LoggingService logger = 
+    LoggingService myLogger = 
       (LoggingService) sb.getService(this, LoggingService.class, null);
-    ypService = 
+    myYPService = 
       (YPService) sb.getService(this, YPService.class, null);
     String ypAgent = System.getProperty("org.cougaar.yp.ypAgent");
       
-    proxy = ypService.getYP(ypAgent);
+    myYPProxy = myYPService.getYP(ypAgent);
 
-    initTaxonomy(proxy);
+    initTaxonomy();
 
-    proxy  = null;
+    myYPProxy  = null;
   }
 
-  private void initTaxonomy(YPProxy proxyArg) {
-    userid = "cougaar";
-    password = "cougaarPass";
-    
-    proxy = proxyArg;
-
+  private void initTaxonomy() {
     try {
-      genTaxonomy(UDDIConstants.MILITARY_SERVICE_SCHEME, UDDIConstants.MILITARY_SERVICE_SCHEME_UUID);
-      genTaxonomy(UDDIConstants.MILITARY_ECHELON_SCHEME, UDDIConstants.MILITARY_ECHELON_SCHEME_UUID);
-      genTaxonomy(UDDIConstants.ORGANIZATION_TYPES, UDDIConstants.ORGANIZATION_TYPES_UUID);
-      genTaxonomy(UDDIConstants.SOURCING_CAPABILITY_SCHEME, UDDIConstants.SOURCING_CAPABILITY_SCHEME_UUID);
-      genTaxonomy(UDDIConstants.SUPPORT_COMMAND_ASSIGNMENT, UDDIConstants.SUPPORT_COMMAND_ASSIGNMENTI_UUID);
+      myAuthToken = (AuthToken) myYPService.submit(myYPProxy.get_authToken(UDDI_USERID, UDDI_PASSWORD)).get();
 
+      for (int index = 0; index < TMODELNAMES.length; index++) {
+	genTaxonomy(TMODELNAMES[index]);
+      }
       createBindingTModels();
+
+      myYPService.submit(myYPProxy.discard_authToken(myAuthToken.getAuthInfoString())).get();
       
     } catch (Exception e){
       e.printStackTrace();
@@ -100,18 +104,13 @@ public class PublishTaxonomy extends ComponentSupport {
   }
 
   private TModelDetail saveTModel(Vector tModels) throws UDDIException {
-    // why are we getting a token every single time?...
-    AuthToken token = (AuthToken) ypService.submit(proxy.get_authToken(userid, password)).get();
-
     TModelDetail tModelDetail = 
-      (TModelDetail) ypService.submit(proxy.save_tModel(token.getAuthInfoString(), tModels)).get();
-
-    // and never releasing any tokens?...
+      (TModelDetail) myYPService.submit(myYPProxy.save_tModel(myAuthToken.getAuthInfoString(), tModels)).get();
 
     return tModelDetail;
   }
 
-  private void createTaxonomy(String name, String key, String file) throws UDDIException {
+  private void createTaxonomy(String name, String file) throws UDDIException {
     try {
       TModel tModel = new TModel();
       tModel.setName(name);
@@ -141,7 +140,7 @@ public class PublishTaxonomy extends ComponentSupport {
     } catch (UDDIException ue) {
       DispositionReport dr = ue.getDispositionReport();
       if (dr!=null) {
-	logger.error("UDDIException faultCode:" + ue.getFaultCode() +
+	myLogger.error("UDDIException faultCode:" + ue.getFaultCode() +
 		     "\n operator:" + dr.getOperator() +
 		     "\n generic:"  + dr.getGeneric() +
 		     "\n errno:"    + dr.getErrno() +
@@ -186,7 +185,7 @@ public class PublishTaxonomy extends ComponentSupport {
     } catch (UDDIException e) {
       DispositionReport dr = e.getDispositionReport();
       if (dr!=null) {
-	logger.error("UDDIException faultCode:" + e.getFaultCode() +
+	myLogger.error("UDDIException faultCode:" + e.getFaultCode() +
 		     "\n operator:" + dr.getOperator() +
 		     "\n generic:"  + dr.getGeneric() +
 		     "\n errno:"    + dr.getErrno() +
@@ -231,7 +230,7 @@ public class PublishTaxonomy extends ComponentSupport {
     } catch (UDDIException e) {
       DispositionReport dr = e.getDispositionReport();
       if (dr!=null) {
-	logger.error("UDDIException faultCode:" + e.getFaultCode() +
+	myLogger.error("UDDIException faultCode:" + e.getFaultCode() +
 		     "\n operator:" + dr.getOperator() +
 		     "\n generic:"  + dr.getGeneric() +
 		     "\n errno:"    + dr.getErrno() +
@@ -249,18 +248,18 @@ public class PublishTaxonomy extends ComponentSupport {
     return (new File(path)).exists();
   }
 
-  private boolean genTaxonomy(String name, String uuid) throws UDDIException {
+  private boolean genTaxonomy(String name) throws UDDIException {
     String file_ext = "-yp.xml";
 
     String basePath = System.getProperty("org.cougaar.install.path") + File.separator +
       "servicediscovery" + File.separator + "data" + File.separator + "taxonomies" + File.separator;
 
     if(validPath(basePath + name + file_ext)) {
-      createTaxonomy(name, uuid, basePath + name + file_ext);
+      createTaxonomy(name, basePath + name + file_ext);
       return true;
     }
 
-    logger.error("Invalid Path: " + basePath + name + file_ext);
+    myLogger.error("Invalid Path: " + basePath + name + file_ext);
     return false;
   }
 

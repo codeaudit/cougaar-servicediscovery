@@ -27,10 +27,9 @@ import org.cougaar.core.service.LoggingService;
 import org.cougaar.core.servlet.SimpleServletSupport;
 import org.cougaar.planning.servlet.data.xml.XMLWriter;
 import org.cougaar.planning.ldm.PlanningFactory;
-import org.cougaar.servicediscovery.description.MMRoleQuery;
+import org.cougaar.servicediscovery.description.MMQuery;
 import org.cougaar.servicediscovery.description.ScoredServiceDescription;
 import org.cougaar.servicediscovery.description.ServiceClassification;
-import org.cougaar.servicediscovery.matchmaker.MatchMakerQuery;
 import org.cougaar.servicediscovery.transaction.MMQueryRequest;
 import org.cougaar.servicediscovery.transaction.NewMMQueryRequest;
 import org.cougaar.util.UnaryPredicate;
@@ -282,31 +281,21 @@ public class MatchMakerQueryServlet
 
         protected void printTableAsHTML(MMQueryRequest request) {
             if (request != null) {
-                if (request.getQuery() instanceof MatchMakerQuery) {
-                    MatchMakerQuery query = (MatchMakerQuery) request.getQuery();
-                    printQueryAsHTMLTable(query);
-                } else if (request.getQuery() instanceof MMRoleQuery) {
-                    MMRoleQuery query = (MMRoleQuery) request.getQuery();
-                    printQueryAsHTMLTable(query);
-                } else {
-                    logger.error("Unknown query type:" + request.getQuery());
-                }
+	        printQueryAsHTMLTable(request.getQuery());
                 printResultAsHTMLTable(request);
             } else {
                 out.print("<pre>No Match Maker query requests at this Agent</b></pre>");
             }
         }
 
-
-        protected void printQueryAsHTMLTable(MatchMakerQuery query) {
-            String queryStr = query.getQueryString();
-            QueryToHTMLTranslator qt = QueryToHTMLTranslator.parseQueryStrToTranslator(queryStr);
-            printQueryAsHTMLTable(qt);
-        }
-
-        protected void printQueryAsHTMLTable(MMRoleQuery query) {
-            QueryToHTMLTranslator qt = QueryToHTMLTranslator.createTranslatorFromMMRoleQuery(query);
-            printQueryAsHTMLTable(qt);
+        protected void printQueryAsHTMLTable(MMQuery query) {
+            QueryToHTMLTranslator qt = QueryToHTMLTranslator.createTranslatorForQuery(query);
+	    
+	    if (qt == null) {
+	      logger.error("Unknown query type:" + query);
+	    } else {
+	      printQueryAsHTMLTable(qt);
+	    }
         }
 
         protected void printQueryAsHTMLTable(QueryToHTMLTranslator qt) {
@@ -362,35 +351,25 @@ public class MatchMakerQueryServlet
                     String queryUID = (String) uidIT.next();
                     MMQueryRequest mmqr = (MMQueryRequest) mmRequests.get(queryUID);
 
-                    QueryToHTMLTranslator qt = null;
-
-                    if (mmqr.getQuery() instanceof MatchMakerQuery) {
-
-                        MatchMakerQuery mmq = (MatchMakerQuery) mmqr.getQuery();
-
-                        String queryStr = mmq.getQueryString();
-                        qt = QueryToHTMLTranslator.parseQueryStrToTranslator(queryStr);
-                    } else if (mmqr.getQuery() instanceof MMRoleQuery) {
-                        MMRoleQuery mmrq = (MMRoleQuery) mmqr.getQuery();
-                        qt = QueryToHTMLTranslator.createTranslatorFromMMRoleQuery(mmrq);
-                    } else {
-                        logger.error("Unknown query class type:" + mmqr.getQuery());
+                    QueryToHTMLTranslator qt = 
+		      QueryToHTMLTranslator.createTranslatorForQuery(mmqr.getQuery());
+		    if (qt == null) {
+                        logger.error("Unknown query class type:" + 
+				     mmqr.getQuery());
+			continue;
                     }
 
                     qt.setRootFactory(ldmFactory);
 
-                    if (qt != null) {
-                        if (ctr == 0) {
-                            out.print(qt.beginHTMLQueriesTable("Queries"));
-                        }
-                        out.print(qt.toHTMLQueriesTableRow(queryUID, mmqr));
-                        ctr++;
-                        if (ctr == requests.size()) {
-                            out.print(qt.endHTMLQueriesTable());
-                        }
-                    } else {
-                        System.out.println("Unparseable Query=" + mmqr.getQuery());
-                    }
+		    if (ctr == 0) {
+		      out.print(qt.beginHTMLQueriesTable("Queries"));
+		    }
+		    out.print(qt.toHTMLQueriesTableRow(queryUID, mmqr));
+		    ctr++;
+		    if (ctr == requests.size()) {
+		      out.print(qt.endHTMLQueriesTable());
+		    }
+
                 }
             }
         }
@@ -404,15 +383,8 @@ public class MatchMakerQueryServlet
 
                 MMQueryRequest mmqr = (MMQueryRequest) requestsIT.next();
 
-                String queryType = null;
-
-                if (mmqr.getQuery() instanceof MatchMakerQuery) {
-                    MatchMakerQuery mmq = (MatchMakerQuery) mmqr.getQuery();
-                    String queryStr = mmq.getQueryString();
-                    queryType = QueryToHTMLTranslator.parseQueryStrToQueryType(queryStr);
-                } else if (mmqr.getQuery() instanceof MMRoleQuery) {
-                    queryType = QueryToHTMLTranslator.getQueryTypeForMMRoleQuery();
-                } else {
+                String queryType = QueryToHTMLTranslator.getQueryType(mmqr.getQuery());
+		if (queryType == null) {
                     logger.error("Unknown query type:" + mmqr.getQuery());
                 }
 
@@ -564,3 +536,5 @@ public class MatchMakerQueryServlet
         }
     }
 }
+
+

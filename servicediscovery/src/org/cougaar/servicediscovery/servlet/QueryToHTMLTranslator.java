@@ -22,12 +22,12 @@
 
 package org.cougaar.servicediscovery.servlet;
 
-import org.cougaar.servicediscovery.transaction.MMQueryRequest;
-import org.cougaar.servicediscovery.description.MMRoleQuery;
 import org.cougaar.core.domain.Factory;
 import org.cougaar.planning.ldm.PlanningFactory;
 
-
+import org.cougaar.servicediscovery.description.MMQuery;
+import org.cougaar.servicediscovery.description.MMRoleQuery;
+import org.cougaar.servicediscovery.transaction.MMQueryRequest;
 
 /**
  * <pre>
@@ -41,11 +41,6 @@ import org.cougaar.planning.ldm.PlanningFactory;
 
 
 public abstract class QueryToHTMLTranslator {
-
-
-    protected static String START_OF_MILITARY_SERVICE_QUERY = "(attr(id('mil_entity(''";
-    protected static String KEY_PART_OF_DLA_NSN_QUERY = "', ultralog), id('hasNAICSCategory',ultralog), NaicsCat),";
-    protected static String KEY_PART_OF_SERVICE_BY_NAME_QUERY = "ProviderObjId, ultralog), attr(id(Service,ServiceSource)";
 
     protected PlanningFactory ldmFactory=null;
 
@@ -75,35 +70,21 @@ public abstract class QueryToHTMLTranslator {
     }
 
 
-    public static QueryToHTMLTranslator parseQueryStrToTranslator(String queryStr) {
-        if (queryStr.startsWith(START_OF_MILITARY_SERVICE_QUERY)) {
-            return MilitaryServiceQueryTranslator.parseQueryString(queryStr);
-        } else if (queryStr.indexOf(KEY_PART_OF_DLA_NSN_QUERY) != -1) {
-            return DlaNSNQueryTranslator.parseQueryString(queryStr);
-        } else if (queryStr.indexOf(KEY_PART_OF_SERVICE_BY_NAME_QUERY) != -1) {
-            return ServiceByNameQueryTranslator.parseQueryString(queryStr);
-        }
-        return null;
+    public static QueryToHTMLTranslator createTranslatorForQuery(MMQuery mmq) {
+      if (mmq instanceof MMRoleQuery) {
+	return MilitaryServiceQueryTranslator.createFromMMRoleQuery((MMRoleQuery) mmq);
+      } else {
+	return null;
+      }
+      
     }
 
-    public static String parseQueryStrToQueryType(String queryStr) {
-        if (queryStr.startsWith(START_OF_MILITARY_SERVICE_QUERY)) {
-            return MilitaryServiceQueryTranslator.QUERY_TYPE;
-        } else if (queryStr.indexOf(KEY_PART_OF_DLA_NSN_QUERY) != -1) {
-            return DlaNSNQueryTranslator.QUERY_TYPE;
-        } else if (queryStr.indexOf(KEY_PART_OF_SERVICE_BY_NAME_QUERY) != -1) {
-            return ServiceByNameQueryTranslator.QUERY_TYPE;
-        }
-        return "Unknown Query Type";
-    }
-
-
-    public static QueryToHTMLTranslator createTranslatorFromMMRoleQuery(MMRoleQuery mmrq) {
-            return MilitaryServiceQueryTranslator.createFromMMRoleQuery(mmrq);
-    }
-
-    public static String getQueryTypeForMMRoleQuery() {
+    public static String getQueryType(MMQuery mmq) {
+      if (mmq instanceof MMRoleQuery) {
         return MilitaryServiceQueryTranslator.QUERY_TYPE;
+      } else {
+	return null;
+      }
     }
 
     public String beginHTMLQueriesTable(String title) {
@@ -127,5 +108,11 @@ public abstract class QueryToHTMLTranslator {
     }
 
 }
+
+
+
+
+
+
 
 

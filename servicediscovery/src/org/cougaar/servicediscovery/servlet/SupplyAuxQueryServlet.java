@@ -51,7 +51,6 @@ import org.cougaar.glm.plugins.AssetUtils;
 import org.cougaar.glm.plugins.TaskUtils;
 import org.cougaar.servicediscovery.transaction.MMQueryRequest;
 import org.cougaar.servicediscovery.transaction.NewMMQueryRequest;
-import org.cougaar.servicediscovery.matchmaker.MatchMakerQuery;
 import org.cougaar.servicediscovery.description.ScoredServiceDescription;
 import org.cougaar.servicediscovery.description.ServiceClassification;
 import org.cougaar.servicediscovery.description.ServiceBinding;
@@ -524,3 +523,6 @@ public class SupplyAuxQueryServlet
         }
     }
 }
+
+
+

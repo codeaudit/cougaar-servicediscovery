@@ -23,7 +23,6 @@
 package org.cougaar.servicediscovery.servlet;
 
 import org.cougaar.servicediscovery.util.UDDIConstants;
-import org.cougaar.servicediscovery.matchmaker.MatchMakerQueryGenerator;
 import org.cougaar.servicediscovery.transaction.MMQueryRequest;
 import org.cougaar.servicediscovery.description.MMRoleQuery;
 
@@ -50,15 +49,6 @@ public class MilitaryServiceQueryTranslator extends QueryToHTMLTranslator {
 
     public static String QUERY_TYPE = "MilitaryServiceQuery";
     private static String QUERY_TITLE = "Military Service Query";
-
-    private static String START_OF_QUERY = START_OF_MILITARY_SERVICE_QUERY;
-    private static String QUERY_STR_2 = "'')',ultralog),id('SupportedBy',ultralog),Support)::widen(1,";
-
-    private static String QUERY_STR_3 = ",_X),isa(id('";
-    private static String QUERY_STR_4 = "','" + UDDIConstants.MILITARY_ECHELON_SCHEME + "'),id('";
-    private static String QUERY_STR_5 = "','" + UDDIConstants.MILITARY_ECHELON_SCHEME + "'))::widen(1,RealEch)," + "attr(Support,id('" + UDDIConstants.MILITARY_ECHELON_SCHEME + "',ultralog),RealEch)," + "isa(Support, id('";
-    private static String QUERY_STR_6 = "', '";
-    private static String QUERY_STR_7 = "')),";
 
 
     public MilitaryServiceQueryTranslator(String aClientName,
@@ -95,11 +85,7 @@ public class MilitaryServiceQueryTranslator extends QueryToHTMLTranslator {
     }
 
     public String toQueryString() {
-        return MatchMakerQueryGenerator.militaryServiceQuery(clientName,
-                                                             echelon,
-                                                             classCode,
-                                                             classScheme,
-                                                             lineageRelaxationPenalty);
+        return "";
     }
 
     public String toString() {
@@ -127,15 +113,6 @@ public class MilitaryServiceQueryTranslator extends QueryToHTMLTranslator {
 
         return retStr;
 
-        /**  MWD Remove
-        return (retStr + "</th></tr>\n" +
-                "<tr>" +
-                "<th>Echelon</th>" +
-                "<th>Class Code</th>" +
-                "<th>Class Scheme</th>" +
-                "</tr>\n");
-
-         ***/
     }
 
     public String getHTMLQueryText() {
@@ -192,41 +169,6 @@ public class MilitaryServiceQueryTranslator extends QueryToHTMLTranslator {
     }
 
 
-    public static MilitaryServiceQueryTranslator parseQueryString(String queryString) {
-        String aClientName,anEchelon,aClassCode,aClassScheme,relaxationPenaltyStr;
-        float relaxationPenalty;
-        int start,end;
-        if (queryString.startsWith(START_OF_QUERY)) {
-            start = START_OF_QUERY.length();
-            end = queryString.indexOf(QUERY_STR_2);
-            aClientName = queryString.substring(start, end);
-            start = end + QUERY_STR_2.length();
-            queryString = queryString.substring(start);
-            end = queryString.indexOf(QUERY_STR_3);
-            relaxationPenaltyStr = queryString.substring(0, end);
-            relaxationPenalty = Float.parseFloat(relaxationPenaltyStr);
-            start = end + QUERY_STR_3.length();
-            end = queryString.indexOf(QUERY_STR_4);
-            anEchelon = queryString.substring(start, end);
-            start = end + QUERY_STR_4.length() + anEchelon.length() + QUERY_STR_5.length();
-            queryString = queryString.substring(start);
-            end = queryString.indexOf(QUERY_STR_6);
-            aClassCode = queryString.substring(0, end);
-            start = end + QUERY_STR_6.length();
-            end = queryString.indexOf(QUERY_STR_7);
-            aClassScheme = queryString.substring(start, end);
-
-            return new MilitaryServiceQueryTranslator(aClientName,
-                                                      anEchelon,
-                                                      aClassCode,
-                                                      aClassScheme,
-                                                      relaxationPenalty);
-
-        }
-        return null;
-    }
-
-
     public static MilitaryServiceQueryTranslator
                 createFromMMRoleQuery(MMRoleQuery rq){
         return new MilitaryServiceQueryTranslator(null,rq.getEchelon(),
@@ -236,17 +178,6 @@ public class MilitaryServiceQueryTranslator extends QueryToHTMLTranslator {
 
     }
 
-    private static String TRIAL_QUERY = "(attr(id('mil_entity(''1-36-INFBN'')',ultralog),id('SupportedBy',ultralog),Support)::widen(1,10.0,_X),isa(id('BRIGADE','MilitaryEchelonScheme'),id('BRIGADE','MilitaryEchelonScheme'))::widen(1,RealEch),attr(Support,id('MilitaryEchelonScheme',ultralog),RealEch),isa(Support, id('SparePartsProvider', 'M ilitaryServiceScheme')),attr(ProfileObj, id(serviceCategory,'http://www.daml.org/services/daml-s/0.7 /Profile.daml'), Support),attr(id(Service, _), id(presents,'http://www.daml.org/services/daml-s/0.7/ Service.daml'), ProfileObj))";
-
-    public static void main(String[] args) {
-        MilitaryServiceQueryTranslator msq = MilitaryServiceQueryTranslator.parseQueryString(TRIAL_QUERY);
-        boolean doesEqual = TRIAL_QUERY.equals(msq.toQueryString());
-        System.out.println(" The " + msq + " doesEqual: " + doesEqual);
-        if (!doesEqual) {
-            printDiff(TRIAL_QUERY, msq.toQueryString());
-        }
-
-    }
 
 }
 
