@@ -426,6 +426,7 @@ public final class UDDI4JRegistrationServiceComponent
 
 //  FIXME -NEED TO DELETE THE PROVIDER DESC STORED LOCALLY AS WELL
     public boolean deleteProviderDescription(String providerKey){
+      log.error(" This method has not been implemented ");
       return false;
     }
 
@@ -475,7 +476,8 @@ public final class UDDI4JRegistrationServiceComponent
 
     //Below methods not yet implemented
     public boolean updateProviderDescription(String providerKey, ProviderDescription pd){
-      return true;
+      log.error(" This method has not been implemented ");
+      return false;
     }
 
 
@@ -591,7 +593,7 @@ public final class UDDI4JRegistrationServiceComponent
 
 
     // delete a service description given provider name and service categories.
-    // this method currently only deletes one service description
+    // NOTE:  This really should use service keys and business keys to ensure uniqueness instead.
     public boolean deleteServiceDescription(String providerName, Collection serviceCategories) {
       boolean success = true;
       Object token = getLock();
