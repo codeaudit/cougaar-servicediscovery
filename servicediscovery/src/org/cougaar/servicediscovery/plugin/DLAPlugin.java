@@ -90,7 +90,7 @@ import org.cougaar.util.UnaryPredicate;
  *
  *
  *@author    HSingh
- *@version   $Id: DLAPlugin.java,v 1.1 2003-01-20 19:32:24 mthome Exp $
+ *@version   $Id: DLAPlugin.java,v 1.2 2003-01-22 15:57:01 lgoldsto Exp $
  */
 public class DLAPlugin extends SimplePlugin {
 	private IncrementalSubscription mySupplyTaskSubscription;
@@ -591,12 +591,9 @@ public class DLAPlugin extends SimplePlugin {
 			info.setAllocation(null);
 		}
 
-		int[] aspects = {};
-		double[] results = {};
 		boolean isSuccessful = true;
-		AllocationResult estAR = getFactory().newAllocationResult(1.0,
-			isSuccessful, aspects, results);
-		estAR.addAuxiliaryQueryInfo(AuxiliaryQueryType.PORT_NAME,
+    AllocationResult estAR = PluginHelper.createEstimatedAllocationResult(task, theLDMF, 1.0, isSuccessful);
+    estAR.addAuxiliaryQueryInfo(AuxiliaryQueryType.PORT_NAME,
 			"Allocating task to:" + asset);
 
 		Allocation allocation = getFactory().createAllocation(task.getPlan(), task,
@@ -625,10 +622,7 @@ public class DLAPlugin extends SimplePlugin {
 	 *@return              Returns result of publishAdd
 	 */
 	protected boolean publishDispos(Task task, boolean isSuccessful) {
-		int[] aspects = {};
-		double[] results = {};
-		AllocationResult estAR = getFactory().newAllocationResult(1.0,
-			isSuccessful, aspects, results);
+    AllocationResult estAR = PluginHelper.createEstimatedAllocationResult(task, theLDMF, 1.0, isSuccessful);
 		estAR.addAuxiliaryQueryInfo(AuxiliaryQueryType.PORT_NAME,
 			"Publishing disposition:" + isSuccessful);
 
@@ -892,7 +886,7 @@ public class DLAPlugin extends SimplePlugin {
 	 * Bean for holding information associated with a task.
 	 *
 	 *@author    HSingh
-	 *@version   $Id: DLAPlugin.java,v 1.1 2003-01-20 19:32:24 mthome Exp $
+	 *@version   $Id: DLAPlugin.java,v 1.2 2003-01-22 15:57:01 lgoldsto Exp $
 	 */
 	public class Info {
 		Task task;
