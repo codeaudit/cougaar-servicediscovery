@@ -32,7 +32,6 @@ import javax.servlet.*;
 import javax.servlet.http.*;
 
 import org.cougaar.core.blackboard.Subscription;
-import org.cougaar.core.servlet.ServletUtil;
 import org.cougaar.core.servlet.SimpleServletSupport;
 import org.cougaar.core.service.LoggingService;
 import org.cougaar.core.util.UID;
@@ -60,8 +59,7 @@ import org.cougaar.servicediscovery.description.ServiceBinding;
 /**
  * A <code>Servlet</code>, loaded by the
  * <code>SimpleServletComponent</code>, that generates
- * HTML, XML, and serialized-Object views of Task completion
- * information.
+ * an HTML view of SupplyAuxQuery data.
  *
  * @see org.cougaar.core.servlet.SimpleServletComponent
  */
@@ -100,15 +98,6 @@ public class SupplyAuxQueryServlet
      */
     protected static class AuxQueryPrinter {
 
-        public static final int FORMAT_DATA = 0;
-        public static final int FORMAT_XML = 1;
-        public static final int FORMAT_HTML = 2;
-
-        private boolean anyArgs;
-        private int format;
-        private boolean showTables;
-
-
         // since "AuxQueryPrinter" is a static inner class, here
         // we hold onto the support API.
         //
@@ -125,9 +114,6 @@ public class SupplyAuxQueryServlet
         // writer from the request for HTML output
         private PrintWriter out;
 
-        // base url
-        private String baseURL;
-
         public AuxQueryPrinter(SimpleServletSupport support,
                                LoggingService logger,
                                HttpServletRequest request,
@@ -138,102 +124,50 @@ public class SupplyAuxQueryServlet
             this.logger = logger;
             this.assetUtils = new AssetUtils();
             this.taskUtils = new TaskUtils();
-            format = FORMAT_HTML;
         }
 
         public void execute() throws IOException, ServletException {
-            boolean viewAllTasks = false;
-
-            // save the absolute address
-            this.baseURL =
-                    request.getScheme() +
-                    "://" +
-                    request.getServerName() +
-                    ":" +
-                    request.getServerPort() +
-                    "/";
-
-            // create a URL parameter visitor
-            ServletUtil.ParamVisitor vis =
-                    new ServletUtil.ParamVisitor() {
-                        public void setParam(String name, String value) {
-                            if (eq("format", name)) {
-                                anyArgs = true;
-                                if (eq("data", value)) {
-                                    format = FORMAT_DATA;
-                                } else if (eq("xml", value)) {
-                                    format = FORMAT_XML;
-                                } else if (eq("html", value)) {
-                                    format = FORMAT_HTML;
-                                }
-                                else if (eq("data", name)) {
-                                    anyArgs = true;
-                                    format = FORMAT_DATA;
-                                } else if (eq("xml", name)) {
-                                    anyArgs = true;
-                                    format = FORMAT_XML;
-                                } else if (eq("html", name)) {
-                                    anyArgs = true;
-                                    format = FORMAT_HTML;
-                                }
-                            }
-                        }
-                    };
-
-            // visit the URL parameters
-            ServletUtil.parseParams(vis, request);
-
+            this.out = response.getWriter();
 
             String viewType = request.getParameter("viewType");
             if ("viewSpecificTask".equals(viewType)) {
+                // single selected task
                 String taskUID = request.getParameter("UID");
-
                 Task task = getSpecificTask(taskUID);
-
-                this.out = response.getWriter();
-                printTaskAuxQueriesAsHTML(task);
-                return;
+                printTaskAuxQueriesAsHTML(taskUID, task);
             } else if ("viewAllTasks".equals(viewType)) {
-                viewAllTasks = true;
-            }
-
-
-            // get result
-            Collection col = getAllSupplyTasks();
-            viewAllTasks = true;
-
-
-            // write data
-            try {
-                if (format == FORMAT_HTML) {
-                    // html
-                    this.out = response.getWriter();
-                    printTasksAsHTML(col);
-                } else {
-                    // unsupported
-                    OutputStream out = response.getOutputStream();
-                    if (format == FORMAT_DATA) {
-                        // serialize
-                        ObjectOutputStream oos = new ObjectOutputStream(out);
-                        oos.writeObject(col);
-                        oos.flush();
-                    } else {
-                        // xml
-                        out.write(("<?xml version='1.0'?>\n").getBytes());
-                        XMLWriter w =
-                                new XMLWriter(
-                                        new OutputStreamWriter(out));
-                        //result.toXML(w);
-                        w.flush();
-                    }
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            } catch (Exception e) {
-                e.printStackTrace();
+                // all
+                Collection col = getAllSupplyTasks();
+                printTasksAsHTML(col);
+            } else if ("viewDefault".equals(viewType)) {
+                // same as viewAll ?
+                Collection col = getAllSupplyTasks();
+                printTasksAsHTML(col);
+            } else {
+                // frame
+                printFrame();
             }
         }
 
+        protected void printFrame() {
+            // generate outer frame page:
+            //   top:    select "/agent"
+            //   bottom: query frame
+            out.print(
+                    "<html><head><title>SupplyAuxQuery Data</title></head>"+
+                    "<frameset rows=\"10%,90%\">\n"+
+                    "<frame src=\""+
+                    "/agents?format=select&suffix="+
+                    support.getEncodedAgentName()+
+                    "\" name=\"agentFrame\">\n"+
+                    "<frame src=\"/$"+
+                    support.getEncodedAgentName()+
+                    support.getPath()+"?viewType=viewDefault"+
+                    "\" name=\"queryFrame\">\n"+
+                    "</frameset>\n"+
+                    "<noframes>Please enable frame support</noframes>"+
+                    "</html>\n");
+        }
 
         private static String formatLabel(String lbl) {
             int nchars = lbl.length();
@@ -289,11 +223,6 @@ public class SupplyAuxQueryServlet
                 return "Failure:" + i;
         }
 
-        // startsWithIgnoreCase
-        private static final boolean eq(String a, String b) {
-            return a.regionMatches(true, 0, b, 0, a.length());
-        }
-
         protected final static SupplyTaskPredicate SUPPLY_TASK_PREDICATE =
                 new SupplyTaskPredicate();
 
@@ -326,6 +255,9 @@ public class SupplyAuxQueryServlet
 
 
         protected Task getSpecificTask(String taskUID) {
+            if (taskUID == null) {
+                return null;
+            }
             Collection col = support.queryBlackboard(new SpecificTaskPredicate(taskUID));
             if ((col == null) || (col.size() < 1)) {
                 System.out.println("Null Collection returned from blackboard");
@@ -344,105 +276,62 @@ public class SupplyAuxQueryServlet
             return col;
         }
 
-        protected void printTasksVanillaHeader() {
-            out.print(
-                    "<html>\n" +
-                    "<head>\n" +
-                    "<title>");
-            out.print(support.getEncodedAgentName());
-            out.print(
-                    "</title>" +
-                    "</head>\n" +
-                    "<body>" +
-                    "<h2><center>Supply Tasks at ");
-            out.print(support.getEncodedAgentName());
-            out.print("</center></h2>\n");
-        }
-
-
-        protected void printTaskVanillaHeader(Task t) {
-            out.print(
-                    "<html>\n" +
-                    "<head>\n" +
-                    "<title>");
-            out.print(support.getEncodedAgentName());
-            out.print("</title>" +
-                      "</head>\n" +
-                      "<body>" +
-                      "<h2><center>Auxilliary Queries on task " +
-                      t.getUID().toString() + " at ");
-            out.print(support.getEncodedAgentName());
-            out.print("</center></h2>\n");
-        }
-
-
-        protected void printClusterSelectionComboBox() {
+        protected void printClusterSelectionComboBox(String title) {
             // javascript based on PlanViewServlet
             out.print(
-                    "<html>\n" +
-                    "<script language=\"JavaScript\">\n" +
-                    "<!--\n" +
-                    "function mySubmit() {\n" +
-                    "  var tidx = document.myForm.formCluster.selectedIndex\n" +
-                    "  var cluster = document.myForm.formCluster.options[tidx].text\n" +
-                    "  document.myForm.action=\"/$\"+cluster+\"");
-            out.print(support.getPath());
-            out.print("\"\n" +
-                      "  return true\n" +
-                      "}\n" +
-                      "// -->\n" +
-                      "</script>\n" +
-                      "<head>\n" +
-                      "<title>");
-            out.print(support.getEncodedAgentName());
-            out.print(
-                    "</title>" +
-                    "</head>\n" +
-                    "<body>" +
-                    "<h2><center>SupplyTaskAuxQuery at ");
-            out.print(support.getEncodedAgentName());
-            out.print(
-                    "</center></h2>\n" +
-                    "<form name=\"myForm\" method=\"get\" " +
-                    "onSubmit=\"return mySubmit()\">\n" +
-                    "MatchMakerQuery data at " +
-                    "<select name=\"formCluster\">\n");
-            // lookup all known cluster names
-            List names = support.getAllEncodedAgentNames();
-            int sz = names.size();
-            for (int i = 0; i < sz; i++) {
-                String n = (String) names.get(i);
-                out.print("  <option ");
-                if (n.equals(support.getEncodedAgentName())) {
-                    out.print("selected ");
-                }
-                out.print("value=\"");
-                out.print(n);
-                out.print("\">");
-                out.print(n);
-                out.print("</option>\n");
+                    "<html><head>"+
+                    "<script language=\"JavaScript\">\n"+
+                    "<!--\n"+
+                    "function mySubmit() {\n"+
+                    "  var obj = top.agentFrame.document.agent.name;\n"+
+                    "  var encAgent = obj.value;\n"+
+                    "  if (encAgent.charAt(0) == '.') {\n"+
+                    "    alert(\"Please select an agent name\")\n"+
+                    "    return false;\n"+
+                    "  }\n"+
+                    "  document.myForm.target=\"queryFrame\"\n"+
+                    "  document.myForm.action=\"/$\"+encAgent+\""+
+                    support.getPath()+"\"\n"+
+                    "  return true\n"+
+                    "}\n"+
+                    "// -->\n"+
+                    "</script>\n"+
+                    "</head><body>\n"+
+                    "<h2><center>"+
+                    title+
+                    " at "+
+                    support.getEncodedAgentName()+
+                    "</center></h2>\n"+
+                    "<form name=\"myForm\" method=\"get\" "+
+                    "onSubmit=\"return mySubmit()\">\n"+
+                "<input type=hidden name=\"viewType\" value=\"");
+            String viewType = request.getParameter("viewType");
+            if (viewType != null) {
+                out.print(viewType);
             }
             out.print(
-                    "</select>, \n" +
-                    "<input type=\"submit\" name=\"formSubmit\" value=\"Reload\"><br>\n" +
-                    "</form>\n");
-
+                    "\">"+
+                    "<input type=submit name=\"formSubmit\" value=\"Reload\">"+
+                    "<br>\n</form>");
         }
 
         /**
          * Write the given <code>MatchMakerQueryRequest</code> as formatted HTML.
          */
-        protected void printTaskAuxQueriesAsHTML(Task task) {
-            // printClusterSelectionComboBox();
+        protected void printTaskAuxQueriesAsHTML(String taskUID, Task task) {
+            printClusterSelectionComboBox(
+                    "Auxilliary Queries on Task "+taskUID);
             if (task != null) {
-                printTaskVanillaHeader(task);
                 Collection col = extractAuxiliaryQueriesFromTask(task);
                 printAuxQueriesAsHTMLTable(col);
             } else {
-                out.print("<pre>No task by that UID</b></pre>");
+                out.print("<pre>No task with UID "+taskUID+"</pre>");
             }
-            out.print("\n<a href=\"supplytask_auxquery?viewType=viewAllTasks");
-            out.print("\">View all Supply Tasks</a>\n");
+            out.print(
+                    "\n<a href=\""+
+                    support.getPath()+
+                    "?viewType=viewAllTasks");
+            out.print("\" target=\"queryFrame\">View all Supply Tasks</a>\n");
             out.print("</body></html>");
             out.flush();
         }
@@ -482,8 +371,7 @@ public class SupplyAuxQueryServlet
 
 
         protected void printTasksAsHTML(Collection col) {
-//printClusterSelectionComboBox();
-            printTasksVanillaHeader();
+            printClusterSelectionComboBox("Supply Tasks");
             if((col != null) && (col.size() > 0)) {
                 printTasksAsHTMLTable(col);
             }
@@ -531,7 +419,10 @@ public class SupplyAuxQueryServlet
 
 
                 out.print("<tr align=center><td>" +
-                          "\n<a href=\"supplytask_auxquery?viewType=viewSpecificTask&UID=" + taskUID + "\">" + taskUID + "</a>\n");
+                          "\n<a href=\""+
+                          support.getPath()+
+                          "?viewType=viewSpecificTask&UID="+
+                          taskUID + "\">" + taskUID + "</a>\n");
                 out.print("</td><td align=left>");
                 out.print(assetString);
                 //out.print("</td><td>");

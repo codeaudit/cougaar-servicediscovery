@@ -24,7 +24,6 @@
 package org.cougaar.servicediscovery.servlet;
 
 import org.cougaar.core.service.LoggingService;
-import org.cougaar.core.servlet.ServletUtil;
 import org.cougaar.core.servlet.SimpleServletSupport;
 import org.cougaar.planning.servlet.data.xml.XMLWriter;
 import org.cougaar.planning.ldm.PlanningFactory;
@@ -46,8 +45,7 @@ import java.util.*;
 /**
  * A <code>Servlet</code>, loaded by the
  * <code>SimpleServletComponent</code>, that generates
- * HTML, XML, and serialized-Object views of Task completion
- * information.
+ * an HTML view of MatchMakerQuery data.
  *
  * @see org.cougaar.core.servlet.SimpleServletComponent
  */
@@ -91,14 +89,6 @@ public class MatchMakerQueryServlet
      */
     protected static class MMQueryPrinter {
 
-        public static final int FORMAT_DATA = 0;
-        public static final int FORMAT_XML = 1;
-        public static final int FORMAT_HTML = 2;
-
-        private int format;
-
-
-
         // since "MMQueryPrinter" is a static inner class, here
         // we hold onto the support API.
         //
@@ -113,10 +103,6 @@ public class MatchMakerQueryServlet
         // writer from the request for HTML output
         private PrintWriter out;
 
-
-        private boolean anyArgs;
-        private String baseURL;
-
         public MMQueryPrinter(SimpleServletSupport support,
                               PlanningFactory ldmFactory,
                               LoggingService logger,
@@ -127,121 +113,61 @@ public class MatchMakerQueryServlet
             this.response = response;
             this.ldmFactory = ldmFactory;
             this.logger = logger;
-            format = FORMAT_HTML;
         }
 
         public void execute() throws IOException, ServletException {
-            boolean viewAllQueries = false;
-
-            // save the absolute address
-            this.baseURL =
-                    request.getScheme() +
-                    "://" +
-                    request.getServerName() +
-                    ":" +
-                    request.getServerPort() +
-                    "/";
-
-            // create a URL parameter visitor
-            ServletUtil.ParamVisitor vis =
-                    new ServletUtil.ParamVisitor() {
-                        public void setParam(String name, String value) {
-                            if (eq("format", name)) {
-                                anyArgs = true;
-                                if (eq("data", value)) {
-                                    format = FORMAT_DATA;
-                                } else if (eq("xml", value)) {
-                                    format = FORMAT_XML;
-                                } else if (eq("html", value)) {
-                                    format = FORMAT_HTML;
-                                }
-
-                                else if (eq("data", name)) {
-                                    anyArgs = true;
-                                    format = FORMAT_DATA;
-                                } else if (eq("xml", name)) {
-                                    anyArgs = true;
-                                    format = FORMAT_XML;
-                                } else if (eq("html", name)) {
-                                    anyArgs = true;
-                                    format = FORMAT_HTML;
-                                }
-                            }
-                        }
-                    };
-
-            // visit the URL parameters
-            ServletUtil.parseParams(vis, request);
-
+            this.out = response.getWriter();
 
             String viewType = request.getParameter("viewType");
             if ("viewSpecificQuery".equals(viewType)) {
+                // single query w/ matching UID
                 String queryUID = request.getParameter("UID");
-
-
                 MMQueryRequest result = getSpecificMMQueryRequest(queryUID);
-
-                this.out = response.getWriter();
                 printMatchMakerQueryAsHTML(result);
-                return;
             } else if ("viewAllQueries".equals(viewType)) {
-                viewAllQueries = true;
-            }
-
-            // get result
-            Collection col = getMMQueryRequests();
-            MMQueryRequest request = null;
-
-            //MWD - to introduce default of printing entire result when only on MMQueryRequest
-            //delete or comment out below
-            //viewAllQueries = true;
-
-            if (!viewAllQueries) {
-                if (col.size() <= 1) {
-                    if (col.size() == 1) {
-                        request = (MMQueryRequest) col.iterator().next();
-                    }
+                // all
+                Collection col = getMMQueryRequests();
+                printQueriesAsHTML(col);
+            } else if ("viewDefault".equals(viewType)) {
+                Collection col = getMMQueryRequests();
+                if (col.isEmpty()) {
+                    // none
+                    printMatchMakerQueryAsHTML(null);
+                } else if (col.size() == 1) {
+                    // single query
+                    MMQueryRequest request = 
+                        (MMQueryRequest) col.iterator().next();
+                    printMatchMakerQueryAsHTML(request);
                 } else {
-                    viewAllQueries = true;
+                    // all
+                    printQueriesAsHTML(col);
                 }
-            }
-
-            // write data
-            try {
-                if (format == FORMAT_HTML) {
-                    // html
-                    this.out = response.getWriter();
-                    if (viewAllQueries) {
-                        printQueriesAsHTML(col);
-                    } else {
-                        printMatchMakerQueryAsHTML(request);
-                    }
-                } else {
-                    // unsupported
-                    OutputStream out = response.getOutputStream();
-                    if (format == FORMAT_DATA) {
-                        // serialize
-                        ObjectOutputStream oos = new ObjectOutputStream(out);
-                        oos.writeObject(col);
-                        oos.flush();
-                    } else {
-                        // xml
-                        out.write(("<?xml version='1.0'?>\n").getBytes());
-                        XMLWriter w =
-                                new XMLWriter(
-                                        new OutputStreamWriter(out));
-                        //result.toXML(w);
-                        w.flush();
-                    }
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            } catch (Exception e) {
-                e.printStackTrace();
+            } else {
+                // frame
+                printFrame();
             }
         }
 
-
+        protected void printFrame() {
+            // generate outer frame page:
+            //   top:    select "/agent"
+            //   bottom: query frame
+            out.print(
+                    "<html><head>"+
+                    "<title>MatchMakerQuery Data</title></head>"+
+                    "<frameset rows=\"10%,90%\">\n"+
+                    "<frame src=\""+
+                    "/agents?format=select&suffix="+
+                    support.getEncodedAgentName()+
+                    "\" name=\"agentFrame\">\n"+
+                    "<frame src=\"/$"+
+                    support.getEncodedAgentName()+
+                    support.getPath()+"?viewType=viewDefault"+
+                    "\" name=\"queryFrame\">\n"+
+                    "</frameset>\n"+
+                    "<noframes>Please enable frame support</noframes>"+
+                    "</html>\n");
+        }
 
         private static String formatFloat(float n) {
             return formatFloat(n, 6);
@@ -250,13 +176,6 @@ public class MatchMakerQueryServlet
         private static String formatFloat(float n, int w) {
             String r = String.valueOf(n);
             return "        ".substring(0, w - r.length()) + r;
-        }
-
-
-
-        // startsWithIgnoreCase
-        private static final boolean eq(String a, String b) {
-            return a.regionMatches(true, 0, b, 0, a.length());
         }
 
         protected static final UnaryPredicate MATCH_MAKER_REQUEST_PRED =
@@ -308,54 +227,38 @@ public class MatchMakerQueryServlet
         protected void printClusterSelectionComboBox() {
             // javascript based on PlanViewServlet
             out.print(
-                    "<html>\n" +
-                    "<script language=\"JavaScript\">\n" +
-                    "<!--\n" +
-                    "function mySubmit() {\n" +
-                    "  var tidx = document.myForm.formCluster.selectedIndex\n" +
-                    "  var cluster = document.myForm.formCluster.options[tidx].text\n" +
-                    "  document.myForm.action=\"/$\"+cluster+\"");
-            out.print(support.getPath());
-            out.print("\"\n" +
-                      "  return true\n" +
-                      "}\n" +
-                      "// -->\n" +
-                      "</script>\n" +
-                      "<head>\n" +
-                      "<title>");
-            out.print(support.getEncodedAgentName());
-            out.print(
-                    "</title>" +
-                    "</head>\n" +
-                    "<body>" +
-                    "<h2><center>MatchMakerQuery at ");
-            out.print(support.getEncodedAgentName());
-            out.print(
-                    "</center></h2>\n" +
-                    "<form name=\"myForm\" method=\"get\" " +
-                    "onSubmit=\"return mySubmit()\">\n" +
-                    "MatchMakerQuery data at " +
-                    "<select name=\"formCluster\">\n");
-            // lookup all known cluster names
-            List names = support.getAllEncodedAgentNames();
-            int sz = names.size();
-            for (int i = 0; i < sz; i++) {
-                String n = (String) names.get(i);
-                out.print("  <option ");
-                if (n.equals(support.getEncodedAgentName())) {
-                    out.print("selected ");
-                }
-                out.print("value=\"");
-                out.print(n);
-                out.print("\">");
-                out.print(n);
-                out.print("</option>\n");
+                    "<html><head>"+
+                    "<script language=\"JavaScript\">\n"+
+                    "<!--\n"+
+                    "function mySubmit() {\n"+
+                    "  var obj = top.agentFrame.document.agent.name;\n"+
+                    "  var encAgent = obj.value;\n"+
+                    "  if (encAgent.charAt(0) == '.') {\n"+
+                    "    alert(\"Please select an agent name\")\n"+
+                    "    return false;\n"+
+                    "  }\n"+
+                    "  document.myForm.target=\"queryFrame\"\n"+
+                    "  document.myForm.action=\"/$\"+encAgent+\""+
+                    support.getPath()+"\"\n"+
+                    "  return true\n"+
+                    "}\n"+
+                    "// -->\n"+
+                    "</script>\n"+
+                    "</head><body>\n"+
+                    "<h2><center>MatchMakerQuery Data at "+
+                    support.getEncodedAgentName()+
+                    "</center></h2>\n"+
+                    "<form name=\"myForm\" method=\"get\" "+
+                    "onSubmit=\"return mySubmit()\">\n"+
+                "<input type=hidden name=\"viewType\" value=\"");
+            String viewType = request.getParameter("viewType");
+            if (viewType != null) {
+                out.print(viewType);
             }
             out.print(
-                    "</select>, \n" +
-                    "<input type=\"submit\" name=\"formSubmit\" value=\"Reload\"><br>\n" +
-                    "</form>\n");
-
+                    "\">"+
+                    "<input type=submit name=\"formSubmit\" value=\"Reload\">"+
+                    "<br>\n</form>");
         }
 
         /**
@@ -365,8 +268,12 @@ public class MatchMakerQueryServlet
             printClusterSelectionComboBox();
             printTableAsHTML(result);
             if (result != null) {
-                out.print("\n<a href=\"matchmaker_query?viewType=viewAllQueries");
-                out.print("\">View all Queries</a>\n");
+                out.print(
+                        "\n<a href=\""+
+                        support.getPath()+
+                        "?viewType=viewAllQueries\""+
+                        " target=\"queryFrame\">"+
+                        "View all Queries</a>\n");
             }
             out.print("</body></html>");
             out.flush();
