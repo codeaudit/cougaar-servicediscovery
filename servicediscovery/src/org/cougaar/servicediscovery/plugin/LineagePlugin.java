@@ -253,7 +253,7 @@ public class LineagePlugin extends SimplePlugin
 	if ((existingLineage) &&
 	    (localLineage.countHops(localLineage.getLeaf(),
 				    localLineage.getRoot()) == 1)) {
-	  myLoggingService.warn(myAgentName +
+	  myLoggingService.debug(myAgentName +
 				"  has a direct support command relationship." +
 				" Ignoring support lineage from superior: " +
 				relayLineage);
