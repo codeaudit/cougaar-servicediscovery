@@ -22,8 +22,6 @@
 
 package org.cougaar.servicediscovery.service;
 import org.cougaar.core.component.Service;
-import org.cougaar.servicediscovery.service.YPServiceAdapter.Callback;
-import org.cougaar.servicediscovery.service.YPServiceAdapter.CallbackWithContext;
 import org.cougaar.servicediscovery.transaction.RegistryQuery;
 
 /**

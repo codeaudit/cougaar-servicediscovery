@@ -1,14 +1,12 @@
 package org.cougaar.servicediscovery.description;
 
-import org.cougaar.util.log.Logger;
-import org.cougaar.util.log.Logging;
-import org.cougaar.util.MutableTimeSpan;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 
-import org.cougaar.util.TimeSpan;
+import org.cougaar.util.MutableTimeSpan;
+import org.cougaar.util.log.Logger;
+import org.cougaar.util.log.Logging;
 
 /**
  * <p>Title: </p>

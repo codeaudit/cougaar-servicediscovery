@@ -45,8 +45,6 @@ import org.cougaar.servicediscovery.description.ProviderInfo;
 import org.cougaar.servicediscovery.description.ServiceBinding;
 import org.cougaar.servicediscovery.description.ServiceClassificationImpl;
 import org.cougaar.servicediscovery.description.ServiceInfo;
-import org.cougaar.servicediscovery.service.YPServiceAdapter.Callback;
-import org.cougaar.servicediscovery.service.YPServiceAdapter.CallbackWithContext;
 import org.cougaar.servicediscovery.transaction.RegistryQuery;
 import org.cougaar.util.GenericStateModelAdapter;
 import org.cougaar.yp.YPProxy;

@@ -41,7 +41,6 @@ import org.cougaar.servicediscovery.description.ProviderDescription;
 import org.cougaar.servicediscovery.description.ServiceCategory;
 import org.cougaar.servicediscovery.description.ServiceClassification;
 import org.cougaar.servicediscovery.description.ServiceProfile;
-import org.cougaar.servicediscovery.service.YPServiceAdapter.Callback;
 import org.cougaar.util.log.Logger;
 import org.cougaar.util.log.Logging;
 import org.cougaar.yp.YPFuture;
