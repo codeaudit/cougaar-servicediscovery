@@ -65,6 +65,8 @@ public class PublishTaxonomy extends ComponentSupport {
     UDDI_PASSWORD = System.getProperty("org.cougaar.yp.juddi-users.password", YPProxy.DEFAULT_UDDI_PASSWORD);
   }
 
+  private static final String FILE_EXTENSION = "-yp.xml";
+
   private static int WARNING_SUPPRESSION_INTERVAL = 2;
   private static final String TAXONOMY_GRACE_PERIOD = 
     "org.cougaar.servicediscovery.util.yp.TaxonomyGracePeriod"; 
@@ -83,6 +85,8 @@ public class PublishTaxonomy extends ComponentSupport {
   private Alarm myAlarm;
   
   private ArrayList myTModelNames;
+
+  private String myBasePath;
 
   private static String []TMODELNAMES = 
      { UDDIConstants.MILITARY_SERVICE_SCHEME,
@@ -130,6 +134,27 @@ public class PublishTaxonomy extends ComponentSupport {
 
   protected final YPService getYPService() {
     return myYPService;
+  }
+
+  public void setBasePath(String basePath) {
+    if (myBasePath == null) {
+      myBasePath = basePath;
+    } else {
+      getLoggingService().warn("setBasePath: attempt to reset basePath " +
+			       " from " + myBasePath + 
+			       " to " + basePath + 
+			       " ignored.");
+    }
+  }
+
+  protected String getBasePath() {
+    if (myBasePath == null) {
+      return System.getProperty("org.cougaar.install.path") + 
+	File.separator + "servicediscovery" + File.separator + 
+	"data" + File.separator + "taxonomies" + File.separator;
+    } else {
+      return myBasePath;
+    }
   }
 
   public void load() {
@@ -270,15 +295,13 @@ public class PublishTaxonomy extends ComponentSupport {
       add(new SState("genTaxonomy") {
           public void invoke() {
             String name = (String) getArgument();
-            String file_ext = "-yp.xml";
+	    String completeFileName = getBasePath() + name + FILE_EXTENSION;
 
-            String basePath = System.getProperty("org.cougaar.install.path") + File.separator +
-              "servicediscovery" + File.separator + "data" + File.separator + "taxonomies" + File.separator;
-
-            if(validPath(basePath + name + file_ext)) {
-              call("createTaxonomy", new String[] {name,  basePath + name + file_ext}, "POP");
+            if(validPath(completeFileName)) {
+              call("createTaxonomy", new String[] {name,  completeFileName},
+	      "POP");
             } else {
-              getLoggingService().error("Invalid Path: " + basePath + name + file_ext);
+              getLoggingService().error("Invalid Path: " + completeFileName);
               transit("POP");
             }
           }
