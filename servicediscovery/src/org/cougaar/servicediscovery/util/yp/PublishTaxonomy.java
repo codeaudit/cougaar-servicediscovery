@@ -129,8 +129,8 @@ public class PublishTaxonomy extends ComponentSupport {
     return myYPService;
   }
 
-  public void initialize() {
-    super.initialize();
+  public void load() {
+    super.load();
 
     myTModelNames = new ArrayList(TMODELNAMES.length);
     for (int index = 0; index < TMODELNAMES.length; index++) {
@@ -140,15 +140,9 @@ public class PublishTaxonomy extends ComponentSupport {
     // Don't mess around with community based lookup. 
     // Assume component loaded in the same agent as the YPServer
     myYPProxy = getYPService().getYP(getAgentIdentificationService().getMessageAddress());
-  }
 
-  public void load() {
-    super.load();
     myStateMachine = new PublishTaxonomyMachine(new PublishTaxonomyCallback());
-  }
 
-  public void start() {
-    super.start();
     // start the ball rolling
     myStateMachine.start();
   }
