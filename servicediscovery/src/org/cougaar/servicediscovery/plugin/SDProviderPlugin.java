@@ -45,6 +45,7 @@ import org.cougaar.servicediscovery.description.ProviderCapabilities;
 import org.cougaar.servicediscovery.description.ProviderCapability;
 import org.cougaar.servicediscovery.description.ServiceContract;
 import org.cougaar.servicediscovery.description.ServiceRequest;
+import org.cougaar.servicediscovery.transaction.ProviderServiceContractRelay;
 import org.cougaar.servicediscovery.transaction.ServiceContractRelay;
 import org.cougaar.util.MutableTimeSpan;
 import org.cougaar.util.TimeSpan;
@@ -72,7 +73,7 @@ public class SDProviderPlugin extends SimplePlugin
 
   private UnaryPredicate myServiceContractRelayPred = new UnaryPredicate() {
     public boolean execute(Object o) {
-      if (o instanceof ServiceContractRelay) {
+      if (o instanceof ProviderServiceContractRelay) {
 	ServiceContractRelay relay = (ServiceContractRelay) o;
 	return (relay.getProviderName().equals(myAgentName));
       } else {
@@ -126,7 +127,8 @@ public class SDProviderPlugin extends SimplePlugin
       Collection addedRelays =
 	myServiceContractRelaySubscription.getAddedCollection();
       for (Iterator adds = addedRelays.iterator(); adds.hasNext();) {
-	ServiceContractRelay relay = (ServiceContractRelay) adds.next();
+	ProviderServiceContractRelay relay = 
+	  (ProviderServiceContractRelay) adds.next();
         handleAddedServiceContractRelay(relay);
       }
 
@@ -146,7 +148,7 @@ public class SDProviderPlugin extends SimplePlugin
     }
   }
 
-  protected void handleAddedServiceContractRelay(ServiceContractRelay relay){
+  protected void handleAddedServiceContractRelay(ProviderServiceContractRelay relay){
     ServiceRequest serviceRequest = relay.getServiceRequest();
 
     HashMap contractPreferences = 
@@ -226,8 +228,8 @@ public class SDProviderPlugin extends SimplePlugin
       
       for (Iterator relayIterator = contracts.iterator(); 
 	   relayIterator.hasNext();) {
-	ServiceContractRelay relay = 
-	  (ServiceContractRelay) relayIterator.next();
+	ProviderServiceContractRelay relay = 
+	  (ProviderServiceContractRelay) relayIterator.next();
 	ServiceContract contract = relay.getServiceContract();
 
 	if (!contract.isRevoked()) {

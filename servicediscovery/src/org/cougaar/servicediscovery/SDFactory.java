@@ -45,11 +45,11 @@ import org.cougaar.servicediscovery.description.ServiceContractRelationship;
 import org.cougaar.servicediscovery.description.ServiceContractRelationshipImpl;
 import org.cougaar.servicediscovery.description.ServiceRequest;
 import org.cougaar.servicediscovery.description.ServiceRequestImpl;
-import org.cougaar.servicediscovery.transaction.DAMLReadyRelay;
 import org.cougaar.servicediscovery.transaction.LineageRelay;
 import org.cougaar.servicediscovery.transaction.MMQueryRequest;
 import org.cougaar.servicediscovery.transaction.MMQueryRequestImpl;
 import org.cougaar.servicediscovery.transaction.ServiceContractRelay;
+import org.cougaar.servicediscovery.transaction.ServiceContractRelayImpl;
 import org.cougaar.util.log.Logger;
 import org.cougaar.util.log.Logging;
 
@@ -196,18 +196,11 @@ public class SDFactory implements Factory {
     **/
   public ServiceContractRelay newServiceContractRelay(MessageAddress provider,
 						      ServiceRequest request) {
-    ServiceContractRelay serviceContractRelay =
-      new ServiceContractRelay(request);
+    ServiceContractRelayImpl serviceContractRelay =
+      new ServiceContractRelayImpl(request);
     serviceContractRelay.setUID(myLDM.getUIDServer().nextUID());
     serviceContractRelay.addTarget(provider);
     return serviceContractRelay;
-  }
-
-  public DAMLReadyRelay newDAMLReadyRelay(MessageAddress damlAgent) {
-    DAMLReadyRelay damlReadyRelay = new DAMLReadyRelay();
-    damlReadyRelay.setUID(myLDM.getUIDServer().nextUID());
-    damlReadyRelay.addTarget(damlAgent);
-    return damlReadyRelay;
   }
 
   /** Generate a new ServiceContractRelationship

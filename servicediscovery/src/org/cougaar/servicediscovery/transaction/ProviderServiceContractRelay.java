@@ -22,54 +22,20 @@
 
 package org.cougaar.servicediscovery.transaction;
 
-import org.cougaar.core.relay.Relay;
-import org.cougaar.planning.ldm.asset.Asset;
-
 import org.cougaar.servicediscovery.description.ServiceContract;
-import org.cougaar.servicediscovery.description.ServiceRequest;
 
 /**
  * Relay used to request command chain lineage
  **/
-public interface ServiceContractRelay extends Relay {
-  /**
-   * Gets the name of the Agent from whom the service is requested
-   *
-   * @return String Name of the agent
-   */
-  public String getProviderName();
+public interface ProviderServiceContractRelay extends ServiceContractRelay {
 
   /**
-   * Returns  the service contract provided by the provider agent
+   * Sets the service contract as specified by the provider and
+   * return true. Caller responsible for verifying compatibility.
    *
-   * @return ServiceContract  service contract as specified by the provider
-   * agent.
+   * @param serviceContract ServiceContract as specified by the provider
    */
-  public ServiceContract getServiceContract();
-
-  /**
-   * Returns the provider asset from the ServiceContract
-   *
-   * @return Asset provider asset as specified by the ServiceContract
-   * agent.
-   */
-  public Asset getProvider();
-
-  /**
-   * Returns the service request from the client
-   *
-   * @return ServiceRequest  service request as specified by the client
-   * agent.
-   */
-  public ServiceRequest getServiceRequest();
-
-  /**
-   * Returns the client asset from the ServiceRequest
-   *
-   * @return Asset client asset as specified by the ServiceRequest
-   * agent.
-   */
-  public Asset getClient();
+  public void setServiceContract(ServiceContract serviceContract);
 }
 
 
