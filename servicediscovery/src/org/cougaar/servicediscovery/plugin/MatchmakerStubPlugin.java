@@ -210,8 +210,10 @@ public final class MatchmakerStubPlugin extends SimplePlugin {
     }
     
     if (serviceEchelonOrder == -1) {
-      log.error(agentName + ": Ignoring service with a bad echelon of support: " + 
-		serviceEchelonOrder);
+      if (log.isDebugEnabled()) {
+	log.debug(agentName + ": Ignoring service with a bad echelon of support: " + 
+		  serviceEchelonOrder);
+      }
       return -1;
     } if (serviceEchelonOrder < requestedEchelonOrder) {
       return -1;
