@@ -56,7 +56,9 @@ import org.cougaar.util.UnaryPredicate;
 public class SDProviderPlugin extends SimplePlugin
 {
   private static Integer START_TIME_KEY = new Integer(AspectType.START_TIME);
-  private static Integer END_TIME_KEY = new Integer(AspectType.START_TIME);
+  private static Integer END_TIME_KEY = new Integer(AspectType.END_TIME);
+
+
   private IncrementalSubscription mySelfOrgSubscription;
   private IncrementalSubscription myServiceContractRelaySubscription;
   private IncrementalSubscription myProviderCapabilitiesSubscription;

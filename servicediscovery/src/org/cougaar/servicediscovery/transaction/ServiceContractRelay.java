@@ -76,25 +76,13 @@ public class ServiceContractRelay extends RelayAdapter {
 
   /**
    * Sets the service contract as specified by the provider and
-   * return true, iff the proposed service contract is a subset
-   * of the service request. Otherwise, returns false;
+   * return true. Caller responsible for verifying compatibility.
    *
-   * @return boolean true iff the proposed service contract has allowable
-   * values and the service contract of this relay was set to be the
-   * proposed service contract.
    * @param serviceContract ServiceContract as specified by the provider
    */
-  public boolean setServiceContract(ServiceContract serviceContract) {
-    ServiceContract compatibleServiceContract;
-    if(!isContractCompatibleWithRequest(serviceContract)) {
-      return false;
-    }
-    else {
-      compatibleServiceContract = serviceContract;
-    }
-    myServiceContract = compatibleServiceContract;
+  public void setServiceContract(ServiceContract serviceContract) {
+    myServiceContract = serviceContract;
     myToString = null;
-    return true;
   }
 
   /**
@@ -105,7 +93,7 @@ public class ServiceContractRelay extends RelayAdapter {
    * @return boolean true iff the service contract is a subset of the
    * service request.
    */
-  private boolean isContractCompatibleWithRequest(ServiceContract serviceContract) {
+  public boolean isContractCompatibleWithRequest(ServiceContract serviceContract) {
     boolean compatible = getServiceRequest().getServiceRole().equals(serviceContract.getServiceRole());
     if (compatible) {
       Collection requestPreferences = getServiceRequest().getServicePreferences();

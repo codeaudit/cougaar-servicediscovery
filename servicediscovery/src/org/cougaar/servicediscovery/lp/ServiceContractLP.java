@@ -296,8 +296,7 @@ public class ServiceContractLP implements LogicProvider, EnvelopeLogicProvider {
                                   provider,
                                   client);
 
-    RelationshipSchedule providerSchedule =
-      ((HasRelationships)provider).getRelationshipSchedule();
+    RelationshipSchedule providerSchedule = provider.getRelationshipSchedule();
     providerSchedule.addAll(localRelationships);
 
     RelationshipSchedule clientSchedule = client.getRelationshipSchedule();
@@ -345,8 +344,13 @@ public class ServiceContractLP implements LogicProvider, EnvelopeLogicProvider {
 						   HasRelationships client) {
     Collection relationships = new ArrayList();
 
+    try {
     relationships.add(SDFactory.newServiceContractRelationship(relay, localProvider, client));
-
+    } catch (IllegalArgumentException iae) {
+      logger.error("Unable to create relationship provider " + localProvider + 
+		   " and client " + client,
+		   iae);
+    }
     return relationships;
   }
 

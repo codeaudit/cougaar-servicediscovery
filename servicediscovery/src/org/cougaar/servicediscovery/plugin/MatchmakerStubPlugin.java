@@ -442,6 +442,12 @@ public final class MatchmakerStubPlugin extends SimplePlugin {
 		    " for Service name: " + serviceInfo.getServiceName());
 	}
 	continue;
+      } else {
+	if (log.isDebugEnabled()) {
+	  log.debug(agentName + ":execute: query predicate accepted " +
+		    " Provider name:" + serviceInfo.getProviderName() +
+		    " for Service name: " + serviceInfo.getServiceName());
+	}
       }
 	
       float score = scoreServiceProvider(serviceInfo, echelon);

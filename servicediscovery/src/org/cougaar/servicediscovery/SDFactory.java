@@ -296,6 +296,7 @@ public class SDFactory implements Factory {
    * @param preferences Collection of Preferences (will ignore in the Collection
    * which are not Preferences
    * @param aspectType int specifying the AspectType of the Preference
+   * @return value, -1 if matching Preference not found.
    */
   static public double getPreference(Collection preferences, int aspectType) {
     double result = -1;
