@@ -34,7 +34,6 @@ import org.cougaar.servicediscovery.description.ProviderDescription;
 import org.cougaar.servicediscovery.description.ServiceCategory;
 import org.cougaar.servicediscovery.description.ServiceClassification;
 import org.cougaar.servicediscovery.description.ServiceProfile;
-import org.cougaar.servicediscovery.util.LockPool;
 import org.cougaar.util.UnaryPredicate;
 import org.cougaar.util.log.Logger;
 import org.cougaar.util.log.Logging;
@@ -251,11 +250,9 @@ public final class UDDI4JRegistrationServiceComponent
     public boolean addProviderDescription(ProviderDescription pd) {
       boolean success=false;
 
-      Object token = getLock();
       if(storeProviderDescription(pd)) {
         success = executePublish(pd);
       }
-      freeLock(token);
       return success;
     }
 
@@ -499,8 +496,6 @@ public final class UDDI4JRegistrationServiceComponent
     public boolean updateServiceDescription(String providerName, Collection serviceCategories){
       boolean success = true;
 
-      Object token = getLock();
-
       Vector namePatterns = new Vector();
       namePatterns.add(new Name(providerName));
       Vector services = new Vector();
@@ -528,7 +523,6 @@ public final class UDDI4JRegistrationServiceComponent
             log.debug("updateServiceDescription, cannot find registration for: " + providerName);
           }
 
-          freeLock(token);
           return false;
         }
         Enumeration enum = businessInfo.getServiceInfos().getServiceInfoVector().elements();
@@ -565,13 +559,11 @@ public final class UDDI4JRegistrationServiceComponent
                     "\n errCode:"  + d.getErrCode() +
                     "\n errInfoText:" + d.getErrInfoText(), ex);
         }
-        freeLock(token);
         return false;
       } catch (TransportException te) {
         if (log.isErrorEnabled()) {
           log.error("Exception", te);
         }
-        freeLock(token);
         return false;
       }
 
@@ -603,7 +595,6 @@ public final class UDDI4JRegistrationServiceComponent
           success = false;
         }
       }
-      freeLock(token);
       return success;
     }
 
@@ -612,7 +603,6 @@ public final class UDDI4JRegistrationServiceComponent
     // NOTE:  This really should use service keys and business keys to ensure uniqueness instead.
     public boolean deleteServiceDescription(String providerName, Collection serviceCategories) {
       boolean success = true;
-      Object token = getLock();
       ServiceInfo service = null;
 
       Vector namePatterns = new Vector();
@@ -655,7 +645,6 @@ public final class UDDI4JRegistrationServiceComponent
       }
 
       if (businessList == null ) {
-        freeLock(token);
         return false;
       }
 
@@ -674,7 +663,6 @@ public final class UDDI4JRegistrationServiceComponent
           log.debug("deleteServiceDescription, cannot find registration for: " + providerName);
         }
 
-        freeLock(token);
         return false;
       }
 
@@ -719,7 +707,6 @@ public final class UDDI4JRegistrationServiceComponent
           success = false;
         }
       }
-      freeLock(token);
       return success;
     }
   }
@@ -817,27 +804,5 @@ public final class UDDI4JRegistrationServiceComponent
     public void setData(Object data) {
       this.data = data;
     }
-  }
-
-  private Object getLock() {
-    if (log.isDebugEnabled()) {
-      log.debug(getAgentIdentifier()+ ": waiting on lock");
-    }
-
-    Object lockToken = LockPool.getCurrentPool().getLock();
-
-    if (log.isDebugEnabled()) {
-      log.debug(getAgentIdentifier() + ": got lock");
-    }
-
-    return lockToken;
-  }
-
-  private void freeLock(Object lockToken) {
-    if (log.isDebugEnabled()) {
-      log.debug(getAgentIdentifier() + ": freeing lock");
-    }
-
-    LockPool.getCurrentPool().freeLock(lockToken);
   }
 }

@@ -555,6 +555,8 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
       try {
 	log.debug("[createSimpleServiceInfo]calling get_serviceDetail()");
         ServiceDetail sd = proxy.get_serviceDetail(serviceKeys);
+	log.debug("[createSimpleServiceInfo]returned get_serviceDetail() - sd = " +
+		  sd);
 	Vector serviceVector = sd.getBusinessServiceVector();
 	log.debug("[createSimpleServiceInfo]returned from get_serviceDetail() "+ 
 		 " size = " + serviceVector.size());
@@ -562,11 +564,14 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
 	for (Enumeration serviceEnum = serviceVector.elements();
 	     serviceEnum.hasMoreElements();) {
           BusinessService bs = (BusinessService) serviceEnum.nextElement();
+	  log.debug("[createSimpleServiceInfo]BusinessService - " + bs);
           ServiceInfo serviceInfo = new ServiceInfo();
           serviceInfo.setServiceId(bs.getServiceKey());
+	  log.debug("[createSimpleServiceInfo]BusinessService key " + bs.getServiceKey());
           serviceInfo.setServiceName(bs.getDefaultNameString());
-          //serviceInfo.setServiceClassifications(getServiceClassifications(bs.getCategoryBag()));
-          //serviceInfo.setServiceBindings(getServiceBindings(bs.getBindingTemplates()));
+	  log.debug("[createSimpleServiceInfo]BusinessService name " + bs.getDefaultNameString());
+          serviceInfo.setServiceClassifications(getServiceClassifications(bs.getCategoryBag()));
+          serviceInfo.setServiceBindings(getServiceBindings(bs.getBindingTemplates()));
           serviceInfos.add(serviceInfo);
 
           if (log.isDebugEnabled()) {
@@ -693,8 +698,10 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
 
     private Collection getServiceClassifications(CategoryBag bag) {
       Collection serviceClassifications = new ArrayList();
-      Enumeration enum = bag.getKeyedReferenceVector().elements();
-      while (enum.hasMoreElements()) {
+      Vector keyedReferenceVector = bag.getKeyedReferenceVector();
+
+      for (Enumeration enum = keyedReferenceVector.elements();
+	   enum.hasMoreElements();) {
         KeyedReference kr = (KeyedReference) enum.nextElement();
         serviceClassifications.add(createClassification( new ServiceClassificationImpl(), kr));
       }
@@ -731,8 +738,9 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
     private Collection getServiceBindings(BindingTemplates bindingTemplates) {
       Collection serviceBindings = new ArrayList();
 
-      Enumeration enum = bindingTemplates.getBindingTemplateVector().elements();
-      while (enum.hasMoreElements()) {
+      Vector bindingTemplatesVector = bindingTemplates.getBindingTemplateVector();
+      for (Enumeration enum = bindingTemplatesVector.elements();
+	   enum.hasMoreElements();) {
         BindingTemplate binding = (BindingTemplate) enum.nextElement();
         serviceBindings.add(getServiceBinding(binding));
       }
