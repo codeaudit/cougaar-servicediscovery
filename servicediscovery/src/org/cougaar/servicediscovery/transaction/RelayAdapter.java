@@ -45,7 +45,7 @@ import org.cougaar.core.util.UniqueObject;
  **/
 abstract public class RelayAdapter implements Relay.Source, Relay.Target, UniqueObject, Cloneable {
 
-  protected transient Set myTargetSet = null;
+  protected Set myTargetSet = null;
 
   protected UID myUID = null;
   protected MessageAddress mySource = null;
