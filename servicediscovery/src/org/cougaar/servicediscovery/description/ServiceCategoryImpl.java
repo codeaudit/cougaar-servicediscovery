@@ -26,11 +26,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 
-import com.hp.hpl.mesa.rdf.jena.model.RDFException;
-import com.hp.hpl.mesa.rdf.jena.model.RDFNode;
-import com.hp.hpl.mesa.rdf.jena.model.Resource;
-import com.hp.hpl.mesa.rdf.jena.model.Statement;
-import com.hp.hpl.mesa.rdf.jena.model.StmtIterator;
+import com.hp.hpl.jena.rdf.model.RDFException;
+import com.hp.hpl.jena.rdf.model.RDFNode;
+import com.hp.hpl.jena.rdf.model.Resource;
+import com.hp.hpl.jena.rdf.model.Statement;
+import com.hp.hpl.jena.rdf.model.StmtIterator;
 
 /**
  * <p>Title: </p>
@@ -105,7 +105,7 @@ public class ServiceCategoryImpl implements ServiceCategory {
 
           while(quals.hasNext()) {
             //there may be multiples
-            Statement st2 = quals.next();
+            Statement st2 = quals.nextStatement();
             RDFNode node2 = st2.getObject();
             if(node2 instanceof Resource){
               Resource currentQual = (Resource)node2;

@@ -26,12 +26,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 
-import com.hp.hpl.jena.daml.DAMLInstance;
-import com.hp.hpl.mesa.rdf.jena.model.RDFException;
-import com.hp.hpl.mesa.rdf.jena.model.RDFNode;
-import com.hp.hpl.mesa.rdf.jena.model.Resource;
-import com.hp.hpl.mesa.rdf.jena.model.Statement;
-import com.hp.hpl.mesa.rdf.jena.model.StmtIterator;
+import com.hp.hpl.jena.rdf.model.RDFException;
+import com.hp.hpl.jena.rdf.model.RDFNode;
+import com.hp.hpl.jena.rdf.model.Resource;
+import com.hp.hpl.jena.rdf.model.Statement;
+import com.hp.hpl.jena.rdf.model.StmtIterator;
+import com.hp.hpl.jena.ontology.daml.DAMLInstance;
 
 /**
  * Implements ServiceProfile
@@ -55,7 +55,7 @@ public class ServiceProfileImpl implements ServiceProfile {
           StmtIterator cats = serviceProfile.listProperties(Profile.SERVICECATEGORY);
           while(cats.hasNext()) {
             //can be multiple service categories heres
-            Statement st = cats.next();
+            Statement st = cats.nextStatement();
             RDFNode node = st.getObject();
             if (node instanceof Resource) {
               Resource serviceCat = (Resource)node;
@@ -86,7 +86,7 @@ public class ServiceProfileImpl implements ServiceProfile {
         StmtIterator echelon = serviceProfile.listProperties(Profile.ECHELONOFSUPPORT);
         while(echelon.hasNext()) {
           //should only be one string in this property
-          echelonOfSupport = echelon.next().getString();
+          echelonOfSupport = echelon.nextStatement().getString();
         }
       }
     }
@@ -104,7 +104,7 @@ public class ServiceProfileImpl implements ServiceProfile {
         StmtIterator descs = serviceProfile.listProperties(Profile.TEXTDESCRIPTION);
         while(descs.hasNext()) {
           //should only be one string in this property
-          textDescription = descs.next().getString();
+          textDescription = descs.nextStatement().getString();
         }
       }
     }
@@ -121,7 +121,7 @@ public class ServiceProfileImpl implements ServiceProfile {
          StmtIterator uris = serviceGrounding.listProperties(Profile.WSDLDOCUMENT);
          while(uris.hasNext()) {
            //assume only one of these for now
-           uri = uris.next().getString();
+           uri = uris.nextStatement().getString();
          }
        }
      }
@@ -138,7 +138,7 @@ public class ServiceProfileImpl implements ServiceProfile {
          StmtIterator bindingTypes = serviceGrounding.listProperties(Profile.BINDINGTYPE);
          while(bindingTypes.hasNext()) {
            //assume only one of these for now
-           bindingType = bindingTypes.next().getString();
+           bindingType = bindingTypes.nextStatement().getString();
          }
        }
      }

@@ -27,11 +27,14 @@
  */
 package org.cougaar.servicediscovery.description;
 
-import com.hp.hpl.mesa.rdf.jena.common.ErrorHelper;
-import com.hp.hpl.mesa.rdf.jena.common.PropertyImpl;
-import com.hp.hpl.mesa.rdf.jena.common.ResourceImpl;
-import com.hp.hpl.mesa.rdf.jena.model.Property;
-import com.hp.hpl.mesa.rdf.jena.model.Resource;
+
+
+import com.hp.hpl.jena.rdf.model.Property;
+import com.hp.hpl.jena.rdf.model.Resource;
+import com.hp.hpl.jena.rdf.model.impl.ResourceImpl;
+import com.hp.hpl.jena.rdf.model.impl.PropertyImpl;
+import com.hp.hpl.jena.rdf.model.impl.RDFDefaultErrorHandler;
+import com.hp.hpl.jena.vocabulary.RDF;
 
 /**
  */
@@ -138,7 +141,8 @@ public class Profile {
       QUALIFICATIONVALUE = new PropertyImpl(cougaar_uri, nQUALIFICATIONVALUE);
 
     } catch (Exception e) {
-      ErrorHelper.logInternalError("RDF", 1, e);
+        RDFDefaultErrorHandler errorHandler = new RDFDefaultErrorHandler();
+        errorHandler.error(e);
     }
   }
 }

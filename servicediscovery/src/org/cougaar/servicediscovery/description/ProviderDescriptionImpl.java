@@ -22,24 +22,26 @@
 
 package org.cougaar.servicediscovery.description;
 
+import com.hp.hpl.jena.ontology.OntDocumentManager;
+import com.hp.hpl.jena.ontology.OntModelSpec;
+import com.hp.hpl.jena.ontology.daml.DAMLClass;
+import com.hp.hpl.jena.ontology.daml.DAMLInstance;
+import com.hp.hpl.jena.ontology.daml.DAMLModel;
+import com.hp.hpl.jena.rdf.model.ModelFactory;
+import com.hp.hpl.jena.rdf.model.RDFException;
+import com.hp.hpl.jena.rdf.model.Resource;
+import com.hp.hpl.jena.rdf.model.Statement;
+import com.hp.hpl.jena.shared.JenaException;
+import org.cougaar.core.service.LoggingService;
+import org.cougaar.servicediscovery.Constants;
+
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.File;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
-
-import org.cougaar.core.service.LoggingService;
-import org.cougaar.servicediscovery.Constants;
-
-import com.hp.hpl.jena.daml.DAMLClass;
-import com.hp.hpl.jena.daml.DAMLInstance;
-import com.hp.hpl.jena.daml.DAMLModel;
-import com.hp.hpl.jena.daml.common.DAMLModelImpl;
-import com.hp.hpl.mesa.rdf.jena.model.RDFException;
-import com.hp.hpl.mesa.rdf.jena.model.Resource;
-import com.hp.hpl.mesa.rdf.jena.model.Statement;
 
 /**
  * Implements ProviderDescription
@@ -53,12 +55,14 @@ public class ProviderDescriptionImpl implements ProviderDescription {
   //store the model that Jena parses from the file
   private DAMLModel model = null;
   private String fileName;
+  private String cougaarInstallPath;
 
   private LoggingService log;
 
   public static void main (String args[]) {
+
     ProviderDescription pd = new ProviderDescriptionImpl(null);
-    pd.parseDAML("NEWARK.profile.daml");
+    pd.parseDAML("123-MSB.profile.daml");
     System.out.println(pd.toString());
   }
 
@@ -68,6 +72,7 @@ public class ProviderDescriptionImpl implements ProviderDescription {
    */
   public ProviderDescriptionImpl(LoggingService log) {
     this.log = log;
+    this.cougaarInstallPath = System.getProperty("org.cougaar.install.path", "");
   }
 
   public boolean parseDAML(String damlFileName) {
@@ -92,19 +97,45 @@ public class ProviderDescriptionImpl implements ProviderDescription {
       return false;
     }
 
-    model = new DAMLModelImpl();
+    model = ModelFactory.createDAMLModel();
+    OntDocumentManager mgr = model.getDocumentManager();
 
-    //There is some intermittent problem with a link to SRI
-    //from one of the necessary daml base pages.
-    //this code seems to deal with that link problem but trying to access
-    //it a different way.
-    model.getLoader().addImportBlock("http://www.ai.sri.com/daml/ontologies/sri-basic/1-0/Time.daml");
-    model.getLoader().setUseImportBlocking(true);
+    String prefix = "file:";
+    if(cougaarInstallPath.length()>0) {
+        prefix = prefix + cougaarInstallPath + File.separator;
+    }
+    prefix = prefix + "servicediscovery" + File.separator + "data" +
+            File.separator + "cached" + File.separator;
 
-    InputStreamReader reader = new InputStreamReader(in);
+
+    mgr.addAltEntry("http://cougaar.daml",
+              prefix + "cougaar.daml");
+    mgr.addAltEntry("http://www.w3.org/1999/02/22-rdf-syntax-ns",
+              prefix + "rdfSyntaxNS.rdf");
+    mgr.addAltEntry("http://www.w3.org/2000/01/rdf-schema",
+              prefix + "rdfSchema.rdf");
+    mgr.addAltEntry("http://www.daml.org/2001/03/daml+oil",
+              prefix + "damlOil.daml");
+    mgr.addAltEntry("http://www.w3.org/2000/10/XMLSchema.xsd",
+              prefix + "XMLSchema.xsd");
+    mgr.addAltEntry("http://www.daml.org/services/daml-s/2001/10/Service.daml",
+              prefix + "Service.daml");
+    mgr.addAltEntry("http://www.daml.org/services/daml-s/2001/10/Process.daml",
+              prefix + "Process.daml");
+    mgr.addAltEntry("http://www.daml.org/services/daml-s/2001/10/Profile.daml",
+              prefix + "Profile.daml");
+    mgr.addAltEntry("http://www.ai.sri.com/daml/ontologies/sri-basic/1-0/Time.daml",
+              prefix + "Time.daml");
+
+    OntModelSpec s = new OntModelSpec( OntModelSpec.DAML_MEM);
+    s.setDocumentManager( mgr );
+
+    System.out.println("");
+
     try {
-      model.read(reader, "");
-    } catch (RDFException e1) {
+        model.read(in, "");
+    }
+    catch (RDFException e1) {
       if (log != null && log.isErrorEnabled()) {
         String helpMessage =
         "If the following StackTrace includes \"IO error while reading URL:\"\n" +
@@ -127,7 +158,12 @@ public class ProviderDescriptionImpl implements ProviderDescription {
                     "  File: " + fileName, e1);
       }
     }
-    return model.getLoadSuccessful();
+    catch (JenaException eJ){
+        if (log != null && log.isErrorEnabled()) {
+          log.error("JenaException in "+ fileName + " " + eJ.getMessage());
+        }
+    }
+      return model.getLoadSuccessful();
   }
 
   public String getProviderName() {
@@ -223,7 +259,7 @@ public class ProviderDescriptionImpl implements ProviderDescription {
         serviceProfiles.add(inst);
       }
     }
-    if (serviceProfiles.isEmpty() && log.isInfoEnabled()) {
+    if (serviceProfiles.isEmpty() && (log !=null && log.isInfoEnabled())) {
       log.info("Info: getServicePs() for [" + fileName + "] is returning an empty collection.\n" +
                "DAMLInstance does not contain: " + Profile.SERVICEPROFILE.getURI());
     }
@@ -241,7 +277,8 @@ public class ProviderDescriptionImpl implements ProviderDescription {
         serviceGroundings.add(inst);
       }
     }
-    if (serviceGroundings.isEmpty() && log.isInfoEnabled()) {
+
+    if (serviceGroundings.isEmpty() && (log != null && log.isInfoEnabled())) {
       log.info("Info: getServiceGroundings() for [" +  fileName + "] is returning an empty collection.\n" +
                "DAMLInstance does not contain: " + Profile.GROUNDING.getURI());
     }
@@ -281,7 +318,7 @@ public class ProviderDescriptionImpl implements ProviderDescription {
         try {
           theGroundingService =grounding.getProperty(Profile.SUPPORTEDBY).getResource();
           //see if it has a matching Service object
-          if(theGroundingService == theProfileService) {
+          if(theGroundingService.equals(theProfileService)) {
             //if so, this profile/grounding pair makes a service profile object
             serviceDescriptions.add(new ServiceProfileImpl(profile, grounding));
           }

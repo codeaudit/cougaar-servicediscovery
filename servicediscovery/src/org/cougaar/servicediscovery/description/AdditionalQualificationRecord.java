@@ -22,8 +22,9 @@
 
 package org.cougaar.servicediscovery.description;
 
-import com.hp.hpl.mesa.rdf.jena.model.RDFException;
-import com.hp.hpl.mesa.rdf.jena.model.Resource;
+import com.hp.hpl.jena.rdf.model.Resource;
+import com.hp.hpl.jena.rdf.model.RDFException;
+
 
 /**
  * <p>Title: </p>
