@@ -47,8 +47,18 @@ public abstract class Lineage implements java.io.Serializable, UniqueObject {
   public static final String OPCON_STRING = "OPCON";
   public static final String SUPPORT_STRING = "SUPPORT";
 
+  /* returns null if type is not recognized */
   public static Role typeToRole(int type) { 
-    return new Role();
+    switch (type) {
+    case ADCON:
+      return org.cougaar.glm.ldm.Constants.Role.ADMINISTRATIVESUPERIOR;
+    case OPCON:
+      return org.cougaar.glm.ldm.Constants.Role.OPERATIONALSUPERIOR;
+    case SUPPORT:
+      return org.cougaar.glm.ldm.Constants.Role.SUPPORTSUPERIOR;
+    default:
+      return null;
+    }
   }
 
   public static int roleToType(Role role) { 
