@@ -207,9 +207,6 @@ public class SDFactory implements Factory {
     return serviceContractRelay;
   }
 
-  /** Generate a new ServiceContractRelationship
-    * @return ServiceContractRelationship
-    **/
   static public ServiceContractRelationship newServiceContractRelationship(ServiceContractRelay relay,
 									   HasRelationships provider,
 									   HasRelationships client) {
@@ -217,31 +214,35 @@ public class SDFactory implements Factory {
     long start = 
       (long) getPreference(contractPreferences, AspectType.START_TIME);
     if (start == -1) {
-      IllegalArgumentException iae = 
-	new IllegalArgumentException(" ServiceContractRelay - " +
-				     relay +
-				     " - does not have a start time preference.");
-      throw iae;
+      if (myLogger.isDebugEnabled()) {
+	myLogger.debug("newServiceContractRelationship: ServiceContractRelay - " +
+		       relay +
+		       " - does not have a start time preference." +
+                       " Returning null.");
+      }
+      return null;
     }
 
     long end = 
       (long) getPreference(contractPreferences, AspectType.END_TIME);
     if (end == -1) {
-      IllegalArgumentException iae = 
-	new IllegalArgumentException(" ServiceContractRelay - " +
-				     relay +
-				     " - does not have an end time preference.");
-      throw iae;
+      if (myLogger.isDebugEnabled()) {
+	myLogger.debug("newServiceContractRelationship: ServiceContractRelay - " +
+		       relay +
+		       " - does not have an end time preference." +
+                       " Returning null.");
+      }
+      return null;
     }
 
 
     if (start >= end) {
-      IllegalArgumentException iae = 
-	new IllegalArgumentException(" ServiceContractRelay - " +
-				     relay +
-				     " - does not have a valid time span.\n" +
-				     "Start - " + start + "- >= End - " + end);
-      throw iae;
+	myLogger.debug("newServiceContractRelationship: ServiceContractRelay - " +
+		       relay +
+		       " - does not have a valid time span.\n" +
+		       "Start - " + start + "- >= End - " + end +
+		       " Returning null."); 
+	return null;
     }
 
     return new ServiceContractRelationshipImpl(start, end,
