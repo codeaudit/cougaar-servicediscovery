@@ -429,6 +429,10 @@ public class SDCommunityBasedRegistrationPlugin extends ComponentPlugin implemen
 
     // Have all the known SCAs reported in?
     if (scaHash.size() < knownSCAs) {
+      if (log.isDebugEnabled()) {
+	log.debug(getAgentIdentifier() + " isRegistered(): scaHash.size() = " + 
+		  scaHash.size() + " knownSCAs = " + knownSCAs);
+      }
       return false;
     }
 
@@ -441,6 +445,10 @@ public class SDCommunityBasedRegistrationPlugin extends ComponentPlugin implemen
       SCAInfo scaInfo = (SCAInfo) entry.getValue();
       
       if (!scaInfo.getIsRegistered()) {
+	if (log.isDebugEnabled()) {
+	  log.debug(getAgentIdentifier() + " isRegistered(): " + 
+		    scaInfo.getCommunity() + " is not registered.");
+	}
 	return false;
       }
     } 
@@ -815,6 +823,11 @@ public class SDCommunityBasedRegistrationPlugin extends ComponentPlugin implemen
     }
 
     public void setIsRegistered(boolean isRegistered){ 
+      if ((myIsRegistered) && (!isRegistered) &&
+	  (log.isDebugEnabled())) {
+	RuntimeException re  = new RuntimeException();
+	log.debug(getAgentIdentifier() + " setIsRegistered() going from true to false.", re);
+      }
       myIsRegistered = isRegistered;
     }
 
