@@ -39,7 +39,7 @@ import org.cougaar.servicediscovery.util.UDDIConstants;
  **/
 public class SDRegistrationPlugin extends SDRegistrationPluginBase {
   private static String ypAgent = 
-  System.getProperty("org.cougaar.yp.ypAgent", "NCA");
+  System.getProperty("org.cougaar.yp.ypAgent", "OSD.GOV");
 
   private int outstandingSCAUpdates = 0;
 

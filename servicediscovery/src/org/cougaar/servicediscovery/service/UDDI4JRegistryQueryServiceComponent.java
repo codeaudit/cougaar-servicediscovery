@@ -73,7 +73,7 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
   implements Component 
 {
   private static String ypAgent = 
-  System.getProperty("org.cougaar.yp.ypAgent", "NCA");
+  System.getProperty("org.cougaar.yp.ypAgent", "OSD.GOV");
 
   private LoggingService log;
   public void setLoggingService(LoggingService log) { 
