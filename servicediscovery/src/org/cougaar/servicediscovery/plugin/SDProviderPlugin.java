@@ -292,8 +292,13 @@ public class SDProviderPlugin extends SimplePlugin
 	  }
 	  
 	  if (changeRequired) {
+	    if (myLoggingService.isInfoEnabled()) {
+	      myLoggingService.info(getAgentIdentifier() +
+				    " handleChangeProviderCap " +" publish change relay for "
++ contract.getServiceRole() + "  " + contract);
+	    }
 	    publishChange(relay);
-	  }
+          }
         }
       }
     }
