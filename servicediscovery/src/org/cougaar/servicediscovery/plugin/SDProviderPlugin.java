@@ -187,11 +187,11 @@ public class SDProviderPlugin extends SimplePlugin
     TimeSpan requestedTimeSpan = 
       mySDFactory.getTimeSpanFromPreferences(serviceRequest.getServicePreferences());
 
-    if (myLoggingService.isDebugEnabled()) {
-      TimeSpan contractTimeSpan = (serviceContract != null) ?
-	mySDFactory.getTimeSpanFromPreferences(serviceContract.getServicePreferences()) :
-	null;
+    TimeSpan contractTimeSpan = (serviceContract != null) ?
+      mySDFactory.getTimeSpanFromPreferences(serviceContract.getServicePreferences()) :
+      null;
 
+    if (myLoggingService.isDebugEnabled()) {
       String contractTimeSpanString = (contractTimeSpan == null) ?
 	"" : 
 	new Date(contractTimeSpan.getStartTime()) + 
@@ -207,7 +207,6 @@ public class SDProviderPlugin extends SimplePlugin
 			     contractTimeSpanString);
     }
 
-    TimeSpan contractTimeSpan  = requestedTimeSpan;
     Collection modifiedContractPreferences = null;
  
     if (requestedTimeSpan == null) {
@@ -223,11 +222,11 @@ public class SDProviderPlugin extends SimplePlugin
       contractPreferences.remove(END_TIME_KEY);
       contractChanged = true;
     } else {
-      contractTimeSpan = 
+      TimeSpan verifiedContractTimeSpan = 
 	checkProviderCapability(getProviderCapability(serviceRequest.getServiceRole()),
 				requestedTimeSpan);
       
-      if (contractTimeSpan == null) {
+      if (verifiedContractTimeSpan == null) {
 	if (myLoggingService.isInfoEnabled()) {
 	  myLoggingService.info(getAgentIdentifier() + 
 				": handleServiceContractRelay() unable to handle service request - " + 
@@ -239,38 +238,36 @@ public class SDProviderPlugin extends SimplePlugin
 	contractPreferences.remove(START_TIME_KEY);
 	contractPreferences.remove(END_TIME_KEY);
 	contractChanged = true;
-      } else if (!contractTimeSpan.equals(requestedTimeSpan)) {
-	// Replace start/end with what provider can handle.
-	modifiedContractPreferences = 
-	  mySDFactory.createTimeSpanPreferences(contractTimeSpan);
-
-	contractChanged = true;
       } else if (contractExists) {
 	//compare with existing contract
-	TimeSpan existingContractTimeSpan = 
-	  mySDFactory.getTimeSpanFromPreferences(serviceContract.getServicePreferences());
-
 	if (myLoggingService.isDebugEnabled()) {
 	  myLoggingService.debug(getAgentIdentifier() + 
 				 ": handleServiceContractRelay() - " +
 				 " current time span = " +
-				 new Date(existingContractTimeSpan.getStartTime()) +
-				 " to " + 
-				 new Date(existingContractTimeSpan.getEndTime()) +
-				 " new time span = " +
 				 new Date(contractTimeSpan.getStartTime()) +
 				 " to " + 
-				 new Date(contractTimeSpan.getEndTime()) + 
+				 new Date(contractTimeSpan.getEndTime()) +
+				 " new time span = " +
+				 new Date(verifiedContractTimeSpan.getStartTime()) +
+				 " to " + 
+				 new Date(verifiedContractTimeSpan.getEndTime()) + 
 				 " (current == new) = " +
-				 existingContractTimeSpan.equals(contractTimeSpan));
+				 contractTimeSpan.equals(verifiedContractTimeSpan));
 	}
-	if (!existingContractTimeSpan.equals(contractTimeSpan)) {
+
+	if (!contractTimeSpan.equals(verifiedContractTimeSpan)) {
 	  // Replace contract start end with requested start end
 	  modifiedContractPreferences = 
-	    mySDFactory.createTimeSpanPreferences(contractTimeSpan);
+	    mySDFactory.createTimeSpanPreferences(verifiedContractTimeSpan);
 
 	  contractChanged = true;
 	}
+      } else if (!verifiedContractTimeSpan.equals(requestedTimeSpan)) {
+	// Replace start/end with what provider can handle.
+	modifiedContractPreferences = 
+	  mySDFactory.createTimeSpanPreferences(verifiedContractTimeSpan);
+
+	contractChanged = true;
       }
     }
 
