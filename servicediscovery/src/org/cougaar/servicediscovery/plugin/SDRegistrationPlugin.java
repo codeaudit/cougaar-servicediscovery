@@ -27,6 +27,16 @@ import org.cougaar.core.blackboard.IncrementalSubscription;
 import org.cougaar.core.blackboard.PrivilegedClaimant;
 import org.cougaar.core.service.LoggingService;
 import org.cougaar.core.mts.MessageAddress;
+
+import org.cougaar.glm.ldm.Constants;
+
+import org.cougaar.planning.ldm.plan.AllocationResult;
+import org.cougaar.planning.ldm.plan.Disposition;
+import org.cougaar.planning.ldm.plan.PlanElement;
+import org.cougaar.planning.ldm.plan.Task;
+import org.cougaar.planning.plugin.legacy.SimplePlugin;
+import org.cougaar.planning.plugin.util.PluginHelper;
+
 import org.cougaar.servicediscovery.description.ProviderDescription;
 import org.cougaar.servicediscovery.description.ProviderDescriptionImpl;
 import org.cougaar.servicediscovery.description.ServiceClassification;
@@ -38,9 +48,10 @@ import org.cougaar.servicediscovery.util.StatusChangeMessage;
 import org.cougaar.servicediscovery.transaction.DAMLReadyRelay;
 import org.cougaar.servicediscovery.SDFactory;
 import org.cougaar.servicediscovery.SDDomain;
+
 import org.cougaar.util.ConfigFinder;
 import org.cougaar.util.UnaryPredicate;
-import org.cougaar.planning.plugin.legacy.SimplePlugin;
+
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -48,14 +59,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 
-//import org.cougaar.util.UnaryPredicate;
 
 
 public class SDRegistrationPlugin extends SimplePlugin implements PrivilegedClaimant {
 
   private static final String DAML_IDENTIFIER = ".profile.daml";
 
-  //private static Logger log;
   private LoggingService log;
 
   //private RegistrationService
@@ -64,10 +73,8 @@ public class SDRegistrationPlugin extends SimplePlugin implements PrivilegedClai
   private String myAgent;
 
   private IncrementalSubscription supportLineageSubscription;
-  private IncrementalSubscription damlReadySubscription;
   private IncrementalSubscription statusChangeSubscription;
-
-  private SDFactory mySDFactory;
+  private IncrementalSubscription registerTaskSubscription;
 
   private boolean isRegistered = false;
 
@@ -79,15 +86,16 @@ public class SDRegistrationPlugin extends SimplePlugin implements PrivilegedClai
     }
   };
 
-  private UnaryPredicate damlReadyPredicate = new UnaryPredicate() {
-    public boolean execute(Object o) {
-      return (o instanceof DAMLReadyRelay);
-    }
-  };
-
   private UnaryPredicate statusChangePredicate = new UnaryPredicate() {
     public boolean execute(Object o) {
       return (o instanceof StatusChangeMessage);
+    }
+  };
+
+  private UnaryPredicate registerTaskPredicate = new UnaryPredicate() {
+    public boolean execute(Object o) {
+      return ((o instanceof Task) &&
+	      (((Task) o).getVerb().equals(Constants.Verb.RegisterServices)));
     }
   };
 
@@ -99,88 +107,65 @@ public class SDRegistrationPlugin extends SimplePlugin implements PrivilegedClai
     registrationService = (RegistrationService) getBindingSite().
       getServiceBroker().getService(this, RegistrationService.class, null);
 
-    supportLineageSubscription = (IncrementalSubscription)getBlackboardService().subscribe(supportLineagePredicate);
-    damlReadySubscription = (IncrementalSubscription)getBlackboardService().subscribe(damlReadyPredicate);
-    statusChangeSubscription = (IncrementalSubscription)getBlackboardService().subscribe(statusChangePredicate);
-    mySDFactory = (SDFactory) getFactory(SDDomain.SD_NAME);
-    DAMLReadyRelay relay = mySDFactory.newDAMLReadyRelay(MessageAddress.getMessageAddress("DAML"));
-    publishAdd(relay);
-
+    supportLineageSubscription = 
+      (IncrementalSubscription) subscribe(supportLineagePredicate);
+    statusChangeSubscription = 
+      (IncrementalSubscription) subscribe(statusChangePredicate);
+    registerTaskSubscription = 
+      (IncrementalSubscription) subscribe(registerTaskPredicate);
   }
 
   protected void execute () {
-    if(damlReadySubscription.getChangedCollection().size()>0 || myAlarm!=null) {
-      if (!isRegistered) {
-        Iterator relayIt = damlReadySubscription.iterator();
-        while(relayIt.hasNext()) {
-          DAMLReadyRelay relay = (DAMLReadyRelay)relayIt.next();
-          if(relay.isReady()) {
-            initialRegister();
-            if(isRegistered) {
-              if (log.isDebugEnabled()) {
-                log.debug("Registering: " + myAgent);
-              }
+    if (!isRegistered) {
+      initialRegister();
+      if (isRegistered) {
+	if (log.isDebugEnabled()) {
+	  log.debug("Registering: " + myAgent);
+	}
 
-              if (!supportLineageSubscription.getCollection().isEmpty()) {
-                Collection serviceCategories = null;
-                serviceCategories = new ArrayList();
-                for (Iterator i = supportLineageSubscription.getCollection().iterator(); i.hasNext();) {
-                  SupportLineageList supportList = (SupportLineageList) i.next();
-                  ServiceClassification sca = new ServiceClassificationImpl(supportList.getRoot(), supportList.getRoot(),
-                                                                            UDDIConstants.SUPPORT_COMMAND_ASSIGNMENT);
-                  serviceCategories.add(sca);
-                }
-                registrationService.updateServiceDescription(getAgentIdentifier().toString(), serviceCategories);
-
-                return;
-              }
-            }
-          }
-        }
+	updateRegisterTaskDispositions(registerTaskSubscription);
+	return;
       }
+      
+    } else if (supportLineageSubscription.hasChanged()) {
+      Collection adds = supportLineageSubscription.getAddedCollection();
+      Collection serviceClassifications = scaServiceClassifications(adds);
+      registrationService.updateServiceDescription(getAgentIdentifier().toString(), 
+						   serviceClassifications);
+      // Not handling changes/removes
     }
-    // If I am a provider, update my service descriptions in the registry
-    if (isRegistered) {
 
-      Collection serviceCategories = null;
-      if (supportLineageSubscription.hasChanged()) {
-        serviceCategories = new ArrayList();
-        if (! supportLineageSubscription.getAddedCollection().isEmpty()) {
-          for (Iterator i = supportLineageSubscription.getAddedCollection().iterator(); i.hasNext();) {
-            SupportLineageList supportList = (SupportLineageList) i.next();
 
-            ServiceClassification sca = new ServiceClassificationImpl(supportList.getRoot(), supportList.getRoot(),
-                                                                      UDDIConstants.SUPPORT_COMMAND_ASSIGNMENT);
-            serviceCategories.add(sca);
-          }
-          registrationService.updateServiceDescription(getAgentIdentifier().toString(), serviceCategories);
-        }
+    if (statusChangeSubscription.hasChanged()) {
+      Collection adds = statusChangeSubscription.getAddedCollection();
+      for (Iterator iterator = adds.iterator(); iterator.hasNext();) {
+	StatusChangeMessage statusChange = 
+	  (StatusChangeMessage) iterator.next();
+	Collection serviceClassifications = new ArrayList(1);
+	ServiceClassification sca = 
+	  new ServiceClassificationImpl(statusChange.getRole(), 
+					statusChange.getRole(),
+					UDDIConstants.MILITARY_SERVICE_SCHEME);
+	serviceClassifications.add(sca);
+	boolean registryDeleteStatus = 
+	  registrationService.deleteServiceDescription(myAgent,
+						       serviceClassifications);
+	statusChange.setRegistryUpdated(registryDeleteStatus);
+	publishChange(statusChange);
       }
-      // Update if the list changed
-      if (! supportLineageSubscription.getChangedCollection().isEmpty()) {
-        for (Iterator i = supportLineageSubscription.getChangedCollection().iterator(); i.hasNext();) {
-          SupportLineageList supportList = (SupportLineageList) i.next();
+      // Handle statusChangeMessage as trumping the presence of DAML file.
+      // Don't change isRegistered flag because that would assume that we
+      // should reregister.
+      //isRegistered = false;
+      
+      // No point in updating a non-existant registration
+      return;
+    }    
 
-          ServiceClassification sca = new ServiceClassificationImpl(supportList.getRoot(), supportList.getRoot(),
-                                                                    UDDIConstants.SUPPORT_COMMAND_ASSIGNMENT);
-          serviceCategories.add(sca);
-        }
-        registrationService.updateServiceDescription(getAgentIdentifier().toString(), serviceCategories);
-      }
-      Collection categories = new ArrayList();
-      StatusChangeMessage statusChange = null;
-      if (statusChangeSubscription.hasChanged()) {
-        for (Iterator iterator = statusChangeSubscription.getAddedCollection().iterator(); iterator.hasNext();) {
-          statusChange = (StatusChangeMessage) iterator.next();
-          ServiceClassification sca = new ServiceClassificationImpl(statusChange.getRole(), statusChange.getRole(),
-                                                                    UDDIConstants.MILITARY_SERVICE_SCHEME);
-          categories.add(sca);
-          statusChange.setRegistryUpdated(registrationService.deleteServiceDescription(myAgent, categories));
-          publishChange(statusChange);
-        }
-      }
+    if (registerTaskSubscription.hasChanged()) {
+      Collection adds = registerTaskSubscription.getAddedCollection();
+      updateRegisterTaskDispositions(adds);
     }
-    // TODO: are removes expected?
   }
 
   private void initialRegister() {
@@ -193,17 +178,17 @@ public class SDRegistrationPlugin extends SimplePlugin implements PrivilegedClai
         boolean result = pd.parseDAML(damlfilename);
         // TODO:  need to respond in some way to registration failures
         if(result && pd.getProviderName() != null) {
-            if(registrationService.addProviderDescription(pd)) {
-              isRegistered = true;
-              myAlarm = null;
-            }
-            else {
-              int rand = (int)(Math.random()*10000) + 1000;
-              myAlarm = this.wakeAfter(rand);
-              if (log.isErrorEnabled()) {
-                log.error("Error:  problem adding ProviderDescription now, try again later: " + myAgent);
-              }
-            }
+	  if (registrationService.addProviderDescription(pd, scaServiceClassifications(supportLineageSubscription)))  {
+	    isRegistered = true;
+	    myAlarm = null;
+	  }
+	  else {
+	    int rand = (int)(Math.random()*10000) + 1000;
+	    myAlarm = this.wakeAfter(rand);
+	    if (log.isErrorEnabled()) {
+	      log.error("Error:  problem adding ProviderDescription now, try again later: " + myAgent);
+	    }
+	  }
         } else {
           //if the parsing failed, it may be because one of the url's was down, so try again later
           int rand = (int)(Math.random()*10000) + 1000;
@@ -213,14 +198,64 @@ public class SDRegistrationPlugin extends SimplePlugin implements PrivilegedClai
           }
         }
       } else {
+	isRegistered = true;
         if (log.isDebugEnabled()) {
           log.debug("Agent " + myAgent + " Not Registering, no daml file.");
         }
       }
     } catch( IOException ioe) {
+      isRegistered = true;
       if (log.isDebugEnabled()) {
         log.debug("Agent " + myAgent + " Not Registering, no daml file.");
       }
     }
   }
+    
+
+  private Collection scaServiceClassifications(Collection supportLineageCollection) {
+    Collection serviceClassifications = 
+      new ArrayList(supportLineageCollection.size());
+    for (Iterator iterator = supportLineageCollection.iterator(); 
+	 iterator.hasNext();) {
+      SupportLineageList supportList = (SupportLineageList) iterator.next();
+      ServiceClassification sca = 
+	new ServiceClassificationImpl(supportList.getRoot(), 
+				      supportList.getRoot(),
+				      UDDIConstants.SUPPORT_COMMAND_ASSIGNMENT);
+      serviceClassifications.add(sca);
+    }
+    return serviceClassifications;
+  }
+  
+  private void updateRegisterTaskDispositions(Collection registerTasks) {
+    for (Iterator iterator = registerTasks.iterator();
+	 iterator.hasNext();) {
+      Task task = (Task) iterator.next();
+      PlanElement pe = task.getPlanElement();
+      double conf;
+      if (isRegistered) {
+	conf = 1.0;
+      } else {
+	conf = 0.0;
+      }
+
+      AllocationResult estResult = 
+	PluginHelper.createEstimatedAllocationResult(task, 
+						     theLDMF, 
+						     conf, 
+						     true);
+      if (pe == null) {
+	Disposition disposition = 
+	  theLDMF.createDisposition(task.getPlan(), task, estResult);
+	publishAdd(disposition);
+      } else {
+	pe.setEstimatedResult(estResult);
+	publishChange(pe);
+      }
+    }
+  }
 }
+
+
+
+
