@@ -95,7 +95,6 @@ public class MatchMakerQueryServlet
         public static final int FORMAT_XML = 1;
         public static final int FORMAT_HTML = 2;
 
-        private boolean anyArgs;
         private int format;
 
 
@@ -114,7 +113,8 @@ public class MatchMakerQueryServlet
         // writer from the request for HTML output
         private PrintWriter out;
 
-        // base url
+
+        private boolean anyArgs;
         private String baseURL;
 
         public MMQueryPrinter(SimpleServletSupport support,
@@ -242,38 +242,6 @@ public class MatchMakerQueryServlet
         }
 
 
-        private static String formatLabel(String lbl) {
-            int nchars = lbl.length();
-            if (nchars > 24) return lbl;
-            return lbl + "                        ".substring(nchars);
-        }
-
-        private static String formatLongString(String str,
-                                               int maxLength) {
-            int nchars = str.length();
-            int start = 0;
-            String resultStr = "";
-            while (start < nchars) {
-                resultStr = (resultStr +
-                        str.substring(start, Math.min(nchars, start + maxLength)) +
-                        "\n");
-                start = start + maxLength;
-            }
-            return resultStr;
-        }
-
-        private static String formatQueryStr(String queryStr) {
-            return formatLongString(queryStr, 100);
-        }
-
-        private static String formatInteger(int n) {
-            return formatInteger(n, 5);
-        }
-
-        private static String formatInteger(int n, int w) {
-            String r = String.valueOf(n);
-            return "        ".substring(0, w - r.length()) + r;
-        }
 
         private static String formatFloat(float n) {
             return formatFloat(n, 6);
@@ -284,17 +252,7 @@ public class MatchMakerQueryServlet
             return "        ".substring(0, w - r.length()) + r;
         }
 
-        private static String formatPercent(double percent) {
-            return formatInteger((int) (percent * 100.0), 3) + "%";
-        }
 
-
-        private static String printResultCode(int i) {
-            if (i == 1)
-                return "Success:" + i;
-            else
-                return "Failure:" + i;
-        }
 
         // startsWithIgnoreCase
         private static final boolean eq(String a, String b) {
@@ -476,10 +434,26 @@ public class MatchMakerQueryServlet
                 Iterator requestsIT = requests.iterator();
                 int ctr = 0;
 
+                ArrayList uids = new ArrayList();
+                HashMap mmRequests = new HashMap();
+
+                //sort the requests by UID
                 while (requestsIT.hasNext()) {
 
                     MMQueryRequest mmqr = (MMQueryRequest) requestsIT.next();
+                    String queryUID = mmqr.getUID().toString();
 
+                    uids.add(queryUID);
+                    mmRequests.put(queryUID,mmqr);
+                }
+                Collections.sort(uids);
+                Collections.reverse(uids);
+
+                Iterator uidIT = uids.iterator();
+
+                while(uidIT.hasNext()) {
+                    String queryUID = (String) uidIT.next();
+                    MMQueryRequest mmqr = (MMQueryRequest) mmRequests.get(queryUID);
 
                     QueryToHTMLTranslator qt = null;
 
@@ -496,9 +470,7 @@ public class MatchMakerQueryServlet
                         logger.error("Unknown query class type:" + mmqr.getQuery());
                     }
 
-
                     qt.setRootFactory(ldmFactory);
-                    String queryUID = mmqr.getUID().toString();
 
                     if (qt != null) {
                         if (ctr == 0) {
@@ -512,7 +484,6 @@ public class MatchMakerQueryServlet
                     } else {
                         System.out.println("Unparseable Query=" + mmqr.getQuery());
                     }
-
                 }
             }
         }
@@ -644,7 +615,7 @@ public class MatchMakerQueryServlet
 
             out.print("<tr bgcolor=lightgrey> <td align=center colspan=3><b> Provider:");
             out.print(sdd.getProviderName());
-            out.print("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp    Score=");
+            out.print("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp    Penalty Score=");
             out.print(formatFloat(sdd.getScore()));
             out.print("</b></td></tr>\n");
             out.print(
