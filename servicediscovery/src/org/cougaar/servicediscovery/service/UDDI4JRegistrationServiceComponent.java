@@ -3,11 +3,11 @@
  *  Copyright 2002-2003 BBNT Solutions, LLC
  *  under sponsorship of the Defense Advanced Research Projects Agency (DARPA)
  *  and the Defense Logistics Agency (DLA).
- * 
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the Cougaar Open Source License as published by
  *  DARPA on the Cougaar Open Source Website (www.cougaar.org).
- * 
+ *
  *  THE COUGAAR SOFTWARE AND ANY DERIVATIVE SUPPLIED BY LICENSOR IS
  *  PROVIDED 'AS IS' WITHOUT WARRANTIES OF ANY KIND, WHETHER EXPRESS OR
  *  IMPLIED, INCLUDING (BUT NOT LIMITED TO) ALL IMPLIED WARRANTIES OF
@@ -36,7 +36,8 @@ import org.cougaar.servicediscovery.description.ServiceClassification;
 import org.cougaar.servicediscovery.description.ServiceProfile;
 import org.cougaar.servicediscovery.util.LockPool;
 import org.cougaar.util.UnaryPredicate;
-
+import org.cougaar.util.log.Logger;
+import org.cougaar.util.log.Logging;
 
 import org.uddi4j.client.UDDIProxy;
 import org.uddi4j.response.*;
@@ -86,8 +87,11 @@ public final class UDDI4JRegistrationServiceComponent
 
   /** List of objects to add to the blackboard **/
   private final List todo = new ArrayList(5);
-  private AuthToken authorization;
+
+  // TODO:  This could be made static
   private UDDIProxy proxy;
+
+  //TODO:  This could be shared as well, it would reduce the number of calls to the registry
   HashMap schemeKeys = new HashMap();
 
   public void load() {
@@ -171,22 +175,60 @@ public final class UDDI4JRegistrationServiceComponent
     }
   }
 
+  private static AuthToken authorization = null;
+
+  //The following 4 uddi registry parameters are set via System properties.
+  private static String username = null;
+  private static String password = null;
+  private static String queryURL = null;
+  private static String publishURL = null;
+
+  static {
+    // FIXME: CHECK VALUES EXIST!!!!
+    username = System.getProperty("org.cougaar.servicediscovery.registry.username");
+    password = System.getProperty("org.cougaar.servicediscovery.registry.password");
+    queryURL = System.getProperty("org.cougaar.servicediscovery.registry.queryURL");
+    publishURL = System.getProperty("org.cougaar.servicediscovery.registry.publishURL");
+
+  }
+
+  synchronized private static void initAuthToken(UDDIProxy proxy) {
+    if (authorization == null) {
+      try {
+        authorization = proxy.get_authToken(username, password);
+      } catch (UDDIException e) {
+        DispositionReport dr = e.getDispositionReport();
+        Logger logger = Logging.getLogger(UDDI4JRegistrationServiceComponent.class);
+        logger.error("UDDIException faultCode:" + e.getFaultCode() +
+                     "\n operator:" + dr.getOperator() +
+                     "\n generic:"  + dr.getGeneric() +
+                     "\n errno:"    + dr.getErrno() +
+                     "\n errCode:"  + dr.getErrCode() +
+                     "\n errInfoText:" + dr.getErrInfoText(), e);
+      } catch (TransportException e) {
+        Logger logger = Logging.getLogger(UDDI4JRegistrationServiceComponent.class);
+        logger.error("Caught an Exception getting authorization", e);
+      }
+    }
+  }
+
+  synchronized private static void handleExpiration(AuthToken expiredToken, UDDIProxy p) {
+    if (expiredToken.equals(authorization)) {
+      authorization = null;
+      initAuthToken(p);
+    }
+  }
+
   private class RegistrationServiceImpl
     implements RegistrationService {
+     // TODO:  This could be shared
     HashMap schemes = new HashMap();
 
-    //The following 4 uddi registry parameters are set via System properties.
-    String username = null;
-    String password = null;
-    String queryURL = null;
-    String publishURL = null;
 
     public RegistrationServiceImpl() {
-      // FIXME: CHECK VALUES EXIST!!!!
-      username = System.getProperty("org.cougaar.servicediscovery.registry.username");
-      password = System.getProperty("org.cougaar.servicediscovery.registry.password");
-      queryURL = System.getProperty("org.cougaar.servicediscovery.registry.queryURL");
-      publishURL = System.getProperty("org.cougaar.servicediscovery.registry.publishURL");
+      if (!makeProxy()) {
+        log.error("Error initializing proxy ");
+      }
     }
 
     /**
@@ -199,28 +241,26 @@ public final class UDDI4JRegistrationServiceComponent
       boolean success=false;
 
       Object token = getLock();
-      if(makeConnection()) {
-        if(storeProviderDescription(pd))
-          success = executePublish(pd);
+      if(storeProviderDescription(pd)) {
+        success = executePublish(pd);
       }
       freeLock(token);
       return success;
     }
 
     /**
-     * Establishes a connection to a registry.
+     * Creates a proxy to communicate with the registry.
      *
      */
-    private boolean makeConnection() {
-      // Define connection configuration properties.
+    private boolean makeProxy() {
+      // Define configuration properties.
 
       proxy = new UDDIProxy();
 
       try {
         proxy.setInquiryURL(queryURL);
         proxy.setPublishURL(publishURL);
-        //authorization = proxy.get_authToken(username, password);
-        initializeAuthToken();
+        initAuthToken(proxy);
         return true;
       } catch (java.net.MalformedURLException e) {
         if (log.isErrorEnabled()) {
@@ -229,27 +269,6 @@ public final class UDDI4JRegistrationServiceComponent
         return false;
       }
     }
-
-
-    private void initializeAuthToken() {
-      try {
-        authorization = proxy.get_authToken(username, password);
-      } catch (UDDIException e) {
-        DispositionReport dr = e.getDispositionReport();
-        log.error("UDDIException faultCode:" + e.getFaultCode() +
-                  "\n operator:" + dr.getOperator() +
-                  "\n generic:"  + dr.getGeneric() +
-                  "\n errno:"    + dr.getErrno() +
-                  "\n errCode:"  + dr.getErrCode() +
-                  "\n errInfoText:" + dr.getErrInfoText(), e);
-      } catch (TransportException e) {
-        if (log.isErrorEnabled()) {
-          log.error("Caught an Exception getting authorization", e);
-        }
-      }
-    }
-
-
 
     /**
      * Creates an organization, its classification, and its
@@ -318,41 +337,23 @@ public final class UDDI4JRegistrationServiceComponent
       }
       businessServices.setBusinessServiceVector (services);
 
-      try {
-        be.setBusinessServices (businessServices);
-        entities.add(be);
-        proxy.save_business(authorization.getAuthInfoString(), entities);
-      } catch (UDDIException e) {
-        DispositionReport dr = e.getDispositionReport();
-        if (dr.getErrCode().equals(DispositionReport.E_authTokenExpired)) {
-          if (log.isDebugEnabled()) {
-            log.debug("Auth Token expired, getting a new one " + getAgentIdentifier());
-          }
-          initializeAuthToken();
-          try {
-            proxy.save_business(authorization.getAuthInfoString(), entities);
-          } catch (UDDIException ex) {
-            DispositionReport d = ex.getDispositionReport();
-            if (log.isErrorEnabled()) {
+      boolean saveBusiness = false;
+      while (!saveBusiness) {
+        AuthToken token = authorization;
+        try {
+          be.setBusinessServices (businessServices);
+          entities.add(be);
 
-              log.error("UDDIException faultCode:" + e.getFaultCode() +
-                        "\n operator:" + d.getOperator() +
-                        "\n generic:"  + d.getGeneric() +
-                        "\n errno:"    + d.getErrno() +
-                        "\n errCode:"  + d.getErrCode() +
-                        "\n errInfoText:" + d.getErrInfoText(), e);
+          proxy.save_business(token.getAuthInfoString(), entities);
+          saveBusiness = true;
+        } catch (UDDIException e) {
+          DispositionReport dr = e.getDispositionReport();
+          if (dr.getErrCode().equals(DispositionReport.E_authTokenExpired)) {
+            if (log.isDebugEnabled()) {
+              log.debug("Auth Token expired, getting a new one " + getAgentIdentifier());
             }
-            return false;
-          }
-          catch (TransportException te) {
-            if (log.isErrorEnabled()) {
-              log.error("Caught a TransportException saving business", e);
-            }
-            return false;
-          }
-        } else {
-          if (log.isErrorEnabled()) {
-
+            handleExpiration(token, proxy);
+          } else {
             log.error("UDDIException faultCode:" + e.getFaultCode() +
                       "\n operator:" + dr.getOperator() +
                       "\n generic:"  + dr.getGeneric() +
@@ -361,12 +362,10 @@ public final class UDDI4JRegistrationServiceComponent
                       "\n errInfoText:" + dr.getErrInfoText(), e);
           }
           return false;
+        } catch (TransportException te) {
+          log.error("Caught a TransportException saving business", te);
+          return false;
         }
-      } catch (TransportException e) {
-        if (log.isErrorEnabled()) {
-          log.error("Caught a TransportException saving business", e);
-        }
-        return false;
       }
       return success;
     }
@@ -422,9 +421,7 @@ public final class UDDI4JRegistrationServiceComponent
 
 
     public boolean addServiceDescription(String providerKey, ServiceProfile sd){
-      Object token = getLock();
-      freeLock(token);
-      return true;
+      return false;
     }
 
 //  FIXME -NEED TO DELETE THE PROVIDER DESC STORED LOCALLY AS WELL
@@ -539,38 +536,42 @@ public final class UDDI4JRegistrationServiceComponent
           thisBag.getKeyedReferenceVector().addAll(updateBag.getKeyedReferenceVector());
           services.add(bs);
         }
-        proxy.save_service(authorization.getAuthInfoString(), services);
-      } catch (UDDIException e) {
-        DispositionReport dr = e.getDispositionReport();
-        if (dr.getErrCode().equals(DispositionReport.E_authTokenExpired)) {
-          if (log.isDebugEnabled()) {
-            log.debug("Auth token expired, getting a new one " + getAgentIdentifier());
-          }
-          initializeAuthToken();
-          try {
-            proxy.save_service(authorization.getAuthInfoString(), services);
-          } catch (UDDIException ex) {
-            DispositionReport d = ex.getDispositionReport();
-            if (log.isErrorEnabled()) {
 
-              log.error("UDDIException faultCode:" + e.getFaultCode() +
-                        "\n operator:" + d.getOperator() +
-                        "\n generic:"  + d.getGeneric() +
-                        "\n errno:"    + d.getErrno() +
-                        "\n errCode:"  + d.getErrCode() +
-                        "\n errInfoText:" + d.getErrInfoText(), e);
-            }
-            return false;
-          }
-          catch (TransportException te) {
-            if (log.isErrorEnabled()) {
-              log.error("Caught a TransportException saving business", e);
-            }
-            return false;
-          }
-        } else {
-          if (log.isErrorEnabled()) {
+      } catch (UDDIException ex) {
+        DispositionReport d = ex.getDispositionReport();
+        if (log.isErrorEnabled()) {
 
+          log.error("UDDIException faultCode:" + ex.getFaultCode() +
+                    "\n operator:" + d.getOperator() +
+                    "\n generic:"  + d.getGeneric() +
+                    "\n errno:"    + d.getErrno() +
+                    "\n errCode:"  + d.getErrCode() +
+                    "\n errInfoText:" + d.getErrInfoText(), ex);
+        }
+        freeLock(token);
+        return false;
+      } catch (TransportException te) {
+        if (log.isErrorEnabled()) {
+          log.error("Exception", te);
+        }
+        freeLock(token);
+        return false;
+      }
+
+      boolean saveService = false;
+      while (!saveService) {
+        AuthToken currentToken = authorization;
+        try {
+          proxy.save_service(currentToken.getAuthInfoString(), services);
+          saveService = true;
+        } catch (UDDIException e) {
+          DispositionReport dr = e.getDispositionReport();
+          if (dr.getErrCode().equals(DispositionReport.E_authTokenExpired)) {
+            if (log.isDebugEnabled()) {
+              log.debug("Auth token expired, getting a new one " + getAgentIdentifier());
+            }
+            handleExpiration(currentToken, proxy);
+          } else {
             log.error("UDDIException faultCode:" + e.getFaultCode() +
                       "\n operator:" + dr.getOperator() +
                       "\n generic:"  + dr.getGeneric() +
@@ -578,16 +579,12 @@ public final class UDDI4JRegistrationServiceComponent
                       "\n errCode:"  + dr.getErrCode() +
                       "\n errInfoText:" + dr.getErrInfoText(), e);
           }
-
-          return false;
+          success = false;
+        } catch (TransportException te) {
+          log.error("Caught a TransportException saving business", te);
+          success = false;
         }
-      } catch (TransportException e) {
-        if (log.isErrorEnabled()) {
-          log.error("Exception", e);
-        }
-        success = false;
       }
-
       freeLock(token);
       return success;
     }
@@ -617,92 +614,96 @@ public final class UDDI4JRegistrationServiceComponent
                                                             serviceClass.getClassificationCode()));
       }
 
-      BusinessList businessList;
+      BusinessList businessList = null;
+
       try {
         businessList = proxy.find_business(namePatterns, null, null, bag, null, findQualifiers, 1);
-        Vector businessInfoVector  = businessList.getBusinessInfos().getBusinessInfoVector();
-        BusinessInfo businessInfo = null;
-        for (int i = 0; i < businessInfoVector.size(); i++) {
-          businessInfo = (BusinessInfo)businessInfoVector.elementAt(i);
-          if (log.isDebugEnabled()) {
-            log.debug("updateServiceDescription for organization: " + businessInfo.getNameString());
-          }
-          break;
-        }
-        if(businessInfo == null) {
-          if (log.isWarnEnabled()) {
-            log.warn("deleteServiceDescription, cannot find registration for: " + providerName);
-          }
+      } catch (UDDIException ex) {
+        DispositionReport d = ex.getDispositionReport();
+        if (log.isErrorEnabled()) {
 
-          freeLock(token);
-          return false;
+          log.error("UDDIException faultCode:" + ex.getFaultCode() +
+                    "\n operator:" + d.getOperator() +
+                    "\n generic:"  + d.getGeneric() +
+                    "\n errno:"    + d.getErrno() +
+                    "\n errCode:"  + d.getErrCode() +
+                    "\n errInfoText:" + d.getErrInfoText(), ex);
         }
-        Enumeration enum = businessInfo.getServiceInfos().getServiceInfoVector().elements();
-        //String serviceKey = new Vector();
-        if (enum.hasMoreElements()) {
-          service = (ServiceInfo) enum.nextElement();
-          proxy.delete_service(authorization.getAuthInfoString(), service.getServiceKey());
-          success = true;
-        } else {
-          if (log.isWarnEnabled()) {
-            log.warn("deleteServiceDescription, cannot find service for: " + providerName);
-          }
-          freeLock(token);
-          return false;
+      }
+      catch (TransportException te) {
+        if (log.isErrorEnabled()) {
+          log.error("Caught a TransportException deleting service ", te);
         }
-      } catch (UDDIException e) {
-        DispositionReport dr = e.getDispositionReport();
-        if (dr.getErrCode().equals(DispositionReport.E_authTokenExpired)) {
-          if (log.isDebugEnabled()) {
-            log.debug("Auth token expired, gettting a new token " + getAgentIdentifier());
-          }
-          initializeAuthToken();
-          try {
-            proxy.delete_service(authorization.getAuthInfoString(), service.getServiceKey());
-          } catch (UDDIException ex) {
+      }
+
+      if (businessList == null ) {
+        freeLock(token);
+        return false;
+      }
+
+      Vector businessInfoVector  = businessList.getBusinessInfos().getBusinessInfoVector();
+      BusinessInfo businessInfo = null;
+      for (int i = 0; i < businessInfoVector.size(); i++) {
+        businessInfo = (BusinessInfo)businessInfoVector.elementAt(i);
+        if (log.isDebugEnabled()) {
+          log.debug("updateServiceDescription for organization: " + businessInfo.getNameString());
+        }
+        break;
+      }
+
+      if(businessInfo == null) {
+        if (log.isWarnEnabled()) {
+          log.warn("deleteServiceDescription, cannot find registration for: " + providerName);
+        }
+
+        freeLock(token);
+        return false;
+      }
+
+
+      Enumeration enum = businessInfo.getServiceInfos().getServiceInfoVector().elements();
+      Vector serviceKeys = new Vector();
+      if (enum.hasMoreElements()) {
+        service = (ServiceInfo) enum.nextElement();
+        serviceKeys.add(service.getServiceKey());
+      }
+      boolean deleteService = false;
+      while (!deleteService) {
+        AuthToken currentToken = authorization;
+        try {
+          proxy.delete_service(currentToken.getAuthInfoString(), serviceKeys);
+          deleteService = true;
+        } catch (UDDIException ex) {
+          DispositionReport dr = ex.getDispositionReport();
+          if (dr.getErrCode().equals(DispositionReport.E_authTokenExpired)) {
+            if (log.isDebugEnabled()) {
+              log.debug("Auth token expired, gettting a new token " + getAgentIdentifier());
+            }
+            handleExpiration(currentToken, proxy);
+          } else {
             DispositionReport d = ex.getDispositionReport();
             if (log.isErrorEnabled()) {
 
-              log.error("UDDIException faultCode:" + e.getFaultCode() +
+              log.error("UDDIException faultCode:" + ex.getFaultCode() +
                         "\n operator:" + d.getOperator() +
                         "\n generic:"  + d.getGeneric() +
                         "\n errno:"    + d.getErrno() +
                         "\n errCode:"  + d.getErrCode() +
-                        "\n errInfoText:" + d.getErrInfoText(), e);
+                        "\n errInfoText:" + d.getErrInfoText(), ex);
             }
-            return false;
+            success = false;
           }
-          catch (TransportException te) {
-            if (log.isErrorEnabled()) {
-              log.error("Caught a TransportException deleting service ", e);
-            }
-            return false;
-          }
-        } else {
+        } catch (TransportException te) {
           if (log.isErrorEnabled()) {
-
-            log.error("UDDIException faultCode:" + e.getFaultCode() +
-                      "\n operator:" + dr.getOperator() +
-                      "\n generic:"  + dr.getGeneric() +
-                      "\n errno:"    + dr.getErrno() +
-                      "\n errCode:"  + dr.getErrCode() +
-                      "\n errInfoText:" + dr.getErrInfoText(), e);
+            log.error("Caught a TransportException deleting service ", te);
           }
-
-          return false;
+          success = false;
         }
-      } catch (TransportException e) {
-        if (log.isErrorEnabled()) {
-          log.error("Exception", e);
-        }
-        success = false;
       }
-
       freeLock(token);
       return success;
     }
   }
-
 
   /**
    * Add all queued up objects to the blackboard.
