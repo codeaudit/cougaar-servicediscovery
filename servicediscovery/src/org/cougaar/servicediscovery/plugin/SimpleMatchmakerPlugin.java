@@ -250,6 +250,8 @@ public class SimpleMatchmakerPlugin extends ComponentPlugin {
 		", alarm: " + alarm);
     }
 
+    // If we've waited to allow startup errors and now still getting errors,
+    // then log these as errors. Until then, log them as DEBUG.
     if(System.currentTimeMillis() > getWarningCutoffTime()) {
       if (e == null)
 	myLoggingService.error(message);
@@ -263,6 +265,14 @@ public class SimpleMatchmakerPlugin extends ComponentPlugin {
     }
   }
 
+  /**
+   * Process a real response from the YP for a lookup. Score it using the
+   * scoring function on the original query. If it scores well,
+   * then put this service provider on the response back to the SDClient. 
+   * If we don't have a good provider to send the SDClient, then check to 
+   * see if the YP said there was another higher (parent) YP server to check. 
+   * If there is, then post the query to that server. Otherwise, we've failed.
+   */
   protected void handleResponse(RQ r) {
     MMQueryRequest queryRequest = r.queryRequest;
     MMRoleQuery query = r.query;
@@ -305,9 +315,11 @@ public class SimpleMatchmakerPlugin extends ComponentPlugin {
 				 " Service score: " + score);
 	}
       }
-    }
+    } // end of loop over services found in the YP on last look-up
 
+    // If we didn't find any services that scored well
     if (scoredServiceDescriptions.isEmpty()) {
+      // Is there another higher-level YP community?
       if (!r.nextContextFailed) {
 	// We just didn't find any yet! Re-post, so we recurse up to the next higher
 	// "context", or YP Community. (in our example, from Cambridge to MA)
@@ -317,6 +329,7 @@ public class SimpleMatchmakerPlugin extends ComponentPlugin {
 				   " in " + r.currentYPContext +
 				   " retrying in next context.");
 	  }
+	  // post the query to the next YP server
 	  postRQ(r);
       } else {
 	// Couldn't find another YPServer to search
@@ -357,17 +370,20 @@ public class SimpleMatchmakerPlugin extends ComponentPlugin {
     return myWarningCutoffTime;
   }
   
+  /**
+   * Inner class representing status of a query to send to the YP.
+   */
   private class RQ {
-    MMQueryRequest queryRequest;
-    MMRoleQuery query;
-    RegistryQuery rq;
+    MMQueryRequest queryRequest; // object sent from SDClient
+    MMRoleQuery query; // contained in above
+    RegistryQuery rq; // The actual query to send to the YP
 
-    Collection services;
-    Exception exception;
+    Collection services; // services found in YP
+    Exception exception; // exception, if any, from last YP query
     boolean complete = false;
-    Object previousYPContext = null;
-    Object currentYPContext = null;
-    boolean nextContextFailed = false;
+    Object previousYPContext = null; // last YP server searched
+    Object currentYPContext = null; // next YP server to search
+    boolean nextContextFailed = false; // is there a next YP server/
 
 
     RQ(MMQueryRequest queryRequest, MMRoleQuery query, RegistryQuery rq) {
@@ -383,10 +399,15 @@ public class SimpleMatchmakerPlugin extends ComponentPlugin {
       myLoggingService.debug(": postRQ " + r + 
 			     " (" + r.rq + ")" );
     }
+
+    // The list of outstanding requests gets touched by the callback (YP) thread
+    // and the plugin thread, so synchronize to avoid concurrent-mod exceptions.
     synchronized (myOutstandingRQs) {
       myOutstandingRQs.add(r);
     }
 
+    // MatchmakerStubPlugin has another alternative -- where there is a single
+    // fixed YP server
     findServiceWithDistributedYP(r);
   }
 
@@ -395,14 +416,18 @@ public class SimpleMatchmakerPlugin extends ComponentPlugin {
     if (myLoggingService.isDebugEnabled()) {
       myLoggingService.debug(": pendRQ " + r + " (" + r.rq + ")");
     }
+
+    // The current request finished (for good or ill)
     r.complete = true;
+
+    // Again, since these get touched in 2 threads, syncrhonize
     synchronized (myOutstandingRQs) {
       myOutstandingRQs.remove(r);
     }
     synchronized (myPendingRQs) {
       myPendingRQs.add(r);
     }
-    // tell the plugin to wake up
+    // tell the plugin to wake up, so the execute() method gets called
     getBlackboardService().signalClientActivity();
   }
 
@@ -431,6 +456,11 @@ public class SimpleMatchmakerPlugin extends ComponentPlugin {
 			     " using YPCommunity search.");
     }
     
+    // This is the main method. It issues the query to the YP server, 
+    // through the RegistryQueryService, which is provided by the 
+    // o.c.sd.service.UDDI4JRegistrationQueryServiceComponent.
+    // Here, we tell the YP to start looking in the currentYPContext (YP server),
+    // satisfying the given query, and to let us know using the given callback.
     myRegistryQueryService.findServiceAndBinding(r.currentYPContext, 
 						 r.rq,
 						 new RegistryQueryService.CallbackWithContext() {
@@ -441,6 +471,7 @@ public class SimpleMatchmakerPlugin extends ComponentPlugin {
 	  myLoggingService.debug(": results = " + result + 
 				 " for " + r.currentYPContext);
 	}
+	// And update the queues
 	flush();
       }
 						     
@@ -452,6 +483,7 @@ public class SimpleMatchmakerPlugin extends ComponentPlugin {
 				 r.queryRequest + 
 				 " context =  " + r.currentYPContext, e);
 	}
+	// And update the queues
 	flush();
       }
       
@@ -480,10 +512,10 @@ public class SimpleMatchmakerPlugin extends ComponentPlugin {
     });
   } // end of findServiceWithDistributedYP
 
-  /** Alarm to add a post a query to the YP after some time. */
+  /** Alarm to post a query to the YP after some time. */
   public class QueryAlarm implements Alarm {
-    private long expiresAt;
-    private boolean expired = false;
+    private long expiresAt; // when the alarm will fire
+    private boolean expired = false; // has the alarm fired
     private RQ rq = null;
 
     public QueryAlarm (RQ rq, long expirationTime) {
@@ -496,7 +528,7 @@ public class SimpleMatchmakerPlugin extends ComponentPlugin {
     public synchronized void expire() {
       if (!expired) {
         expired = true;
-	rq.complete = false;
+	rq.complete = false; // mark the query as in-progress
 	postRQ(rq);
       }
     }
