@@ -454,7 +454,6 @@ public class LineagePlugin extends SimplePlugin
 
       if (localLineage != null) {
 	localLineages.remove(localLineage);
-	//relayLineages.remove(relayLineage);
 	relayLineageIterator.remove();
 
 	// Modify local lineage schedule if necessary
@@ -467,12 +466,15 @@ public class LineagePlugin extends SimplePlugin
 							    false);
 	  
 	  if (!modifiedSchedule.equals(localSchedule)) {
-	    ((LineageImpl) localLineage).setSchedule(modifiedSchedule);
-	    localPublishChange(localLineage);
-
-	    if (modifiedSchedule.size() == 0) {
-	      myLoggingService.warn(getAgentIdentifier() + " has Lineage: " +
-				    localLineage + " which is never active.");
+	    if (!modifiedSchedule.isEmpty()) {
+	      ((LineageImpl) localLineage).setSchedule(modifiedSchedule);
+	      localPublishChange(localLineage);
+	    } else {
+	      if (myLoggingService.isDebugEnabled()) {
+		myLoggingService.debug(getAgentIdentifier() + " removing Lineage: " +
+				       localLineage + " which is never active.");
+	      }
+	      localPublishRemove(localLineage);
 	    }
 	  }
 	}
@@ -519,21 +521,36 @@ public class LineagePlugin extends SimplePlugin
 							  relayLineage,
 							  false);
 	((LineageImpl) localLineage).setSchedule(modifiedSchedule);
-	
-	if (modifiedSchedule.size() == 0) {
-	  myLoggingService.warn(getAgentIdentifier() + " has Lineage: " +
-				localLineage + " which is never active.");
-	}
       }
 
-      if (newLineage) {
-	if (myLoggingService.isDebugEnabled()) {
-	  myLoggingService.debug(getAgentIdentifier() + ": updateLineage() " +
-				 "adding lineage - " + localLineage);
+      // Don't publish lineage which is never valid
+      if (localLineage.getSchedule().isEmpty()) {
+	if (newLineage) {
+	  if (myLoggingService.isDebugEnabled()) {
+	    myLoggingService.debug(getAgentIdentifier() + " ignoring Lineage: " +
+				   localLineage + " which is never active.");
+	  }
+	} else {
+	  if (myLoggingService.isDebugEnabled()) {
+	    myLoggingService.debug(getAgentIdentifier() + " removing Lineage: " +
+				   localLineage + " which is never active.");
+	  }
+	  localPublishRemove(localLineage);
 	}
-	localPublishAdd(localLineage);
       } else {
-	localPublishChange(localLineage);
+	if (newLineage) {
+	  if (myLoggingService.isDebugEnabled()) {
+	    myLoggingService.debug(getAgentIdentifier() + ": updateLineage() " +
+				   "adding lineage - " + localLineage);
+	  }
+	  localPublishAdd(localLineage);
+	} else {
+	  if (myLoggingService.isDebugEnabled()) {
+	    myLoggingService.debug(getAgentIdentifier() + ": updateLineage() " +
+				   "modifying lineage - " + localLineage);
+	  }
+	  localPublishChange(localLineage);
+	}
       }
     }
 
