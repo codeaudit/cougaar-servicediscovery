@@ -420,8 +420,6 @@ public abstract class SDRegistrationPluginBase extends ComponentPlugin {
     return providerCapabilities;
   }
 
-  private boolean quiescentState = false;
-
   private boolean reregistrationKludgeNeeded(Task task) {
     PlanElement pe = task.getPlanElement();
     // BOZO - special rehydration kludge for quiesence monitor.
@@ -439,8 +437,15 @@ public abstract class SDRegistrationPluginBase extends ComponentPlugin {
 	quiescenceReportService.setQuiescentState();
 	if (log.isInfoEnabled()) {
 	  log.info(getAgentIdentifier() + " done with SDRegistration. Now quiescent.");
-	  quiescentState = true;
 	}
+      } else if (registerTaskSubscription.isEmpty()) {
+	// no point in checking for the reregistration kludge
+	quiescenceReportService.clearQuiescentState();
+	if (log.isInfoEnabled()) {
+	  log.info(getAgentIdentifier() + 
+		   " waiting to complete registration - not quiescent.");
+	}
+	return;
       } else {
 	for (Iterator iterator = registerTaskSubscription.iterator();
 	     iterator.hasNext();) {
@@ -450,11 +455,8 @@ public abstract class SDRegistrationPluginBase extends ComponentPlugin {
 	    // May be waiting on a callback or a community or an SCA. Say not Q
 	    quiescenceReportService.clearQuiescentState();
 	    if (log.isInfoEnabled()) {
-	      if (quiescentState == true) {
-		log.info(getAgentIdentifier() + " toggling quiescent state from true to false.");
-		quiescentState = false;
-	      }
-	      log.info(getAgentIdentifier() + " waiting to complete registration - not quiescent.");
+	      log.info(getAgentIdentifier() + 
+		       " waiting to complete registration - not quiescent.");
 	    }
 	    return;
 	  }
@@ -465,6 +467,7 @@ public abstract class SDRegistrationPluginBase extends ComponentPlugin {
 	// monitor. Plugin will reregister on rehydration because it doesn't
 	// know whether the previous registration still exists but we don't 
 	// want to perturb quiescence state.
+	quiescenceReportService.setQuiescentState();
 	if (log.isInfoEnabled()) {
 	  log.info(getAgentIdentifier() + 
 		   ": updateQuiescenceService() " +
