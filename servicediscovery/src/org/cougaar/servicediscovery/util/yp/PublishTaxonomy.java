@@ -35,6 +35,8 @@ import org.uddi4j.UDDIException;
 import org.uddi4j.client.UDDIProxy;
 
 import org.uddi4j.datatype.tmodel.*;
+import org.uddi4j.response.DispositionReport;
+import org.uddi4j.response.TModelDetail;
 import org.uddi4j.util.*;
 
 
@@ -63,7 +65,7 @@ public class PublishTaxonomy extends ComponentSupport {
     proxy = ypService.getYP("3ID");
     test(proxy);
 
-    test(proxy);
+    proxy = null;
   }
 
 
@@ -86,10 +88,118 @@ public class PublishTaxonomy extends ComponentSupport {
       
       Vector tModels = new Vector();
       tModels.addElement(tModel);
-      proxy.save_tModel(proxy.get_authToken(userid, password).getAuthInfoString(), tModels);
+      TModelDetail tModelDetail = 
+	proxy.save_tModel(proxy.get_authToken(userid, password).getAuthInfoString(), tModels);
     } catch (UDDIException ue) {
+      DispositionReport dr = ue.getDispositionReport();
+      if (dr!=null) {
+	System.out.println("UDDIException faultCode:" + ue.getFaultCode() +
+			   "\n operator:" + dr.getOperator() +
+			   "\n generic:"  + dr.getGeneric() +
+			   "\n errno:"    + dr.getErrno() +
+			   "\n errCode:"  + dr.getErrCode() +
+			   "\n errInfoText:" + dr.getErrInfoText());
+      }
       ue.printStackTrace();
-      throw(ue);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
+  public static void createBindingTModels() {
+    // Creating TModels for our binding templates
+    Vector tModels = new Vector();
+    Vector krList = new Vector();
+    
+    TModel cougaarTModel = new TModel("", "COUGAAR:Binding");
+    cougaarTModel.setDefaultDescriptionString("Protocol for COUGAAR services");
+    tModels.add(cougaarTModel);
+    try {
+      TModelDetail tModelDetail = 
+	proxy.save_tModel(proxy.get_authToken(userid, password).getAuthInfoString(), tModels);
+
+      System.out.println("published COUGAAR:Binding tmodel");
+
+      tModels = tModelDetail.getTModelVector();
+      cougaarTModel = (TModel) tModels.elementAt(0);
+
+      CategoryBag categoryBag = new CategoryBag();
+      KeyedReference wsdlKr = new KeyedReference("uddi-org:types", "wsdlSpec");
+      wsdlKr.setTModelKey(cougaarTModel.getTModelKey());
+      krList.add(wsdlKr);
+      categoryBag.setKeyedReferenceVector(krList);
+      cougaarTModel.setCategoryBag(categoryBag);
+
+      tModels.clear();
+      tModels.add(cougaarTModel);
+
+      tModelDetail = 
+	proxy.save_tModel(proxy.get_authToken(userid, password).getAuthInfoString(), tModels);
+
+      System.out.println("published COUGAAR:Binding model with keyedRef");
+    // Handle possible errors
+    } catch (UDDIException e) {
+      DispositionReport dr = e.getDispositionReport();
+      if (dr!=null) {
+	System.out.println("UDDIException faultCode:" + e.getFaultCode() +
+			   "\n operator:" + dr.getOperator() +
+			   "\n generic:"  + dr.getGeneric() +
+			   "\n errno:"    + dr.getErrno() +
+			   "\n errCode:"  + dr.getErrCode() +
+			   "\n errInfoText:" + dr.getErrInfoText());
+      }
+      e.printStackTrace();
+      // Catch any other exception that may occur
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+
+    tModels.clear();
+
+    TModel soapTModel = new TModel("", "SOAP:Binding");
+    soapTModel.setDefaultDescriptionString("SOAP binding for non-COUGAAR services");
+    tModels.add(soapTModel);
+    try {
+      TModelDetail tModelDetail = 
+	proxy.save_tModel(proxy.get_authToken(userid, password).getAuthInfoString(), tModels);
+
+      System.out.println("published SOAP:Binding tmodel");
+
+      tModels = tModelDetail.getTModelVector();
+      soapTModel = (TModel) tModels.elementAt(0);
+    
+      CategoryBag categoryBag = new CategoryBag();
+      KeyedReference soapKr = new KeyedReference("uddi-org:types", "soapSpec");
+      soapKr.setTModelKey(soapTModel.getTModelKey());
+      // described by WSDL
+      krList = new Vector();
+      krList.add(soapKr);
+      KeyedReference wsdlKr = new KeyedReference("uddi-org:types", "wsdlSpec");
+      wsdlKr.setTModelKey(soapTModel.getTModelKey());
+      krList.add(wsdlKr);
+      categoryBag.setKeyedReferenceVector(krList);
+      soapTModel.setCategoryBag(categoryBag);
+
+      tModels.clear();
+      tModels.add(soapTModel);
+    
+      tModelDetail = 
+	proxy.save_tModel(proxy.get_authToken(userid, password).getAuthInfoString(), tModels);
+
+      System.out.println("published SOAP:Binding model with keyedRef");
+    // Handle possible errors
+    } catch (UDDIException e) {
+      DispositionReport dr = e.getDispositionReport();
+      if (dr!=null) {
+	System.out.println("UDDIException faultCode:" + e.getFaultCode() +
+			   "\n operator:" + dr.getOperator() +
+			   "\n generic:"  + dr.getGeneric() +
+			   "\n errno:"    + dr.getErrno() +
+			   "\n errCode:"  + dr.getErrCode() +
+			   "\n errInfoText:" + dr.getErrInfoText());
+      }
+      e.printStackTrace();
+      // Catch any other exception that may occur
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -205,8 +315,11 @@ public class PublishTaxonomy extends ComponentSupport {
       genTaxonomy(UDDIConstants.ORGANIZATION_TYPES, UDDIConstants.ORGANIZATION_TYPES_UUID);
       genTaxonomy(UDDIConstants.SOURCING_CAPABILITY_SCHEME, UDDIConstants.SOURCING_CAPABILITY_SCHEME_UUID);
       genTaxonomy(UDDIConstants.SUPPORT_COMMAND_ASSIGNMENT, UDDIConstants.SUPPORT_COMMAND_ASSIGNMENTI_UUID);
+
+      createBindingTModels();
       
     } catch (Exception e){
+      e.printStackTrace();
     }
   }
 }
