@@ -464,9 +464,16 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
             serviceInfos.add(si);
           } else {
             // Get all the services
-            serviceInfos = createServiceInfos(be.getBusinessServices(), be.getDefaultNameString(), bzClass);
+            if (be.getBusinessServices() != null) {
+              serviceInfos = createServiceInfos(be.getBusinessServices(), be.getDefaultNameString(), bzClass);
+            } else {
+              if (log.isDebugEnabled()) {
+                log.debug("No services registered with provider " + be.getDefaultNameString());
+              }
+              serviceInfos = Collections.EMPTY_LIST;
+            }
+            providers.add(new ProviderInfo(be.getDefaultNameString(), bzClass, serviceInfos));
           }
-          providers.add(new ProviderInfo(be.getDefaultNameString(), bzClass, serviceInfos));
         }
       } catch (UDDIException e) {
         if (log.isErrorEnabled()) {
