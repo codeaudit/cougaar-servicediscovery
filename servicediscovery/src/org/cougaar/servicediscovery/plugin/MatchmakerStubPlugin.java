@@ -259,7 +259,9 @@ public class MatchmakerStubPlugin extends SimplePlugin {
       new QueryAlarm(r, getAlarmService().currentTimeMillis() + rand);
     getAlarmService().addAlarm(alarm);
     // Alarms silently make us non-quiescent -- so keep track of when we have any
-    myOutstandingAlarms.add(alarm);
+    synchronized (myOutstandingAlarms) {
+      myOutstandingAlarms.add(alarm);
+    }
 
     if (myLoggingService.isDebugEnabled()) {
       myLoggingService.debug(getAgentIdentifier() + 
@@ -850,7 +852,9 @@ public class MatchmakerStubPlugin extends SimplePlugin {
 	  myLoggingService.debug("expire: alarm = " + this + 
 				 " for RQ = " + rq);
 	}
-	myOutstandingAlarms.remove(this);
+	synchronized (myOutstandingAlarms) {
+	  myOutstandingAlarms.remove(this);
+	}
         expired = true;
 	rq.complete = false;
 	postRQ(rq);
@@ -861,7 +865,9 @@ public class MatchmakerStubPlugin extends SimplePlugin {
     public synchronized boolean cancel() {
       boolean was = expired;
       expired = true;
-      myOutstandingAlarms.remove(this);
+      synchronized (myOutstandingAlarms) {
+	myOutstandingAlarms.remove(this);
+      }
       return was;
     }
     public String toString() {
