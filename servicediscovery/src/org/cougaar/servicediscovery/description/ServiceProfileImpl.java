@@ -35,7 +35,6 @@ import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.Statement;
 import com.hp.hpl.jena.rdf.model.StmtIterator;
-import com.hp.hpl.jena.ontology.daml.DAMLInstance;
 
 /**
  * Implements ServiceProfile
@@ -43,10 +42,10 @@ import com.hp.hpl.jena.ontology.daml.DAMLInstance;
 
 public class ServiceProfileImpl implements ServiceProfile {
 
-  private DAMLInstance serviceProfile;
-  private DAMLInstance serviceGrounding;
+  private Resource serviceProfile;
+  private Resource serviceGrounding;
 
-  public ServiceProfileImpl(DAMLInstance serviceProfile, DAMLInstance serviceGrounding) {
+  public ServiceProfileImpl(Resource serviceProfile, Resource serviceGrounding) {
     this.serviceProfile = serviceProfile;
     this.serviceGrounding = serviceGrounding;
   }

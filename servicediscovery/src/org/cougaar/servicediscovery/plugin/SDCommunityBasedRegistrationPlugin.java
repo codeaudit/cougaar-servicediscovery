@@ -48,7 +48,7 @@ import org.cougaar.servicediscovery.service.RegistrationService;
 import org.cougaar.servicediscovery.util.UDDIConstants;
 
 /**
- * Read local agent DAML profile file. Use the listed roles and register this agent with those
+ * Read local agent OWL profile file. Use the listed roles and register this agent with those
  * roles in the YP.
  **/
 public class SDCommunityBasedRegistrationPlugin extends SDRegistrationPluginBase {

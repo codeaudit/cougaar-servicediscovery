@@ -55,15 +55,15 @@ public interface ProviderDescription {
 
 
   /**
-   * Writes the DAMLS files that describe this provider. The
+   * Writes the OWL files that describe this provider. The
    * outputFileBase may be an entire directory and base, such
    * as "C:/cougaar/servicedisovery/data/agentXYZ" or just a base
    * such as "agentXYZ". If outputFileBase is the empty string,
    * the provider name will be used as a default base. Right
-   * now the only file that will be written is outputFileBase.profile.daml,
+   * now the only file that will be written is outputFileBase.profile.owl,
    * but later grounding file(s) will aslo be written.
    */
-  public void writeDAMLSFiles(String outputFileBase);
+  public void writeOWLFiles(String outputFileBase);
 
 
   /**
@@ -77,5 +77,5 @@ public interface ProviderDescription {
    * of the provider, such as their location and contact information.
    */
 
-  public boolean parseDAML(String fileName);
+  public boolean parseOWL(String fileName);
 }

@@ -66,7 +66,7 @@ import org.cougaar.util.TimeSpan;
 import org.cougaar.util.UnaryPredicate;
 
 /**
- * Read local agent DAML profile file. Use the listed roles and register this agent with those
+ * Read local agent OWL profile file. Use the listed roles and register this agent with those
  * roles in the YP.
  **/
 public abstract class SDRegistrationPluginBase extends ComponentPlugin {
@@ -74,7 +74,7 @@ public abstract class SDRegistrationPluginBase extends ComponentPlugin {
   protected static final long DEFAULT_START = TimeSpan.MIN_VALUE;
   protected static final long DEFAULT_END = TimeSpan.MAX_VALUE;
 
-  protected static final String DAML_IDENTIFIER = ".profile.daml";
+  protected static final String OWL_IDENTIFIER = ".profile.owl";
 
   protected LoggingService log;
   protected RegistrationService registrationService = null;
@@ -275,24 +275,24 @@ public abstract class SDRegistrationPluginBase extends ComponentPlugin {
   protected  ProviderDescription getPD() {
     if (provD == null) {
       if (log.isDebugEnabled()) {
-	log.debug(getAgentIdentifier() + ": getPD() parsing DAML.");
+	log.debug(getAgentIdentifier() + ": getPD() parsing OWL.");
       }
       
       ProviderDescription pd = new ProviderDescriptionImpl();
       try {
-	boolean ok = pd.parseDAML(getAgentIdentifier() + DAML_IDENTIFIER);
+	boolean ok = pd.parseOWL(getAgentIdentifier() + OWL_IDENTIFIER);
 	
 	if (ok && (pd.getProviderName() != null)) {
 	  if (log.isDebugEnabled()) {
 	    log.debug(getAgentIdentifier() + 
-		      ": getPD() successfully parsed DAML.");
+		      ": getPD() successfully parsed OWL.");
 	  }
 	  
 	  provD = pd;
 	} else {
 	  if (log.isDebugEnabled()) {
 	    log.debug(getAgentIdentifier() + 
-		      ": getPD() unable to parse DAML." +
+		      ": getPD() unable to parse OWL." +
 		      " ok = " + ok);
 	  }
 	}
@@ -369,7 +369,7 @@ public abstract class SDRegistrationPluginBase extends ComponentPlugin {
   protected abstract  boolean registrationComplete();
 
   /* Returns initial version of ProviderCapabilities created from the 
-   * provider DAML file.
+   * provider OWL file.
    */
   protected ProviderCapabilities createProviderCapabilities(){
     ProviderDescription pd = getPD();
@@ -757,11 +757,11 @@ public abstract class SDRegistrationPluginBase extends ComponentPlugin {
     return getProviderFile().exists();
   }
   
-  // Get the DAML service provider file
+  // Get the OWL service provider file
   protected File getProviderFile() {
-    String damlFileName = getAgentIdentifier().toString() + DAML_IDENTIFIER;
+    String owlFileName = getAgentIdentifier().toString() + OWL_IDENTIFIER;
     return new File(org.cougaar.servicediscovery.Constants.getServiceProfileURL().getFile() +
-		    damlFileName);
+		    owlFileName);
   }
 
   public class RetryAlarm implements Alarm {

@@ -25,8 +25,8 @@
  */
 
 /**
- * This class describes a DAML-S profile for Jena. This class will probably
- * be replaced by a class written by the DAML-S people, but we need a placeholder
+ * This class describes a OWL profile for Jena. This class will probably
+ * be replaced by a class written by the OWL people, but we need a placeholder
  * for now.
  */
 package org.cougaar.servicediscovery.description;
@@ -44,9 +44,9 @@ import com.hp.hpl.jena.vocabulary.RDF;
  */
 public class Profile {
 
-  protected static final String cougaar_uri = "http://cougaar.daml#";
-  protected static final String profile_uri ="http://www.daml.org/services/daml-s/2001/10/Profile.daml#";
-  protected static final String service_uri = "http://www.daml.org/services/daml-s/2001/10/Service.daml#";
+  protected static final String cougaar_uri = "http://cougaar.owl#";
+  protected static final String profile_uri = "http://www.daml.org/services/owl-s/1.0/Profile.owl#";
+  protected static final String service_uri = "http://www.daml.org/services/owl-s/1.0/Service.owl#"; 
 
   //ServiceProfile level properties
   static String nSERVICEPROFILE = "ServiceProfile";
@@ -104,12 +104,6 @@ public class Profile {
 
   static {
     try {
-//       String s = ConfigFinder.getInstance().locateFile("cougaar.daml").getAbsolutePath();
-//       s = s.replaceFirst(":","");
-//       s = s.replace('\\', '/');
-//       cougaar_uri = "file://" + s + "#";
-//      cougaar_uri = "http://localhost:8800/$DAML/cougaar.daml#";
-
       // Use Jena cache, allowing install independent service profiles
 
       //ServiceProfile level properties
@@ -150,3 +144,12 @@ public class Profile {
     }
   }
 }
+
+
+
+
+
+
+
+
+

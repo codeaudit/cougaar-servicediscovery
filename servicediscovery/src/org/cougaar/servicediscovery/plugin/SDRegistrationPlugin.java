@@ -38,7 +38,7 @@ import org.cougaar.servicediscovery.service.RegistrationService;
 import org.cougaar.servicediscovery.util.UDDIConstants;
 
 /**
- * Read local agent DAML profile file. Use the listed roles and register this agent with those
+ * Read local agent OWL profile file. Use the listed roles and register this agent with those
  * roles in the YP.
  **/
 public class SDRegistrationPlugin extends SDRegistrationPluginBase {
@@ -235,7 +235,7 @@ public class SDRegistrationPlugin extends SDRegistrationPluginBase {
       }
     } else {
       if (log.isDebugEnabled()) {
-	log.debug("Agent " + getAgentIdentifier() + " Not Registering, no daml file.");
+	log.debug("Agent " + getAgentIdentifier() + " Not Registering, no owl file.");
       }
     }
   }

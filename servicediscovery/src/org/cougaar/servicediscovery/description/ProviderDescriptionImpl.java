@@ -28,14 +28,15 @@ package org.cougaar.servicediscovery.description;
 
 import com.hp.hpl.jena.ontology.OntDocumentManager;
 import com.hp.hpl.jena.ontology.OntModelSpec;
-import com.hp.hpl.jena.ontology.daml.DAMLClass;
-import com.hp.hpl.jena.ontology.daml.DAMLInstance;
-import com.hp.hpl.jena.ontology.daml.DAMLModel;
+import com.hp.hpl.jena.ontology.OntModel;
+import com.hp.hpl.jena.ontology.OntResource;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.RDFException;
+import com.hp.hpl.jena.rdf.model.RDFNode; 
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.Statement;
 import com.hp.hpl.jena.shared.JenaException;
+import com.hp.hpl.jena.vocabulary.RDF;
 
 import org.cougaar.servicediscovery.Constants;
 import org.cougaar.util.log.Logger;
@@ -51,15 +52,15 @@ import java.util.Iterator;
 
 /**
  * Implements ProviderDescription
- * Wraps the Jena parser object (DAML model) with convenience accessors
- * At the ProviderDescription level, a DAMLS ServiceProvider is associated
- * with a number of ServiceDescriptions (which correspond to DAMLS ServiceProfiles).
+ * Wraps the Jena parser object ( model) with convenience accessors
+ * At the ProviderDescription level, an OWL ServiceProvider is associated
+ * with a number of ServiceDescriptions (which correspond to OWL ServiceProfiles).
  */
 
 public class ProviderDescriptionImpl implements ProviderDescription {
 
   //store the model that Jena parses from the file
-  private DAMLModel model = null;
+  protected OntModel model = null;
   private String fileName;
   private String cougaarInstallPath;
 
@@ -73,25 +74,65 @@ public class ProviderDescriptionImpl implements ProviderDescription {
 
   public static void main (String args[]) {
 
-    ProviderDescription pd = 
+    ProviderDescriptionImpl pd = 
       new ProviderDescriptionImpl();
-    pd.parseDAML("123-MSB.profile.daml");
-    System.out.println(pd.toString());
+    boolean status = pd.parseOWL("1-AD.ARMY.MIL.profile.owl");
+
+    logger.shout("main: Model class = " + pd.model.getClass());
+
+    Resource serviceProfileResource = 
+      pd.model.getResource(Profile.SERVICEPROFILE.getURI());
+    
+    logger.shout("main: serviceProfileResource = " + serviceProfileResource);
+    
+    Collection serviceProfiles = pd.getServicePs();
+    for (Iterator iterator = serviceProfiles.iterator();
+	 iterator.hasNext();) { 
+      Resource serviceProfile = (Resource) iterator.next();
+
+      logger.shout("\n serviceProfileResource = " + serviceProfile + 
+		   " class = " + serviceProfile.getClass() +
+		   " has uri = " + serviceProfile.getURI());      
+      for (Iterator propertiesIterator = serviceProfile.listProperties();
+	   propertiesIterator.hasNext();) {
+	logger.shout("\t property = " + propertiesIterator.next());
+      }
+    }
+
+    Statement serviceProvider = pd.getServiceProvider();
+    logger.shout("\n serviceProvider = " + serviceProvider + 
+		 " resource = " + serviceProvider.getResource() +
+		 " resource class = " + 
+		 serviceProvider.getResource().getClass());
+    logger.shout("\n serviceProviderName = " + pd.getProviderName());
+    
+    serviceProfiles = pd.getServiceProfiles();
+    for (Iterator iterator = serviceProfiles.iterator();
+	 iterator.hasNext();) { 
+      ServiceProfile serviceProfile = (ServiceProfile) iterator.next();
+
+      logger.shout("\n serviceProfile = " + serviceProfile);
+    }
+    
+    logger.shout("\n organizationType  = " + pd.getOrganizationType());
+
+    logger.shout("\n ServiceProfile uri = " + 
+		 Profile.SERVICEPROFILE.getURI());
   }
 
   /**
-   * This constructor builds an instance using a DAML-S file that is expected
+   * This constructor builds an instance using a OWL file that is expected
    * to contain at least one service profile and one service provider.
    */
   public ProviderDescriptionImpl() {
     this.cougaarInstallPath = System.getProperty("org.cougaar.install.path", "");
   }
 
-  public boolean parseDAML(String damlFileName) {
+  public boolean parseOWL(String owlFileName) {
     synchronized (LOCKED) {
       if (logger.isDebugEnabled()) {
-	logger.debug("ProviderDescription.parseDAML for " + 
-		     damlFileName + " LOCKED == " +  LOCKED);
+	logger.debug("ProviderDescription.parseOWL for " + 
+		     owlFileName + " LOCKED == " +  LOCKED);
       }
       if (LOCKED == Boolean.TRUE) {
 	return false;
@@ -101,16 +142,16 @@ public class ProviderDescriptionImpl implements ProviderDescription {
     }
 
     if (logger.isDebugEnabled()) {
-      logger.debug("ProviderDescription.parseDAML starting to parse " + 
-		   damlFileName);
+      logger.debug("ProviderDescription.parseOWL starting to parse " + 
+		   owlFileName);
     }
 
-    this.fileName = damlFileName;
+    this.fileName = owlFileName;
 
     InputStream in = null;
     try {
 
-      URL inURL = new URL(Constants.getServiceProfileURL(), damlFileName);
+      URL inURL = new URL(Constants.getServiceProfileURL(), owlFileName);
 
       in = inURL.openStream();
 
@@ -125,7 +166,7 @@ public class ProviderDescriptionImpl implements ProviderDescription {
       }
     }
 
-    model = ModelFactory.createDAMLModel();
+    model = ModelFactory.createOntologyModel();
     OntDocumentManager mgr = model.getDocumentManager();
 
     String prefix = "file:";
@@ -135,30 +176,27 @@ public class ProviderDescriptionImpl implements ProviderDescription {
     prefix = prefix + "servicediscovery" + File.separator + "data" +
             File.separator + "cached" + File.separator;
 
+    OntModelSpec s = new OntModelSpec( OntModelSpec.OWL_MEM);
+    s.setDocumentManager( mgr );
 
-    mgr.addAltEntry("http://cougaar.daml",
-              prefix + "cougaar.daml");
+    mgr.addAltEntry("http://cougaar.owl",
+              prefix + "cougaar.owl");
     mgr.addAltEntry("http://www.w3.org/1999/02/22-rdf-syntax-ns",
               prefix + "rdfSyntaxNS.rdf");
     mgr.addAltEntry("http://www.w3.org/2000/01/rdf-schema",
               prefix + "rdfSchema.rdf");
-    mgr.addAltEntry("http://www.daml.org/2001/03/daml+oil",
-              prefix + "damlOil.daml");
+    mgr.addAltEntry("http://www.w3.org/2002/07/owl",
+              prefix + "owl.rdf");
     mgr.addAltEntry("http://www.w3.org/2000/10/XMLSchema.xsd",
               prefix + "XMLSchema.xsd");
-    mgr.addAltEntry("http://www.daml.org/services/daml-s/2001/10/Service.daml",
-              prefix + "Service.daml");
-    mgr.addAltEntry("http://www.daml.org/services/daml-s/2001/10/Process.daml",
-              prefix + "Process.daml");
-    mgr.addAltEntry("http://www.daml.org/services/daml-s/2001/10/Profile.daml",
-              prefix + "Profile.daml");
+    mgr.addAltEntry("http://www.daml.org/services/owl-s/1.0/Service.owl",
+              prefix + "Service.owl");
+    mgr.addAltEntry("http://www.daml.org/services/owl-s/1.0/Process.owl",
+              prefix + "Process.owl");
+    mgr.addAltEntry("http://www.daml.org/services/owl-s/1.0/Profile.owl",
+              prefix + "Profile.owl");
     mgr.addAltEntry("http://www.ai.sri.com/daml/ontologies/sri-basic/1-0/Time.daml",
               prefix + "Time.daml");
-
-    OntModelSpec s = new OntModelSpec( OntModelSpec.DAML_MEM);
-    s.setDocumentManager( mgr );
-
-    System.out.println("");
 
     try {
         model.read(in, "");
@@ -168,16 +206,16 @@ public class ProviderDescriptionImpl implements ProviderDescription {
         " you should examine the URL and confirm that it exists and\n" +
         " is currently accessible. If the URL includes www.daml.org,\n" +
         " this error means the daml site is temporarily unavailable.\n" +
-        " If the URL is a filepath or includes \"cougaar.daml\", this error\n" +
-        " probably means that your profile.daml files are inconsistent with\n" +
+        " If the URL is a filepath or includes \"cougaar.owl\", this error\n" +
+        " probably means that your profile.owl files are inconsistent with\n" +
         " your installation. One common way for this to happen is to have\n" +
-        " generated your profile.daml files from a perl script using an\n" +
+        " generated your profile.owl files from a perl script using an\n" +
         " agent-input.txt file containing an incorrect or incorrectly formatted\n" +
         " cougaarInstallPath. Alternatively, you may have generated your\n" +
-        " profile.daml files from a ruby script while your %COUGAAR_INSTALL_PATH%\n" +
+        " profile.owl files from a ruby script while your %COUGAAR_INSTALL_PATH%\n" +
         " environment variable was not set correctly. Check these things and try\n" +
-        " regenerating your profile.daml files. \n";
-      logger.error(helpMessage + "Error parsing DAML file [" + fileName + "]\n" +
+        " regenerating your profile.owl files. \n";
+      logger.error(helpMessage + "Error parsing OWL file [" + fileName + "]\n" +
 		"  Error Number: " + e1.getErrorCode() + "\n" +
 		"  Error Message: " + e1.getMessage() + "\n" +
 		"  Error StackTrace: " + e1.getStackTrace() + "\n" +
@@ -186,11 +224,28 @@ public class ProviderDescriptionImpl implements ProviderDescription {
       logger.error("JenaException in "+ fileName + " " + eJ.getMessage());
     }
 
-    boolean success = model.getLoadSuccessful();
+    if (logger.isDebugEnabled()) {
+      logger.debug("ProviderDescription.parseOWL for " + 
+		   owlFileName + " model  == " +  model);
+      Statement serviceProvider = getServiceProvider();
+      logger.debug("\n serviceProvider = " + serviceProvider + 
+		   " resource = " + serviceProvider.getResource() +
+		   " resource class = " + 
+		   serviceProvider.getResource().getClass());
+      logger.debug("\n serviceProviderName = " + getProviderName());
+      
+      Collection serviceProfiles = getServiceProfiles();
+      for (Iterator iterator = serviceProfiles.iterator();
+	   iterator.hasNext();) { 
+	ServiceProfile serviceProfile = (ServiceProfile) iterator.next();
+	
+	logger.debug("\n serviceProfile = " + serviceProfile);
+      }
+      logger.debug("\n organizationType  = " + getOrganizationType());
+    }	
 
     LOCKED = Boolean.FALSE;
-    
-    return success;
+    return true;
   }
 
   public String getProviderName() {
@@ -223,17 +278,19 @@ public class ProviderDescriptionImpl implements ProviderDescription {
     String group = "None";
     try {
       Statement serviceProvider = this.getServiceProvider();
-      if((serviceProvider != null) && (serviceProvider.getResource() instanceof DAMLInstance)) {
-        DAMLInstance inst = (DAMLInstance)serviceProvider.getResource();
-        Iterator iter = inst.getRDFTypes(false);
-        while(iter.hasNext()) {
-          DAMLClass dclass = (DAMLClass)iter.next();
-          String subclassName = dclass.getLocalName();
-          int index = subclassName.indexOf("ServiceProvider");
-          if(index>0) {
-            group = subclassName.substring(0,index);
-          }
-        }
+      if (serviceProvider != null) {
+        Resource resource = serviceProvider.getResource();
+	
+	for (Iterator rdfTypeIterator = resource.listProperties(RDF.type);
+	     rdfTypeIterator.hasNext();) {
+	  Statement statement = (Statement) rdfTypeIterator.next();
+	  Resource rdfResource = statement.getResource(); 
+	  String localClassName = rdfResource.getLocalName();
+	  int index = localClassName.indexOf("ServiceProvider");
+	  if (index > 0) {
+	    return localClassName.substring(0, index);
+	  }
+	}
       }
     } catch(RDFException e) {
       logger.error("Error getOrganizationType failed \n" +
@@ -247,13 +304,20 @@ public class ProviderDescriptionImpl implements ProviderDescription {
     Statement serviceProvider = null;
 
     try {
-      Collection serviceProfiles = this.getServicePs();
-      Iterator iter = serviceProfiles.iterator();
-      //This is a little strange. You can have multiple service profiles
-      //but each one should have an identical service provider. So, just
-      //read the information from the first service provider.
-      while(iter.hasNext()) {
-        DAMLInstance serviceProfile = (DAMLInstance)iter.next();
+      Collection serviceProfiles = getServicePs();
+
+      for (Iterator iterator = serviceProfiles.iterator();
+	   iterator.hasNext();) {
+	//This is a little strange. You can have multiple service profiles
+	//but each one should have an identical service provider. So, just
+	//read the information from the first service provider.
+        Resource serviceProfile = (Resource)iterator.next();
+
+	if (logger.isDebugEnabled()) {
+	  logger.debug("getServiceProvider(): serviceProfile = " + 
+		       serviceProfile + " Profile.PROVIDEDBY = " +
+		       Profile.PROVIDEDBY);
+	}
         //get the service provider
         if(serviceProfile.hasProperty(Profile.PROVIDEDBY)){
           //should be only one
@@ -271,36 +335,48 @@ public class ProviderDescriptionImpl implements ProviderDescription {
   }
 
   private Collection getServicePs() {
+    Resource serviceProfileResource = 
+      model.getResource(Profile.SERVICEPROFILE.getURI());
     ArrayList serviceProfiles = new ArrayList();
-    Iterator instances = model.listDAMLInstances();
-    while (instances.hasNext()) {
-      DAMLInstance inst = (DAMLInstance)instances.next();
-      if(inst.hasRDFType(Profile.SERVICEPROFILE.getURI())){
-        serviceProfiles.add(inst);
+
+    for (Iterator iterator = model.listObjects();
+	 iterator.hasNext();) { 
+      RDFNode rdfNode = (RDFNode) iterator.next();
+      if (rdfNode instanceof Resource) {
+	Resource resource = (Resource) rdfNode;
+	if (resource.hasProperty(RDF.type, serviceProfileResource)) {
+	  serviceProfiles.add(resource);
+	}
       }
     }
+
     if (serviceProfiles.isEmpty() && logger.isInfoEnabled()) {
       logger.info("Info: getServicePs() for [" + fileName + "] is returning an empty collection.\n" +
-               "DAMLInstance does not contain: " + Profile.SERVICEPROFILE.getURI());
+               "Model does not contain: " + Profile.SERVICEPROFILE.getURI());
     }
     
     return serviceProfiles;
   }
   
   private Collection getServiceGroundings() {
+    Resource groundingResource = 
+      model.getResource(Profile.GROUNDING.getURI());
     ArrayList serviceGroundings = new ArrayList();
-    Iterator instances = model.listDAMLInstances();
-    while (instances.hasNext()) {
-      DAMLInstance inst = (DAMLInstance)instances.next();
-//      if(inst.hasRDFType(Profile.WSDLGROUNDING.getURI())){
-      if(inst.hasRDFType(Profile.GROUNDING.getURI())){
-        serviceGroundings.add(inst);
+
+    for (Iterator iterator = model.listObjects();
+	 iterator.hasNext();) { 
+      RDFNode rdfNode = (RDFNode) iterator.next();
+      if (rdfNode instanceof Resource) {
+	Resource resource = (Resource) rdfNode;
+	if (resource.hasProperty(RDF.type, groundingResource)) {
+	  serviceGroundings.add(resource);
+	}
       }
     }
 
     if (serviceGroundings.isEmpty() && logger.isInfoEnabled()) {
       logger.info("Info: getServiceGroundings() for [" +  fileName + "] is returning an empty collection.\n" +
-               "DAMLInstance does not contain: " + Profile.GROUNDING.getURI());
+               "Model does not contain: " + Profile.GROUNDING.getURI());
     }
 
     return serviceGroundings;
@@ -313,39 +389,42 @@ public class ProviderDescriptionImpl implements ProviderDescription {
     //we need to match up the isProvidedBy and isSupportedBy so
     //that we are pairing the correct grounding and profile.
 
-    Iterator profiles = serviceProfiles.iterator();
     ArrayList serviceDescriptions = new ArrayList();
-    //for each profile
-    while(profiles.hasNext()) {
-      DAMLInstance profile = (DAMLInstance)profiles.next();
-      Resource theProfileService = null;
+
+    Resource presentedbyResource = Profile.PRESENTEDBY;
+    for (Iterator iterator = serviceProfiles.iterator();
+	 iterator.hasNext();) { 
+      Resource profile = (Resource) iterator.next();
+      Resource profileService = null;
       //find the Service object
       try {
-        theProfileService =profile.getProperty(Profile.PRESENTEDBY).getResource();
+	profileService = 
+	  profile.getProperty(Profile.PRESENTEDBY).getResource();
       } catch(RDFException e) {
 	logger.error("Error getting ServiceProfiles \n" +
-		  "  Error Number: " + e.getErrorCode() + "\n" +
-		  "  Error Message: " + e.getMessage() + "\n" +
-		  "  File: " + fileName,    e);
+		     "  Error Number: " + e.getErrorCode() + "\n" +
+		     "  Error Message: " + e.getMessage() + "\n" +
+		     "  File: " + fileName,    e);
       }
-      Iterator groundings = serviceGroundings.iterator();
-      //for each grounding
-      while(groundings.hasNext()) {
-        DAMLInstance grounding = (DAMLInstance)groundings.next();
-        Resource theGroundingService = null;
-        try {
-          theGroundingService =grounding.getProperty(Profile.SUPPORTEDBY).getResource();
-          //see if it has a matching Service object
-          if(theGroundingService.equals(theProfileService)) {
-            //if so, this profile/grounding pair makes a service profile object
-            serviceDescriptions.add(new ServiceProfileImpl(profile, grounding));
-          }
-        } catch(RDFException e) {
-	  logger.error("Error cannot find isSupporteBy in grounding \n" +
-		    "  Error Number: " + e.getErrorCode() + "\n" +
-		    "  Error Message: " + e.getMessage() + "\n" +
-		    "  File: " + fileName , e);
-        }
+	
+      for (Iterator groundingIterator = serviceGroundings.iterator();
+	   groundingIterator.hasNext();) { 
+	Resource grounding = (Resource) groundingIterator.next();
+	Resource groundingService = null;
+	try {
+	  groundingService = 
+	    grounding.getProperty(Profile.SUPPORTEDBY).getResource();
+	  
+	  if (groundingService.equals(profileService)) {
+	    //if so, this profile/grounding pair makes a service profile object
+	    serviceDescriptions.add(new ServiceProfileImpl(profile, grounding));
+	  }
+	} catch(RDFException e) {
+	  logger.error("Error cannot find isSupportedBy in grounding \n" +
+		       "  Error Number: " + e.getErrorCode() + "\n" +
+		       "  Error Message: " + e.getMessage() + "\n" +
+		       "  File: " + fileName , e);
+	}
       }
     }
     return serviceDescriptions;
@@ -370,7 +449,7 @@ public class ProviderDescriptionImpl implements ProviderDescription {
   /**
    * not implemented yet
    */
-  public void writeDAMLSFiles(String outputFileBase){
+  public void writeOWLFiles(String outputFileBase){
   }
 
 }
