@@ -140,6 +140,11 @@ public final class MatchmakerStubPlugin extends SimplePlugin {
 	  echelon = getRequestedEchelonOfSupport(services);
 	}
 
+	if (log.isDebugEnabled()) {
+	  log.debug(getAgentIdentifier() + " looking for " + 
+		    query.getRole() + " at " + echelon + " level");
+	}
+
         ArrayList scoredServiceDescriptions = new ArrayList();
         for (Iterator iter = services.iterator(); iter.hasNext(); ) {
           ServiceInfo serviceInfo = (ServiceInfo) iter.next();
@@ -205,7 +210,7 @@ public final class MatchmakerStubPlugin extends SimplePlugin {
 
     if (requestedEchelonOrder == -1) {
       if (log.isDebugEnabled())
-	log.debug("getEchelonScore() - invalid echelon " + requestedEchelonOfSupport);
+	log.debug(getAgentIdentifier() + " getEchelonScore() - invalid echelon " + requestedEchelonOfSupport);
       return 0;
     }
 
@@ -268,36 +273,56 @@ public final class MatchmakerStubPlugin extends SimplePlugin {
 
   protected String getRequestedEchelonOfSupport(Collection services) {
     int serviceEchelonOrder = -1;
+    String serviceEchelon = "";
     String agentName = getAgentIdentifier().toString();
 
     for (Iterator iter = services.iterator(); iter.hasNext(); ) {
       ServiceInfo serviceInfo = (ServiceInfo) iter.next();
-      
+      	
       if (serviceInfo.getProviderName().equals(agentName)) {
 	for (Iterator iterator = serviceInfo.getServiceClassifications().iterator();
 	     iterator.hasNext();) {
+	  boolean foundEchelon = false;
+
 	  ServiceClassification classification = 
 	    (ServiceClassification) iterator.next();
+
 	  if (classification.getClassificationSchemeName().equals(UDDIConstants.MILITARY_ECHELON_SCHEME)) {
-	    
-	    String serviceEchelon = classification.getClassificationCode();
+	    serviceEchelon = classification.getClassificationCode();
+
 	    serviceEchelonOrder = 
 	      Constants.MilitaryEchelon.echelonOrder(serviceEchelon);
+
+	    if ((serviceEchelonOrder == -1) &&
+		(log.isDebugEnabled())) {
+	      log.debug(getAgentIdentifier() + 
+			" getRequestedEchelonOfSupport " +
+			" serviceInfo has an unrecognized echelon " + 
+			serviceEchelon); 
+	    }
+	    foundEchelon = true;
 	    break;
 	  }
-	  break;
+
+	  if (foundEchelon) {
+	    break;
+	  }
 	}
       }
     }
      
+    String requestedEchelonOfSupport;
+
     if (serviceEchelonOrder == -1) {
-      return Constants.MilitaryEchelon.ECHELON_ORDER[0];
+      requestedEchelonOfSupport = Constants.MilitaryEchelon.ECHELON_ORDER[0];
     } else if (serviceEchelonOrder < 
 	       Constants.MilitaryEchelon.MAX_ECHELON_INDEX) {
-	return Constants.MilitaryEchelon.ECHELON_ORDER[serviceEchelonOrder + 1];
+	requestedEchelonOfSupport = Constants.MilitaryEchelon.ECHELON_ORDER[serviceEchelonOrder + 1];
     } else {
-      return Constants.MilitaryEchelon.ECHELON_ORDER[Constants.MilitaryEchelon.MAX_ECHELON_INDEX];
+      requestedEchelonOfSupport = Constants.MilitaryEchelon.ECHELON_ORDER[Constants.MilitaryEchelon.MAX_ECHELON_INDEX];
     }
+
+    return requestedEchelonOfSupport;
   }
 }
 
