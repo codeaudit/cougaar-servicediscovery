@@ -286,7 +286,7 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
 
 	if (removedContract != null) {
 	  TimeSpan timeSpan = 
-	    mySDFactory.getTimeSpanFromPreferences(removedContract.getServicePreferences());
+	    SDFactory.getTimeSpanFromPreferences(removedContract.getServicePreferences());
 
 	  Role role = removedContract.getServiceRole();
 	  if (!checkProviderCompletelyRequested(role, timeSpan)) {
@@ -314,7 +314,7 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
         //do a new service query
 	//What had the contract covered?
 	TimeSpan timeSpan = 
-	  mySDFactory.getTimeSpanFromPreferences(relay.getServiceRequest().getServicePreferences());
+	  SDFactory.getTimeSpanFromPreferences(relay.getServiceRequest().getServicePreferences());
 	queryServices(relay.getServiceContract().getServiceRole(), 
 		      timeSpan);
         //publishRemove(relay);
@@ -766,7 +766,7 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
           relay.getServiceRequest().getServiceRole().equals(role)) {
 	// Did we ask for the same time period?
 	TimeSpan requestedTimeSpan = 
-	  mySDFactory.getTimeSpanFromPreferences(relay.getServiceRequest().getServicePreferences());
+	  SDFactory.getTimeSpanFromPreferences(relay.getServiceRequest().getServicePreferences());
 	return (requestedTimeSpan.equals(timeSpan));
       }
     }
@@ -848,7 +848,7 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
 	  (relay.getClient().equals(getSelfOrg())) &&
 	  (contract.getServiceRole().equals(role))) {
 	TimeSpan contractTimeSpan = 
-	  mySDFactory.getTimeSpanFromPreferences(contract.getServicePreferences());
+	  SDFactory.getTimeSpanFromPreferences(contract.getServicePreferences());
 	contractTimeSpanSet.add(contractTimeSpan);
       }
     }
@@ -872,7 +872,7 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
       if (relay.getClient().equals(getSelfOrg()) &&
 	  request.getServiceRole().equals(role)) {
 	TimeSpan requestTimeSpan = 
-	  mySDFactory.getTimeSpanFromPreferences(request.getServicePreferences());
+	  SDFactory.getTimeSpanFromPreferences(request.getServicePreferences());
 	requestTimeSpanSet.add(requestTimeSpan);
       }
     }
@@ -1477,7 +1477,7 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
 	// Look at request for lineage because that shows what we asked for.
 	ServiceRequest request = relay.getServiceRequest();
 	TimeSpan requestTimeSpan = 
-	  mySDFactory.getTimeSpanFromPreferences(request.getServicePreferences());
+	  SDFactory.getTimeSpanFromPreferences(request.getServicePreferences());
 	
 	Lineage requestLineage = getCommandLineage(requestTimeSpan);
 	
@@ -1594,7 +1594,7 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
 	  
 	  if (myLoggingService.isDebugEnabled()) {
 	    TimeSpan timeSpan = 
-	      mySDFactory.getTimeSpanFromPreferences(requestPreferences.values());
+	      SDFactory.getTimeSpanFromPreferences(requestPreferences.values());
 	    myLoggingService.debug(getAgentIdentifier() + 
 				   ": changing time span on service request - " +
 				   relay + " to " + 

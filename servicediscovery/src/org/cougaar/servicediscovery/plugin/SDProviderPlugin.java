@@ -185,10 +185,10 @@ public class SDProviderPlugin extends SimplePlugin
     // Construct start/end pref by making request agree with capability avail
     // schedule
     TimeSpan requestedTimeSpan = 
-      mySDFactory.getTimeSpanFromPreferences(serviceRequest.getServicePreferences());
+      SDFactory.getTimeSpanFromPreferences(serviceRequest.getServicePreferences());
 
     TimeSpan contractTimeSpan = (serviceContract != null) ?
-      mySDFactory.getTimeSpanFromPreferences(serviceContract.getServicePreferences()) :
+      SDFactory.getTimeSpanFromPreferences(serviceContract.getServicePreferences()) :
       null;
 
     if (myLoggingService.isDebugEnabled()) {
@@ -330,7 +330,7 @@ public class SDProviderPlugin extends SimplePlugin
 	  boolean changeRequired = false;
 
 	  TimeSpan currentContractTimeSpan = 
-	    mySDFactory.getTimeSpanFromPreferences(contract.getServicePreferences());
+	    SDFactory.getTimeSpanFromPreferences(contract.getServicePreferences());
 	  
 	  if (currentContractTimeSpan != null) {
 	    TimeSpan contractTimeSpan = 
@@ -342,7 +342,7 @@ public class SDProviderPlugin extends SimplePlugin
 				      relay.getServiceContract() + 
 				      " due to provider capability change.");
 	      }
-	      mySDFactory.revokeServiceContract(contract);
+	      SDFactory.revokeServiceContract(contract);
 	      changeRequired = true;
 	    } else if (!(currentContractTimeSpan.equals(contractTimeSpan))) {
 	      if (myLoggingService.isInfoEnabled()) {

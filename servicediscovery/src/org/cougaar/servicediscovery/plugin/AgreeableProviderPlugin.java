@@ -250,7 +250,7 @@ public class AgreeableProviderPlugin extends ComponentPlugin {
 
     // Get a TimeSpan to represent when they wanted the service. In the pizza app, this is FOREVER.
     TimeSpan requestedTimeSpan = 
-      mySDFactory.getTimeSpanFromPreferences(serviceRequest.getServicePreferences());
+      SDFactory.getTimeSpanFromPreferences(serviceRequest.getServicePreferences());
 
     if (myLoggingService.isDebugEnabled()) {
       myLoggingService.debug("handleServiceContractRelay() relay = " + relay + 
