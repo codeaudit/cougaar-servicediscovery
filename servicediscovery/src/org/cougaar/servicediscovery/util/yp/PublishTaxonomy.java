@@ -398,8 +398,8 @@ public class PublishTaxonomy extends ComponentSupport {
   }
 
   private TModel createTaxonomy(String name, String file, String tModelKey) throws java.io.IOException, org.xml.sax.SAXException, org.uddi4j.UDDIException {
-    if (getLoggingService().isDebugEnabled()) {
-      getLoggingService().debug("createTaxonomy: name = " + name +
+    if (getLoggingService().isInfoEnabled()) {
+      getLoggingService().info("createTaxonomy: name = " + name +
 			      ", file = " + file +
 			      ", tModelKey = " + tModelKey);
     }
