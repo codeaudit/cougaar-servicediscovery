@@ -26,8 +26,9 @@ above.)
     
 	(d) cd CIP/servicediscovery/data/serviceprofiles
 
-	(c) Edit agent-input.txt. Replace  <COUGAAR_INSTALL_PATH> with your 
-	cougaar install path.
+	(c) Edit agent-input.txt. 
+            Replace  <COUGAAR_INSTALL_PATH> with your cougaar install path.
+            
 
 	Note: If running from NT, you must use a capital letter for the the 
 	drive specification.
