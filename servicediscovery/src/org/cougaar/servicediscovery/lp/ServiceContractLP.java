@@ -300,9 +300,7 @@ public class ServiceContractLP implements LogicProvider, EnvelopeLogicProvider {
       ((HasRelationships)provider).getRelationshipSchedule();
     providerSchedule.addAll(localRelationships);
 
-    RelationshipSchedule clientSchedule =
-      ((HasRelationships)client).getRelationshipSchedule();
-    // TODO: IDEA says this type cast is redundant, need to test this out
+    RelationshipSchedule clientSchedule = client.getRelationshipSchedule();
     clientSchedule.addAll(localRelationships);
   }
 
