@@ -101,7 +101,8 @@ public class ProviderInfo{
   /**
    * Compares with other ProviderInfo object.
    * ProviderInfo objects are considered to be equal if the provider name
-   * are the same.
+   * are the same.  Note: In general provider names are not guaranteed
+   * to be unique and this should be changed.
    */
   public boolean equals(Object obj) {
     if(obj instanceof ProviderInfo) {

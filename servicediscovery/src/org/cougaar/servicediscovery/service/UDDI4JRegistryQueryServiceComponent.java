@@ -133,7 +133,9 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
   private class RegistryQueryServiceImpl implements RegistryQueryService {
     private String queryURL = null;
     private HashMap tModelKeysCache = new HashMap();
+    // TODO: change this to be a static
     private UDDIProxy proxy = null;
+    // TODO: change this to a parameter
     private int maxRows = 100;
     private HashMap tModelNameCache = new HashMap();
 
@@ -164,7 +166,6 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
      * @return Collection of ProviderInfo objects.  Can return an empty list.
      */
     public Collection findProviders(RegistryQuery query) {
-      // TODO:  ADD some kind of retry mechanism????
       if (!makeConnection()) {
         if (log.isErrorEnabled()) {
           log.error("findProviders: make connection failed ");
@@ -190,7 +191,6 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
      * @return Collection of ServiceInfo objects.  Can return an empty list.
      */
     public Collection findServices(RegistryQuery query) {
-      // TODO:  ADD some kind of retry mechanism????
       if (!makeConnection()) {
         if (log.isErrorEnabled()) {
           log.error("findProviders: make connection failed ");
@@ -216,7 +216,6 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
         fq.getFindQualifierVector().add(new FindQualifier(qualifier));
       }
 
-      // for now, we only support exact name matches
       Vector serviceNames = null;
       if (rq.getServiceName() != null) {
         serviceNames = new Vector();
@@ -275,7 +274,6 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
         fq.getFindQualifierVector().add(new FindQualifier(qualifier));
       }
 
-      // for now, we only support exact name matches
       Vector providerNames = null;
       if (rq.getProviderName() != null) {
         providerNames = new Vector();
@@ -329,7 +327,6 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
         fq.getFindQualifierVector().add(new FindQualifier(qualifier));
       }
 
-      // for now, we only support exact name matches
       Vector providerNames = null;
       if (rq.getProviderName() != null) {
         providerNames = new Vector();
@@ -352,7 +349,7 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
           providers = createProviderInfos(businessKeys, rq.getServiceName());
         } else {
           if (log.isDebugEnabled()) {
-            log.debug("No services were found ");
+            log.debug("No providers of that service were found ");
           }
           return Collections.EMPTY_LIST;
         }
@@ -375,7 +372,6 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
     }
 
     public Collection findServiceAndBinding(RegistryQuery query) {
-      // TODO:  ADD some kind of retry mechanism????
       if (!makeConnection()) {
         if (log.isErrorEnabled()) {
           log.error("findServiceAndBinding: make connection failed ");
@@ -395,7 +391,6 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
         fq.getFindQualifierVector().add(new FindQualifier(qualifier));
       }
 
-      // for now, we only support exact name matches
       Vector serviceNames = null;
       if (query.getServiceName() != null) {
         serviceNames = new Vector();
