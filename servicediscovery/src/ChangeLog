@@ -1,0 +1,13 @@
+2003-12-09  Ray Tomlinson  <RTomlinson@bbn.com>
+
+	* org/cougaar/servicediscovery/service/UDDI4JRegistrationServiceComponent.java:
+	Remove ambiguity about threads and log fields defined both in
+	superclass and containing class of inner classes by adding
+	explicit "this" qualification to fields names. javac uses the
+	field in the containing class where other compilers use the field
+	from the superclass. Eclipse points out the ambiguity (since it
+	was developed by the perpetrators of the latter interpretation.
+
+	* org/cougaar/servicediscovery/lp/ServiceContractLP.java:
+	Remove redundant type cast to quiet complaints by IDEA and eclipse.
+
