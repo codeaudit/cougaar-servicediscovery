@@ -10,25 +10,25 @@ cougaarDAMLSFilename=cougaar.daml #you shouldn't need to change this.
 
 [AgentInfo]
 
-agentName = 1-AD.ARMY.MIL
+agentName = 1-AD
 roleName = StrategicTransportationProvider,Division
 
-agentName = 102-POL-SUPPLYCO.16-CSG.5-CORPS.ARMY.MIL
+agentName = 102-POL-SUPPLYCO
 roleName = FuelSupplyProvider,Corps
 ---
 roleName = PackagedPOLSupplyProvider,Corps
 
-agentName = 106-TCBN.16-CSG.5-CORPS.ARMY.MIL
+agentName = 106-TCBN
 roleName = FuelTransportProvider,Corps
 ---
 roleName = MaterielTransportProvider,Corps
 
-agentName = 110-POL-SUPPLYCO.37-TRANSGP.21-TSC.ARMY.MIL
+agentName = 110-POL-SUPPLYCO
 roleName = FuelSupplyProvider,Theater
 ---
 roleName = PackagedPOLSupplyProvider,Theater
 
-agentName = 123-MSB.DISCOM.1-AD.ARMY.MIL
+agentName = 123-MSB
 roleName = AmmunitionProvider,Division
 ---
 roleName = FuelSupplyProvider,Division
@@ -39,7 +39,7 @@ roleName = SparePartsProvider,Division
 ---
 roleName = SubsistenceSupplyProvider,Division
 
-agentName = 125-FSB.DISCOM.1-AD.ARMY.MIL
+agentName = 125-FSB
 roleName = AmmunitionProvider,Brigade
 ---
 roleName = FuelSupplyProvider,Brigade
@@ -50,10 +50,10 @@ roleName = SparePartsProvider,Brigade
 ---
 roleName = SubsistenceSupplyProvider,Brigade
 
-agentName = 125-ORDBN.7-CSG.5-CORPS.ARMY.MIL
+agentName = 125-ORDBN
 roleName = AmmunitionProvider,Corps
 
-agentName = 127-DASB.DISCOM.1-AD.ARMY.MIL
+agentName = 127-DASB
 roleName = AmmunitionProvider,Brigade
 ---
 roleName = FuelSupplyProvider,Brigade
@@ -64,54 +64,53 @@ roleName = SparePartsProvider,Brigade
 ---
 roleName = SubsistenceSupplyProvider,Brigade
 
-agentName = 181-TCBN.7-CSG.5-CORPS.ARMY.MIL
+agentName = 181-TCBN
 roleName = MaterielTransportProvider,Corps
 
-agentName = 191-ORDBN.29-SPTGP.21-TSC.ARMY.MIL
+agentName = 191-ORDBN
 roleName = AmmunitionProvider,Theater
 
-agentName = 200-MMC.21-TSC.ARMY.MIL
-roleName = SparePartsProvider,Theater
+agentName = 200-MMC
 
-agentName = 21-TSC-HQ.ARMY.MIL
+agentName = 21-TSC-HQ
 roleName = StrategicTransportationProvider,Theater
 
-agentName = 226-MAINTCO.16-CSG.5-CORPS.ARMY.MIL
+agentName = 226-MAINTCO
 roleName = SparePartsProvider,Division
 
-agentName = 227-SUPPLYCO.16-CSG.5-CORPS.ARMY.MIL
+agentName = 227-SUPPLYCO
 roleName = SubsistenceSupplyProvider,Corps
 
-agentName = 240-SSCO.7-CSG.5-CORPS.ARMY.MIL
+agentName = 240-SSCO
 roleName = FuelSupplyProvider,Division
 ---
 roleName = PackagedPOLSupplyProvider,Division
 ---
 roleName = SubsistenceSupplyProvider,Division
 
-agentName = 26-SSCO.16-CSG.5-CORPS.ARMY.MIL
+agentName = 26-SSCO
 roleName = FuelSupplyProvider,Division
 ---
 roleName = PackagedPOLSupplyProvider,Division
 ---
 roleName = SubsistenceSupplyProvider,Division
 
-agentName = 28-TCBN.37-TRANSGP.21-TSC.ARMY.MIL
+agentName = 28-TCBN
 roleName = MaterielTransportProvider,Theater
 
-agentName = 3-SUPCOM-HQ.5-CORPS.ARMY.MIL
+agentName = 3-SUPCOM-HQ
 roleName = StrategicTransportationProvider,Corps
 
-agentName = 316-POL-SUPPLYBN.7-CSG.5-CORPS.ARMY.MIL
+agentName = 316-POL-SUPPLYBN
 roleName = FuelTransportProvider,Corps
 
-agentName = 343-SUPPLYCO.29-SPTGP.21-TSC.ARMY.MIL
+agentName = 343-SUPPLYCO
 roleName = SubsistenceSupplyProvider,Theater
 
-agentName = 406-SUPPLYCO.7-CSG.5-CORPS.ARMY.MIL
+agentName = 406-SUPPLYCO
 roleName = SubsistenceSupplyProvider,Corps
 
-agentName = 47-FSB.DISCOM.1-AD.ARMY.MIL
+agentName = 47-FSB
 roleName = AmmunitionProvider,Brigade
 ---
 roleName = FuelSupplyProvider,Brigade
@@ -122,7 +121,7 @@ roleName = SparePartsProvider,Brigade
 ---
 roleName = SubsistenceSupplyProvider,Brigade
 
-agentName = 501-FSB.DISCOM.1-AD.ARMY.MIL
+agentName = 501-FSB
 roleName = AmmunitionProvider,Brigade
 ---
 roleName = FuelSupplyProvider,Brigade
@@ -133,86 +132,86 @@ roleName = SparePartsProvider,Brigade
 ---
 roleName = SubsistenceSupplyProvider,Brigade
 
-agentName = 52-ENGBN-CBTHVY.5-CORPS.ARMY.MIL
+agentName = 52-ENGBN-CBTHVY
 roleName = ConstructionProvider,Corps
 
-agentName = 565-RPRPTCO.7-CSG.5-CORPS.ARMY.MIL
+agentName = 565-RPRPTCO
 roleName = SparePartsProvider,Corps
 
-agentName = 574-SSCO.29-SPTGP.21-TSC.ARMY.MIL
+agentName = 574-SSCO
 roleName = FuelSupplyProvider,Division
 ---
 roleName = PackagedPOLSupplyProvider,Division
 ---
 roleName = SubsistenceSupplyProvider,Division
 
-agentName = 592-ORDCO.16-CSG.5-CORPS.ARMY.MIL
+agentName = 592-ORDCO
 roleName = AmmunitionProvider,Corps
 
-agentName = 597-MAINTCO.7-CSG.5-CORPS.ARMY.MIL
+agentName = 597-MAINTCO
 roleName = SparePartsProvider,Division
 
-agentName = 6-TCBN.37-TRANSGP.21-TSC.ARMY.MIL
+agentName = 6-TCBN
 roleName = FuelTransportProvider,Theater
 
-agentName = 632-MAINTCO.37-TRANSGP.21-TSC.ARMY.MIL
+agentName = 632-MAINTCO
 roleName = SparePartsProvider,Division
 
-agentName = 900-POL-SUPPLYCO.7-CSG.5-CORPS.ARMY.MIL
+agentName = 900-POL-SUPPLYCO
 roleName = FuelSupplyProvider,Corps
 ---
 roleName = PackagedPOLSupplyProvider,Corps
 
-agentName = AMC.TRANSCOM.MIL
+agentName = GlobalAir
 roleName = AirTransportationProvider,Joint
 
-agentName = AWR-2.21-TSC.ARMY.MIL
+agentName = AWR-2
 roleName = AmmunitionProvider,Joint
 ---
 roleName = SparePartsProvider,Joint
 ---
 roleName = SubsistenceSupplyProvider,Joint
 
-agentName = CONUSGround.TRANSCOM.MIL
+agentName = CONUSGround
 roleName = CONUSGroundTransportationProvider,Joint
 
-agentName = CORPS-ARTY.5-CORPS.ARMY.MIL
+agentName = 5-CORPS-ARTY
 roleName = StrategicTransportationProvider,Corps
 
-agentName = CORPS-REAR.5-CORPS.ARMY.MIL
+agentName = 5-CORPS-REAR
 roleName = StrategicTransportationProvider,Corps
 
-agentName = DLAHQ.MIL
+agentName = DLAHQ
 roleName = ConstructionSupplyProvider,Joint
 ---
 roleName = SparePartsProvider,Joint
 ---
 roleName = SubsistenceSupplyProvider,Joint
 
-agentName = HNS.MIL
+agentName = HNS
 roleName = FuelSupplyProvider,Joint
 ---
 roleName = PackagedPOLSupplyProvider,Joint
 
-agentName = MSC.TRANSCOM.MIL
+agentName = GlobalSea
 roleName = SeaTransportationProvider,Joint
 
-agentName = OSC.MIL
+agentName = OSC
 roleName = AmmunitionProvider,Joint
 
-agentName = OSD.GOV
+agentName = NCO
 roleName = LogisticsCommanderInChief,Joint
 ---
 roleName = OperationalCommanderInChief,Joint
 
-agentName = PlanePacker.TRANSCOM.MIL
+agentName = PlanePacker
 roleName = OrganicAirTransportationProvider,Joint
 
-agentName = ShipPacker.TRANSCOM.MIL
+agentName = ShipPacker
 roleName = ShipPackingTransportationProvider,Joint
 
-agentName = TRANSCOM.MIL
+agentName = TRANSCOM
 roleName = StrategicTransportationProvider,Joint
 
-agentName = TheaterGround.TRANSCOM.MIL
+agentName = TheaterGround
 roleName = TheaterStrategicTransportationProvider,Joint
