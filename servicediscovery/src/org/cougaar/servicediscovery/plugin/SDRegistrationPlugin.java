@@ -34,10 +34,12 @@ import org.cougaar.core.mts.MessageAddress;
 //import org.cougaar.core.service.AgentIdentificationService;
 //import org.cougaar.core.service.QuiescenceReportService;
 
+import org.cougaar.planning.ldm.PlanningFactory;
 import org.cougaar.planning.ldm.plan.AllocationResult;
 import org.cougaar.planning.ldm.plan.Disposition;
 import org.cougaar.planning.ldm.plan.Role;
 import org.cougaar.planning.ldm.plan.PlanElement;
+import org.cougaar.planning.ldm.plan.Schedule;
 import org.cougaar.planning.ldm.plan.Task;
 import org.cougaar.planning.plugin.legacy.SimplePlugin;
 import org.cougaar.planning.plugin.util.PluginHelper;
@@ -59,7 +61,9 @@ import org.cougaar.servicediscovery.transaction.DAMLReadyRelay;
 import org.cougaar.servicediscovery.SDFactory;
 import org.cougaar.servicediscovery.SDDomain;
 
+import org.cougaar.util.TimeSpan;
 import org.cougaar.util.UnaryPredicate;
+
 
 
 import java.io.File;
@@ -75,6 +79,8 @@ import java.util.Iterator;
  * roles in the YP.
  **/
 public class SDRegistrationPlugin extends SimplePlugin implements PrivilegedClaimant {
+  private static final long DEFAULT_START = TimeSpan.MIN_VALUE;
+  private static final long DEFAULT_END = TimeSpan.MAX_VALUE;
 
   private static final String DAML_IDENTIFIER = ".profile.daml";
 
@@ -503,6 +509,8 @@ public class SDRegistrationPlugin extends SimplePlugin implements PrivilegedClai
     ProviderDescription pd = getPD();
     Collection serviceProfiles = pd.getServiceProfiles();
 
+    PlanningFactory planningFactory = 
+	(PlanningFactory) getFactory("planning");
     SDFactory sdFactory = (SDFactory) getFactory(SDDomain.SD_NAME);
     ProviderCapabilities providerCapabilities = 
       sdFactory.newProviderCapabilities(getAgentIdentifier().toString());
@@ -529,7 +537,9 @@ public class SDRegistrationPlugin extends SimplePlugin implements PrivilegedClai
 
 	if ((role != null) &&
 	    (echelon != null)) {
-	  providerCapabilities.addCapability(role, echelon);
+	  Schedule defaultSchedule = 
+	    planningFactory.newSimpleSchedule(DEFAULT_START, DEFAULT_END);
+	  providerCapabilities.addCapability(role, echelon, defaultSchedule);
 	  break;
 	}
       }

@@ -23,12 +23,11 @@ package org.cougaar.servicediscovery.description;
 
 import org.cougaar.core.util.UID;
 import org.cougaar.planning.ldm.plan.Role;
+import org.cougaar.planning.ldm.plan.Schedule;
 import org.cougaar.util.log.Logger;
 import org.cougaar.util.log.Logging;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
+import org.cougaar.servicediscovery.Constants;
 
 /**
  * Maintains a Role and echelon
@@ -36,20 +35,24 @@ import java.util.Collections;
 
 
 public class ProviderCapabilityImpl implements ProviderCapability {
+  private static Logger logger = Logging.getLogger(ProviderCapability.class);
+
   private Role myRole = null;
   private String myEchelon = null;
-
+  private Schedule myAvailableSchedule = null;
 
   public ProviderCapabilityImpl() {
   }
 
-  public ProviderCapabilityImpl(Role role, String echelon) {
+  public ProviderCapabilityImpl(Role role, String echelon, 
+				Schedule availableSchedule) {
     setRole(role);
     setEchelon(echelon);
+    setAvailableSchedule(availableSchedule);
   }
 
   /**
-   * @return the echelon name
+   * @return the echelon of support
    **/
   public String getEchelon() {
     return myEchelon;
@@ -59,26 +62,51 @@ public class ProviderCapabilityImpl implements ProviderCapability {
    * @param echelon
    **/
   public void setEchelon(String echelon) {
-    myEchelon = echelon;
+    String mappedEchelon = 
+      Constants.MilitaryEchelon.mapToMilitaryEchelon(echelon);
+
+    if (mappedEchelon.equals(Constants.MilitaryEchelon.UNDEFINED)) {
+      logger.warn("setEchelon: changing echelon from " + getEchelon() +
+		  " to " + mappedEchelon + " for " + this);
+    }
+    myEchelon = mappedEchelon;
   }
 
 
   /**
-   * @return the echelon name
+   * @return the provided role
    **/
   public Role getRole() {
     return myRole;
   }
 
   /**
-   * @param echelon
+   * @param Role
    **/
   public void setRole(Role role) {
-    myRole = role;
+    if (myRole != null) {
+      logger.error("setRole: attempt to change role from " +  myRole + 
+		   " to " + role + " ignored.");
+    } else {
+      myRole = role;
+    }
   }
 
+  /**
+   * @return the availability schedule
+   **/
+  public Schedule getAvailableSchedule() {
+    return myAvailableSchedule;
+  }
 
+  /**
+   * @param availableSchedule
+   **/
+  public void setAvailableSchedule(Schedule availableSchedule) {
+    myAvailableSchedule = availableSchedule;
+  }
  }
+
 
 
 

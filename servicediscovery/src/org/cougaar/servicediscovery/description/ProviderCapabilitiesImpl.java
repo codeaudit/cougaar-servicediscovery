@@ -23,15 +23,15 @@ package org.cougaar.servicediscovery.description;
 
 import org.cougaar.core.util.UID;
 import org.cougaar.planning.ldm.plan.Role;
+import org.cougaar.planning.ldm.plan.Schedule;
 import org.cougaar.util.log.Logger;
 import org.cougaar.util.log.Logging;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-
+import java.util.HashMap;
 /**
- * A Collection which maintains an ordered list of provider capabilities
+ * Maintains the set of provider capabilities
  */
 
 
@@ -39,7 +39,7 @@ public class ProviderCapabilitiesImpl implements ProviderCapabilities {
   private static Logger logger = Logging.getLogger(ProviderCapabilitiesImpl.class);
   private UID myUID = null;
   
-  private ArrayList myCapabilities = null;
+  private HashMap myCapabilities = null;
   private String myProviderName = null;
 
 
@@ -49,7 +49,7 @@ public class ProviderCapabilitiesImpl implements ProviderCapabilities {
 
   public ProviderCapabilitiesImpl(String providerName) {
     myProviderName = providerName;
-    myCapabilities = new ArrayList();
+    myCapabilities = new HashMap();
   }
 
   /**
@@ -72,21 +72,49 @@ public class ProviderCapabilitiesImpl implements ProviderCapabilities {
   }
 
   /**
-   * @return an provider capabilities
+   * @return all provider capabilities
    */ 
   public Collection  getCapabilities() {
-    return Collections.unmodifiableCollection(myCapabilities);
+    return Collections.unmodifiableCollection(myCapabilities.values());
   }
 
-  public void addCapability(Role role, String echelon) {
-    addCapability(new ProviderCapabilityImpl(role, echelon));
+  /**
+   * @return provider capability for a specific Role
+   */ 
+  public ProviderCapability getCapability(Role role) {
+    return (ProviderCapability) myCapabilities.get(role);
   }
+
+  /**
+   * Add a provider capability
+   * @param role
+   * @param echelon
+   * @param availableSchedule
+   */
+   public void addCapability(Role role, String echelon, 
+			     Schedule availableSchedule) {
+     addCapability(new ProviderCapabilityImpl(role, echelon, availableSchedule));
+   }
 
   public void addCapability(ProviderCapability capability) {
     if (logger.isDebugEnabled()) {
-      logger.debug(getProviderName() + " added capability " + capability);
+      ProviderCapability current = 
+	(ProviderCapability) myCapabilities.get(capability.getRole());
+      if (current != null) {
+	logger.debug(getProviderName() + " replacing capability " + current +
+		     " with " + capability);
+      } else {
+	logger.debug(getProviderName() + " added capability " + capability);
+      }
     }
-    myCapabilities.add(capability);
+    myCapabilities.put(capability.getRole(), capability);
+  }
+
+  public void removeCapability(ProviderCapability capability) {
+    if (logger.isDebugEnabled()) {
+      logger.debug(getProviderName() + " removed capability " + capability);
+    }
+    myCapabilities.remove(capability.getRole());
   }
 
   public void setUID(UID newUID) {

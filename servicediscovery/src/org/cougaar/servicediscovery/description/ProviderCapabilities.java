@@ -23,6 +23,7 @@ package org.cougaar.servicediscovery.description;
 
 import org.cougaar.core.util.UniqueObject;
 import org.cougaar.planning.ldm.plan.Role;
+import org.cougaar.planning.ldm.plan.Schedule;
 
 import java.util.Collection;
 
@@ -48,13 +49,20 @@ public interface ProviderCapabilities extends java.io.Serializable, UniqueObject
    */ 
   public Collection getCapabilities();
 
+  /**
+   * @return provider capability for a specific Role
+   */ 
+  public ProviderCapability getCapability(Role role);
+
 
   /**
    * Add a provider capability
    * @param role
    * @param echelon
+   * @param availableSchedule
    */
-   public void addCapability(Role role, String echelon);
+   public void addCapability(Role role, String echelon, 
+			     Schedule availableSchedule);
 
   /**
    * Add a provider capability

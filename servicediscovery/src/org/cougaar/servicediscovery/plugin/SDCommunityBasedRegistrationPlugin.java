@@ -43,6 +43,7 @@ import org.cougaar.planning.ldm.plan.AllocationResult;
 import org.cougaar.planning.ldm.plan.Disposition;
 import org.cougaar.planning.ldm.plan.PlanElement;
 import org.cougaar.planning.ldm.plan.Role;
+import org.cougaar.planning.ldm.plan.Schedule;
 import org.cougaar.planning.ldm.plan.Task;
 import org.cougaar.planning.plugin.legacy.SimplePlugin;
 import org.cougaar.planning.plugin.util.PluginHelper;
@@ -65,7 +66,9 @@ import org.cougaar.servicediscovery.transaction.DAMLReadyRelay;
 import org.cougaar.servicediscovery.SDFactory;
 import org.cougaar.servicediscovery.SDDomain;
 
+import org.cougaar.util.TimeSpan;
 import org.cougaar.util.UnaryPredicate;
+
 
 
 import java.io.File;
@@ -84,6 +87,8 @@ import java.util.Set;
  * roles in the YP.
  **/
 public class SDCommunityBasedRegistrationPlugin extends ComponentPlugin implements PrivilegedClaimant {
+  private static final long DEFAULT_START = TimeSpan.MIN_VALUE;
+  private static final long DEFAULT_END = TimeSpan.MAX_VALUE;
 
   private static final String DAML_IDENTIFIER = ".profile.daml";
 
@@ -733,6 +738,8 @@ public class SDCommunityBasedRegistrationPlugin extends ComponentPlugin implemen
     ProviderDescription pd = getPD();
     Collection serviceProfiles = pd.getServiceProfiles();
 
+    PlanningFactory planningFactory = 
+	(PlanningFactory) domainService.getFactory("planning");
     SDFactory sdFactory = (SDFactory) domainService.getFactory(SDDomain.SD_NAME);
     ProviderCapabilities providerCapabilities = 
       sdFactory.newProviderCapabilities(getAgentIdentifier().toString());
@@ -759,7 +766,9 @@ public class SDCommunityBasedRegistrationPlugin extends ComponentPlugin implemen
 
 	if ((role != null) &&
 	    (echelon != null)) {
-	  providerCapabilities.addCapability(role, echelon);
+	  Schedule defaultSchedule = 
+	    planningFactory.newSimpleSchedule(DEFAULT_START, DEFAULT_END);
+	  providerCapabilities.addCapability(role, echelon, defaultSchedule);
 	  break;
 	}
       }

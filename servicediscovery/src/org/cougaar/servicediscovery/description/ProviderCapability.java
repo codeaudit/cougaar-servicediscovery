@@ -22,24 +22,31 @@
 package org.cougaar.servicediscovery.description;
 
 import org.cougaar.planning.ldm.plan.Role;
+import org.cougaar.planning.ldm.plan.Schedule;
 
 import java.util.Collection;
 
 /**
- * A Collection which maintains an ordered list of provider capabilities
+ * Describes a provider capability for a specific role - including support 
+ * role, echelon of support, and availability.
  */
 
 public interface ProviderCapability extends java.io.Serializable {
 
   /**
-   * @return the name of the provider
+   * @return the provider's echelon of support
    **/
   public String getEchelon();
 
   /**
-   * @return the name of the provider
+   * @return the provider's role
    **/
   public Role getRole();
+
+  /**
+   * @return the providers availability for this role
+   */
+  public Schedule getAvailableSchedule();
 
 }
 
