@@ -50,7 +50,7 @@ import org.cougaar.util.Configuration;
  * using the <agent name>-profile.owl file if any in the plugin parameter-named YP agent.
  * <p>
  * This version of the plugin is somewhat simplified -- fewer error checks for example. It 
- * does not create {@link ProviderCapabilities} objects (used by more complex SDProviderPlugins).
+ * does not create {@link org.cougaar.servicediscovery.description.ProviderCapabilities} objects (used by more complex SDProviderPlugins).
  * <p>
  * First plugin argument is the name of the agent hosting the YP that we will register with.
  *<p>
