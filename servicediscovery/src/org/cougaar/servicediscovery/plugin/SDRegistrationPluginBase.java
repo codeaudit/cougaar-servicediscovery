@@ -286,6 +286,11 @@ public abstract class SDRegistrationPluginBase extends ComponentPlugin {
     return warningCutoffTime;
   }
   
+  
+  protected void resetWarningCutoffTime() {
+    warningCutoffTime = -1;
+  }
+
   protected void retryErrorLog(String message) {
     retryErrorLog(message, null);
   }
@@ -512,6 +517,10 @@ public abstract class SDRegistrationPluginBase extends ComponentPlugin {
 	}
 	pe.setEstimatedResult(estResult);
 	getBlackboardService().publishChange(pe);
+      }
+      
+      if (conf == 1.0) {
+	resetWarningCutoffTime();
       }
     }
   }

@@ -366,9 +366,11 @@ public class MatchmakerStubPlugin extends SimplePlugin {
 	  myOutstandingAlarms == 0) {
 	// Nothing on the lists and no outstanding alarms - so we're done
 	myQuiescenceReportService.setQuiescentState();
+	resetWarningCutoffTime();
 	if (myLoggingService.isInfoEnabled())
 	  myLoggingService.info(myAgentName + 
 				" finished all YP queries. Now quiescent.");
+
       } else {
 	// Some query waiting for an answer, or waiting for this Plugin to 
 	// handle it, or waiting to retry a query
@@ -401,6 +403,10 @@ public class MatchmakerStubPlugin extends SimplePlugin {
     return myWarningCutoffTime;
   }
   
+  protected void resetWarningCutoffTime() {
+    myWarningCutoffTime = -1;
+  }
+
   protected Lineage getLineage(int lineageType, TimeSpan timeSpan) {
     if (myLoggingService.isDebugEnabled()) {
       myLoggingService.debug(myAgentName + 
