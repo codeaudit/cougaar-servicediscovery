@@ -1,9 +1,12 @@
+#!/usr/bin/perl
+# -*- Perl -*-
+
 ################################################################
 # Script to generate the profile.owl files, one per provider
 # agent. Expects to use a owl template file of specific format.
 # Expects to use an agent info input file of specific format.
-# Use servicediscovery/data/profile/profile-template.txt for
-# the template file. Use servicediscovery/data/profile/agent-input.txt
+# Use servicediscovery/data/serviceprofiles/profile-template.txt for
+# the template file. Use servicediscovery/data/serviceprofiles/agent-input.txt
 # for the input file.
 #
 # usage is generateOWL <inputfile> <templatefile>
@@ -50,6 +53,7 @@ sub error_out {
     exit(1);
 } # error_out
 
+# Add a description for each role 
 sub setup_descriptions{
     %serviceDescriptions = (
     "SparePartsProvider" => "Provide spare parts supply. ",
@@ -80,7 +84,7 @@ sub setup_generic_wsdl{
 }
 
 sub resetServiceVariables{
-    $cummulativeDescription="";
+    $cumulativeDescription="";
     $rememberedRole="none";
 }
 sub resetServiceCategoryVariables{
@@ -203,7 +207,7 @@ sub print_ServiceProfile_bottom {
 	}
 	if($print) {
 	    s/%AGENT_NAME%/$agentName/;
-	    s/%SERVICE_DESCRIPTION%/$cummulativeDescription/;
+	    s/%SERVICE_DESCRIPTION%/$cumulativeDescription/;
 	    s/%ECHELON%/$echelon/;
 	    print OUTPUT $_;
 	    print $_ if $dump;
@@ -465,7 +469,7 @@ sub process_agent {
 			($roleName, $echelon) = split(",", $roleNameAndEchelon);
 			$rememberedRole=$roleName;
 			&print_military;
-			$cummulativeDescription = $cummulativeDescription.$serviceDescriptions{$roleName};
+			$cumulativeDescription = $cumulativeDescription.$serviceDescriptions{$roleName};
 		    }
 		    elsif($name eq "naicsName") {
 			$naicsName=$value;
