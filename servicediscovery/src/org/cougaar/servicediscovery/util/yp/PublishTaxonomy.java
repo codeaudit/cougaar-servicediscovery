@@ -77,8 +77,6 @@ public class PublishTaxonomy extends ComponentSupport {
 
   private YPProxy myYPProxy;
 
-  private PublishTaxonomyMachine myStateMachine;
-
   private AlarmService myAlarmService;
   private AgentIdentificationService myAgentIdentificationService;
   private LoggingService myLoggingService;
@@ -173,10 +171,11 @@ public class PublishTaxonomy extends ComponentSupport {
     // Assume component loaded in the same agent as the YPServer
     myYPProxy = getYPService().getYP(getAgentIdentificationService().getMessageAddress());
 
-    myStateMachine = new PublishTaxonomyMachine(new PublishTaxonomyCallback());
+    loadTaxonomies();
+  }
 
-    // start the ball rolling
-    myStateMachine.start();
+  protected void loadTaxonomies() {
+    new PublishTaxonomyMachine(new PublishTaxonomyCallback()).start();
   }
 
   public long getWarningCutoffTime() {
@@ -192,19 +191,6 @@ public class PublishTaxonomy extends ComponentSupport {
   }
 
   public void setTModelNames(Collection tModelNames) {
-    if (myStateMachine != null) {
-      StateMachine.State current = myStateMachine.getState();
-      if (!current.equals(StateMachine.UNINITIALIZED) && 
-	  !current.getKey().equals("START")) {
-	getLoggingService().warn("setTModelNames: TModelNames " + 
-				 tModelNames +
-				 " specified after the process of loading " +
-				 " taxonomies has started. Will not be added " + 
-				 " to the registry.");
-	return;
-      }
-    }
-
     myTModelNames = new ArrayList(tModelNames.size());
     for (Iterator iterator = tModelNames.iterator();
 	 iterator.hasNext();) {
@@ -215,19 +201,6 @@ public class PublishTaxonomy extends ComponentSupport {
   
 
   public void addTModelName(String tModelName) {
-    // Don't add if we've already started.
-    if (myStateMachine != null) {
-      StateMachine.State current = myStateMachine.getState();
-      if (!current.equals(StateMachine.UNINITIALIZED) && 
-	  !current.getKey().equals("START")) {
-	getLoggingService().warn("addTModelName: TModelName " + tModelName +
-				 " specified after the process of loading " +
-				 " taxonomies has started. Will not be added " + 
-				 " to the registry.");
-	return;
-      }
-    }
-
     myTModelNames.add(tModelName);
   }
   
@@ -253,18 +226,18 @@ public class PublishTaxonomy extends ComponentSupport {
       super.kick();
     }
 
+    public synchronized State add(State state) {
+      if (getLoggingService().isInfoEnabled()) {
+        getLoggingService().info("added - " + state);      
+      }
+      return super.add(state);
+    }
+
     private int gentaxi = 0;
+
 
     protected void init() {
       super.init();
-
-      addLink("YPError", "handleYPError");
-      add(new SState("handleYPError") {
-	public void invoke() {
-	  myStateMachine.getCallback().handle((Exception) getVar("YPErrorException"),
-					      (String ) getVar("YPErrorText"));
-	}
-      });
 	  
       addLink("START", "getToken");
       add(new SState("getToken") {
@@ -272,8 +245,8 @@ public class PublishTaxonomy extends ComponentSupport {
 	    try {
 	      call("getAuthToken", null, "gotToken");
 	    } catch (Exception e) {
-	      setVar("YPErrorException", e);
-	      transit("YPError");      
+	      logHandledError("getAuthToken: Caught exception", e);
+	      transit("DONE");
 	    }
           }
         });
@@ -320,7 +293,7 @@ public class PublishTaxonomy extends ComponentSupport {
 
       // genTaxonomy
       add(new SState("genTaxonomy") {
-          public void invoke() {
+	public void invoke() {
             String name = (String) getArgument();
 	    String completeFileName = getBasePath() + name + FILE_EXTENSION;
 
@@ -354,13 +327,13 @@ public class PublishTaxonomy extends ComponentSupport {
 
 			TModel tmodel = null;
 
-			try {
+			try { 
 			  tmodel = createTaxonomy(name, file, tModelKey);
-		
 			} catch (Exception e) {
-			  f.setVar("YPErrorException", e);
-			  transit("YPERROR");
-			}
+			  logHandledError("createTaxonomy: Caught exception in " + 
+					  name, e);
+			  transit("DONE");
+			} 
 			return tmodel;
                       }});
 
@@ -390,7 +363,21 @@ public class PublishTaxonomy extends ComponentSupport {
                         return addSoapBinding((TModel) tModels.elementAt(0));
                       }});
       addLink("doneCBT", "POP");
+
+      addLink("YPError", "handleYPError");
+      add(new SState("handleYPError") {
+	public void invoke() {
+	  getCallback().handle((Exception) getVar("YPErrorException"),
+			       (String ) getVar("YPErrorText"));
+	}
+      });
+      
     }
+
+    protected void logHandledError(String message, Throwable e) {
+      getCallback().handle(e, message);
+    }
+
 
     protected PublishTaxonomyCallback getCallback() {
       return myCallback;
@@ -452,8 +439,7 @@ public class PublishTaxonomy extends ComponentSupport {
   }
 
   private class PublishTaxonomyCallback {
-    void handle(Exception e, String exceptionText) {
-      // Don't try to keep state - just restart from scratch
+    void handle(Throwable e, String exceptionText) {
       int rand = (int)(Math.random()*10000) + 1000;
       
       if(System.currentTimeMillis() > getWarningCutoffTime()) {
@@ -474,6 +460,7 @@ public class PublishTaxonomy extends ComponentSupport {
       
       myAlarm = new PublishAlarm(getAlarmService().currentTimeMillis() + rand);
       getAlarmService().addAlarm(myAlarm);      
+
     }
   }
 
@@ -487,8 +474,7 @@ public class PublishTaxonomy extends ComponentSupport {
     public synchronized void expire() {
       if (!expired) {
         expired = true;
-	myStateMachine.reset();
-	myStateMachine.start();
+	loadTaxonomies();
       }
     }
 
