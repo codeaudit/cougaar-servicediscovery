@@ -264,7 +264,6 @@ public class PublishTaxonomy extends ComponentSupport {
                       public TModel make(Frame f) {
                         String[] args = (String[]) f.getArgument();
                         String name = args[0];
-                        String file = args[1];
                         TModel tModel = new TModel();
                         tModel.setName(name);
                         return tModel;

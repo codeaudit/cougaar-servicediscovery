@@ -37,7 +37,6 @@ import org.uddi4j.client.UDDIProxy;
 import org.uddi4j.datatype.tmodel.TModel;
 import org.uddi4j.response.AuthToken;
 import org.uddi4j.response.DispositionReport;
-import org.uddi4j.response.TModelDetail;
 import org.uddi4j.util.CategoryBag;
 import org.uddi4j.util.KeyedReference;
 
@@ -143,7 +142,7 @@ public class SaveTModel {
       tModels.add(soapTModel);
 
       System.out.println("\nSaving a TModel");
-      TModelDetail tModelDetail = proxy.save_tModel(token.getAuthInfoString(), tModels);
+      proxy.save_tModel(token.getAuthInfoString(), tModels);
       System.out.println("\nTModels saved ");
       // Handle possible errors
     } catch (UDDIException e) {

@@ -616,7 +616,6 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
       state.step3 = new CallbackDelegate(callback) { 
 	public void invoke(Object result) {
 	  ServiceList serviceList = (ServiceList) result;
-	  Enumeration serviceInfos = serviceList.getServiceInfos().getServiceInfoVector().elements();
 	  loop(serviceList.getServiceInfos().getServiceInfoVector(),
 	       state.sub1,
 	       state.step4);

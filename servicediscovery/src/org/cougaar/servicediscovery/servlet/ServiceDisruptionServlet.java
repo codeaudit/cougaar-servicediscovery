@@ -171,16 +171,17 @@ public class ServiceDisruptionServlet extends BaseServletComponent implements Bl
 			HttpServletResponse res) throws IOException {
 			PrintWriter out = res.getWriter();
 			out.println(headWithTitle("Service Disruption") + "<BODY><H1>");
-                        boolean airMaintDisrupted = false;
 
-			Collection col;
+//			rst -- I suppose somebody intended to use this, but it's 
+//                      pointless as it stands.
+//                      Collection col;
 			try {
                           //when does this ever get called?
-				blackboard.openTransaction();
-				col = blackboard.query(pred);
+//				blackboard.openTransaction();
+//				col = blackboard.query(pred);
 
 			} finally {
-				blackboard.closeTransactionDontReset();
+//				blackboard.closeTransactionDontReset();
 				out.println("</H1></body></html>");
 				out.flush();
 			}

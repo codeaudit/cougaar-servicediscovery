@@ -380,7 +380,6 @@ public class SupplyAuxQueryServlet
             beginTasksHTMLTable("Supply Tasks", null);
 
             Iterator tasksIT = col.iterator();
-            int ctr = 0;
 
             while (tasksIT.hasNext()) {
 
@@ -394,9 +393,9 @@ public class SupplyAuxQueryServlet
                 }
                 SupplyClassPG pg = (SupplyClassPG) asset.searchForPropertyGroup(SupplyClassPG.class);
 
-                String supplyType="";
+//                String supplyType="";
                 if(pg!= null) {
-                    supplyType = pg.getSupplyType();
+//                    supplyType = pg.getSupplyType();
                 }
 
                 double qty = taskUtils.getQuantity(task);
