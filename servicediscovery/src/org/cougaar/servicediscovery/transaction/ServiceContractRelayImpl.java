@@ -175,12 +175,12 @@ public class ServiceContractRelayImpl extends RelayAdapter
     
   public String toString() {
     if (myToString == null) {
-      myToString = getClass().getName() + ": Provider=" + getProviderName() +
-	", serviceRequest=" +
+      myToString = getClass().getName() + ": Provider= " + getProviderName() +
+	", serviceRequest = " +
         getServiceRequest() +
-	", serviceContract=" +
+	", serviceContract = " +
         getServiceContract() +
-        ", UID=<" + getUID() + ">";
+        ", UID =<" + getUID() + ">";
     }
     
     return myToString;
