@@ -19,7 +19,26 @@ above.)
 	(e) mysql -u (userid) -p(password) (CSMART db name) < YPSupport-export.sql
 
             
-4) If running sdtest configuration from the command line: add the following 
+4) Generate the provider agent DAML files. 
+
+	(a) If Perl is not installed on your computer, you can download it 
+	from http://www.activestate.com.
+    
+	(d) cd CIP/servicediscovery/data/serviceprofiles
+
+	(c) Edit agent-input.txt. Replace  <COUGAAR_INSTALL_PATH> with your 
+	cougaar install path.
+
+	Note: If running from NT, you must use a capital letter for the the 
+	drive specification.
+		cougaarInstallPath=C:/cougaar
+	
+	If running from linux, the cougaar install path specification must not 
+	contain any symbolic links.
+    
+	(d) perl generateDAML.pl agent-input.txt profile-template.txt
+ 
+5) If running sdtest configuration from the command line: add the following 
 Service Discovery specific definitions to MYPROPERTIES variable used in 
 CIP/bin/Node[.bat]. CIP/servicediscovery/bin/setarguments[.bat][.sh] can be 
 used as a template.
@@ -41,7 +60,7 @@ used as a template.
 	(c) cd CIP/servicediscovery/configs/sdtest
 	(d) node MiniNode
 
-5) If running from CSMART, edit CIP/server/bin/server.props.
+6) If running from CSMART, edit CIP/server/bin/server.props.
 
 	(a) org.cougaar.config.path must include both
 	(CIP)/servicediscovery/configs/common\; 
@@ -53,9 +72,9 @@ used as a template.
         IMPORTANT: (CIP)servicediscovery/configs/common must be listed prior 
 	to the entry for(CIP)/configs/common
    
-5) Running from CSMART:
+7) Running from CSMART:
  
-	(a) Use experiment SD-1AD-TRANS-STUB.
+	(a) Use experiment SD-SMALL-1AD-TRANS-STUB.
  
 	(b) Add the following recipes in the following order:
 		YPSupport
