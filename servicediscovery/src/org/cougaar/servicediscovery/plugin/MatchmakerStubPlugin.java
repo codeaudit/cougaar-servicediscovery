@@ -3,11 +3,11 @@
  *  Copyright 2002-2003 BBNT Solutions, LLC
  *  under sponsorship of the Defense Advanced Research Projects Agency (DARPA)
  *  and the Defense Logistics Agency (DLA).
- * 
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the Cougaar Open Source License as published by
  *  DARPA on the Cougaar Open Source Website (www.cougaar.org).
- * 
+ *
  *  THE COUGAAR SOFTWARE AND ANY DERIVATIVE SUPPLIED BY LICENSOR IS
  *  PROVIDED 'AS IS' WITHOUT WARRANTIES OF ANY KIND, WHETHER EXPRESS OR
  *  IMPLIED, INCLUDING (BUT NOT LIMITED TO) ALL IMPLIED WARRANTIES OF
@@ -70,7 +70,7 @@ public final class MatchmakerStubPlugin extends SimplePlugin {
     public boolean execute(Object o) {
       return ((o instanceof LineageList) &&
 	      (((LineageList) o).getType() == LineageList.COMMAND));
-    }     
+    }
   };
 
 
@@ -141,7 +141,7 @@ public final class MatchmakerStubPlugin extends SimplePlugin {
 	}
 
 	if (log.isDebugEnabled()) {
-	  log.debug(getAgentIdentifier() + " looking for " + 
+	  log.debug(getAgentIdentifier() + " looking for " +
 		    query.getRole() + " at " + echelon + " level");
 	}
 
@@ -149,7 +149,7 @@ public final class MatchmakerStubPlugin extends SimplePlugin {
         for (Iterator iter = services.iterator(); iter.hasNext(); ) {
           ServiceInfo serviceInfo = (ServiceInfo) iter.next();
 	  float score = scoreServiceProvider(serviceInfo, echelon);
-	  
+
 	  if (score >= 0) {
 	    scoredServiceDescriptions.add(new ScoredServiceDescriptionImpl(score,
 									   serviceInfo));
@@ -163,7 +163,7 @@ public final class MatchmakerStubPlugin extends SimplePlugin {
 
 	    if(log.isDebugEnabled()) {
 	      log.debug(agentName + ":execute: ignoring Provider name: " + serviceInfo.getProviderName() +
-			" Service name: " + serviceInfo.getServiceName() + 
+			" Service name: " + serviceInfo.getServiceName() +
 			" Service score: " + score);
 	    }
           }
@@ -179,16 +179,16 @@ public final class MatchmakerStubPlugin extends SimplePlugin {
     }
   }
 
-  protected float scoreServiceProvider(ServiceInfo serviceInfo, 
+  protected float scoreServiceProvider(ServiceInfo serviceInfo,
 				       String requestedEchelonOfSupport) {
     int echelonScore = getEchelonScore(serviceInfo, requestedEchelonOfSupport);
-    
+
     if (log.isDebugEnabled()) {
       log.debug("scoreServiceProvider: echelon score " + echelonScore);
     }
     if (echelonScore < 0) {
       return -1;
-    } 
+    }
 
     int lineageScore = getLineageScore(serviceInfo);
     if (log.isDebugEnabled()) {
@@ -196,16 +196,16 @@ public final class MatchmakerStubPlugin extends SimplePlugin {
     }
     if (lineageScore < 0) {
       return -1;
-    } else { 
+    } else {
       lineageScore = 100 * lineageScore;
     }
 
     return echelonScore + lineageScore;
   }
-    
-  protected int getEchelonScore(ServiceInfo serviceInfo, 
+
+  protected int getEchelonScore(ServiceInfo serviceInfo,
 				String requestedEchelonOfSupport) {
-    int requestedEchelonOrder = 
+    int requestedEchelonOrder =
       Constants.MilitaryEchelon.echelonOrder(requestedEchelonOfSupport);
 
     if (requestedEchelonOrder == -1) {
@@ -218,26 +218,26 @@ public final class MatchmakerStubPlugin extends SimplePlugin {
 
     for (Iterator iterator = serviceInfo.getServiceClassifications().iterator();
 	 iterator.hasNext();) {
-      ServiceClassification classification = 
+      ServiceClassification classification =
 	(ServiceClassification) iterator.next();
       if (classification.getClassificationSchemeName().equals(UDDIConstants.MILITARY_ECHELON_SCHEME)) {
 
 	String serviceEchelon = classification.getClassificationCode();
-	serviceEchelonOrder = 
+	serviceEchelonOrder =
 	  Constants.MilitaryEchelon.echelonOrder(serviceEchelon);
 	break;
       }
     }
-    
+
     if (serviceEchelonOrder == -1) {
       if (log.isDebugEnabled()) {
-	log.debug(agentName + ": Ignoring service with a bad echelon of support: " + 
+	log.debug(agentName + ": Ignoring service with a bad echelon of support: " +
 		  serviceEchelonOrder);
       }
       return -1;
     } if (serviceEchelonOrder < requestedEchelonOrder) {
       if (log.isDebugEnabled()) {
-	log.debug(agentName + ": Ignoring service with a lower echelon of support: " + 
+	log.debug(agentName + ": Ignoring service with a lower echelon of support: " +
 		  serviceEchelonOrder);
       }
       return -1;
@@ -258,17 +258,24 @@ public final class MatchmakerStubPlugin extends SimplePlugin {
       return -1;
     }
 
+    //if there are multiple SCAs, return the minimum distance
+    //among them
+    int minHops = Integer.MAX_VALUE;
+
     for (Iterator iterator = serviceInfo.getServiceClassifications().iterator();
 	 iterator.hasNext();) {
-      ServiceClassification classification = 
+      ServiceClassification classification =
 	(ServiceClassification) iterator.next();
       if (classification.getClassificationSchemeName().equals(UDDIConstants.SUPPORT_COMMAND_ASSIGNMENT)) {
-	return commandLineage.countHops(agentName, 
-					classification.getClassificationName());
+        minHops = Math.min(minHops, commandLineage.countHops(agentName,
+            classification.getClassificationName()));
       }
     }
 
-    return -1;
+    if(minHops == Integer.MAX_VALUE)
+      return -1;
+    else
+      return minHops;
   }
 
   protected String getRequestedEchelonOfSupport(Collection services) {
@@ -278,27 +285,27 @@ public final class MatchmakerStubPlugin extends SimplePlugin {
 
     for (Iterator iter = services.iterator(); iter.hasNext(); ) {
       ServiceInfo serviceInfo = (ServiceInfo) iter.next();
-      	
+
       if (serviceInfo.getProviderName().equals(agentName)) {
 	for (Iterator iterator = serviceInfo.getServiceClassifications().iterator();
 	     iterator.hasNext();) {
 	  boolean foundEchelon = false;
 
-	  ServiceClassification classification = 
+	  ServiceClassification classification =
 	    (ServiceClassification) iterator.next();
 
 	  if (classification.getClassificationSchemeName().equals(UDDIConstants.MILITARY_ECHELON_SCHEME)) {
 	    serviceEchelon = classification.getClassificationCode();
 
-	    serviceEchelonOrder = 
+	    serviceEchelonOrder =
 	      Constants.MilitaryEchelon.echelonOrder(serviceEchelon);
 
 	    if ((serviceEchelonOrder == -1) &&
 		(log.isDebugEnabled())) {
-	      log.debug(getAgentIdentifier() + 
+	      log.debug(getAgentIdentifier() +
 			" getRequestedEchelonOfSupport " +
-			" serviceInfo has an unrecognized echelon " + 
-			serviceEchelon); 
+			" serviceInfo has an unrecognized echelon " +
+			serviceEchelon);
 	    }
 	    foundEchelon = true;
 	    break;
@@ -310,12 +317,12 @@ public final class MatchmakerStubPlugin extends SimplePlugin {
 	}
       }
     }
-     
+
     String requestedEchelonOfSupport;
 
     if (serviceEchelonOrder == -1) {
       requestedEchelonOfSupport = Constants.MilitaryEchelon.ECHELON_ORDER[0];
-    } else if (serviceEchelonOrder < 
+    } else if (serviceEchelonOrder <
 	       Constants.MilitaryEchelon.MAX_ECHELON_INDEX) {
 	requestedEchelonOfSupport = Constants.MilitaryEchelon.ECHELON_ORDER[serviceEchelonOrder + 1];
     } else {
