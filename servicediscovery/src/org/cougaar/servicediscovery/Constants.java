@@ -28,12 +28,6 @@ import org.cougaar.glm.ldm.Constants.RelationshipType;
 public class Constants implements org.cougaar.planning.Constants {
   private Constants() {}
 
-  public interface Verb extends org.cougaar.glm.ldm.Constants.Verb {
-    String REQUESTFORSUPPORT = "RequestForSupport";
-
-    org.cougaar.planning.ldm.plan.Verb RequestForSupport = org.cougaar.planning.ldm.plan.Verb.getVerb(REQUESTFORSUPPORT);
-  }
-
   public static class Role {
     /**
      * Insure that Role constants are initialized. Actually does

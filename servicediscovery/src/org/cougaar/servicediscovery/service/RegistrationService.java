@@ -41,6 +41,7 @@ public interface RegistrationService extends Service {
    */
 
   boolean addProviderDescription(ProviderDescription pd);
+  boolean addProviderDescription(ProviderDescription pd, Collection additionalServiceClassifications);
 
   boolean updateProviderDescription(String providerKey, ProviderDescription pd);
 

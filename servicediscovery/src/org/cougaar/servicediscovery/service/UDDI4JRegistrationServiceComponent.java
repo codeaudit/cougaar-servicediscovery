@@ -242,17 +242,22 @@ public final class UDDI4JRegistrationServiceComponent
 
     }
 
+    public boolean addProviderDescription(ProviderDescription pd) {
+      return addProviderDescription(pd, Collections.EMPTY_LIST);
+    }
+
+
     /**
      * Adds a new ProviderDescription object.
      *
      * @param pd ProviderDescription for this provider.
      * @return success if the Provider was added without error
      */
-    public boolean addProviderDescription(ProviderDescription pd) {
+    public boolean addProviderDescription(ProviderDescription pd, Collection additionalServiceClassifications) {
       boolean success=false;
 
-      if(storeProviderDescription(pd)) {
-        success = executePublish(pd);
+      if (storeProviderDescription(pd)) {
+        success = executePublish(pd, additionalServiceClassifications);
       }
       return success;
     }
@@ -267,7 +272,7 @@ public final class UDDI4JRegistrationServiceComponent
       
       if ((ypAgent == null) || ypAgent.equals("")) {
 	proxy = null;
-	log.error("ypAgent not identified.");
+	log.error(getAgentIdentifier() + ": ypAgent not identified.");
 	return false;
       }
       proxy = ypService.getYP(ypAgent);
@@ -291,7 +296,7 @@ public final class UDDI4JRegistrationServiceComponent
      *
      * @param pd        the ProviderDescription object
      */
-    private boolean executePublish(ProviderDescription pd) {
+    private boolean executePublish(ProviderDescription pd, Collection additionalServiceClassifications) {
 
       boolean success = true;
 
@@ -325,21 +330,31 @@ public final class UDDI4JRegistrationServiceComponent
         BusinessService bSvc = new BusinessService("");
         bSvc.setDefaultName(new Name(sd.getServiceProfileID()));
         Collection serviceCategories = sd.getServiceCategories();
-        CategoryBag myBag = new CategoryBag();
+        CategoryBag categoryBag = new CategoryBag();
         for (Iterator it = serviceCategories.iterator(); it.hasNext() ;) {
           ServiceCategory sc = (ServiceCategory)it.next();
-          myBag.getKeyedReferenceVector().add(getKeyedReference(sc.getCategorySchemeName(), sc.getCategoryName(),
+          categoryBag.getKeyedReferenceVector().add(getKeyedReference(sc.getCategorySchemeName(), sc.getCategoryName(),
                                                                 sc.getCategoryCode()));
 
           // add additional service type qualifiers
           for (Iterator j = sc.getAdditionalQualifications().iterator(); j.hasNext();) {
             AdditionalQualificationRecord aqr = (AdditionalQualificationRecord) j.next();
-            myBag.getKeyedReferenceVector().add(getKeyedReference(sc.getCategorySchemeName(),
+            categoryBag.getKeyedReferenceVector().add(getKeyedReference(sc.getCategorySchemeName(),
                                                                   aqr.getQualificationName(),
                                                                   aqr.getQualificationValue()));
           }
         }
-        bSvc.setCategoryBag(myBag);
+
+	for (Iterator iterator = additionalServiceClassifications.iterator();
+	     iterator.hasNext();) {
+	  ServiceClassification serviceClassification = 
+	    (ServiceClassification) iterator.next();
+          categoryBag.getKeyedReferenceVector().add(getKeyedReference(serviceClassification.getClassificationSchemeName(),
+                                                                    serviceClassification.getClassificationName(),
+                                                                    serviceClassification.getClassificationCode()));
+	}
+      
+        bSvc.setCategoryBag(categoryBag);
         bSvc.setBusinessKey ("");
         if(sd.getTextDescription().trim().length() != 0) {
           bSvc.setDefaultDescriptionString(sd.getTextDescription());
@@ -422,16 +437,31 @@ public final class UDDI4JRegistrationServiceComponent
     private String findTModelKey(String tModelName) {
       if(!schemeKeys.containsKey(tModelName)) {
         TModelList tlist = null;
-        try {
+	int retryCount = 100;
+	
+	while (retryCount-- > 0) {
 	  if (log.isDebugEnabled()) {
-	    log.debug("findTModelKey: " + tModelName);
+	    log.debug("findTModelKey: " + tModelName + 
+		      " retryCount " + retryCount);
 	  }
-          tlist = (TModelList) ypService.submit(currentProxy().find_tModel(tModelName, null, null, null, 1)).get();
-        } catch (Exception e) {
-          if (log.isErrorEnabled()) {
-            log.error("Caught an Exception finding tModel.", e);
-          }
-        }
+	  try {
+	    tlist = (TModelList) ypService.submit(currentProxy().find_tModel(tModelName, null, null, null, 1)).get();
+
+	    if (tlist == null) {
+	      Thread.sleep(10000);
+	    }
+	  } catch (InterruptedException ie) {
+	    continue;
+	  } catch (Exception e) {
+	    log.error("Caught an Exception finding tModel.", e);
+	  }
+	}
+
+	if (tlist == null) {
+	  log.error("Unable to find tModel for " + tModelName);
+	  return "";
+	}
+
         TModelInfos infos = tlist.getTModelInfos();
         Vector tms = infos.getTModelInfoVector();
         schemeKeys.put(tModelName, ((TModelInfo) tms.elementAt(0)).getTModelKey());
