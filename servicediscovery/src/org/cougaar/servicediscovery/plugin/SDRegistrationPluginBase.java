@@ -47,8 +47,7 @@ import org.cougaar.planning.plugin.util.PluginHelper;
 import org.cougaar.servicediscovery.SDDomain;
 import org.cougaar.servicediscovery.SDFactory;
 import org.cougaar.servicediscovery.description.AvailabilityChangeMessage;
-import org.cougaar.servicediscovery.description.LineageList;
-import org.cougaar.servicediscovery.description.LineageListWrapper;
+import org.cougaar.servicediscovery.description.Lineage;
 import org.cougaar.servicediscovery.description.ProviderCapabilities;
 import org.cougaar.servicediscovery.description.ProviderCapability;
 import org.cougaar.servicediscovery.description.ProviderDescription;
@@ -98,8 +97,8 @@ public abstract class SDRegistrationPluginBase extends ComponentPlugin {
 
   private UnaryPredicate supportLineagePredicate = new UnaryPredicate() {
     public boolean execute(Object o) {
-      return ((o instanceof LineageListWrapper) &&
-	      (((LineageListWrapper) o).getType() == LineageList.SUPPORT));
+      return ((o instanceof Lineage) &&
+	      (((Lineage) o).getType() == Lineage.SUPPORT));
     }
   };
 
@@ -315,10 +314,10 @@ public abstract class SDRegistrationPluginBase extends ComponentPlugin {
       new ArrayList(supportLineageCollection.size());
     for (Iterator iterator = supportLineageCollection.iterator();
 	 iterator.hasNext();) {
-      LineageListWrapper wrapper = (LineageListWrapper) iterator.next();
+      Lineage lineage = (Lineage) iterator.next();
       ServiceClassification sca =
-	new ServiceClassificationImpl(wrapper.getRoot(),
-				      wrapper.getRoot(),
+	new ServiceClassificationImpl(lineage.getRoot(),
+				      lineage.getRoot(),
 				      UDDIConstants.SUPPORT_COMMAND_ASSIGNMENT);
       serviceClassifications.add(sca);
     }

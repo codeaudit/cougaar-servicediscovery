@@ -36,29 +36,29 @@ import org.cougaar.planning.plugin.legacy.SimplePlugin;
 import org.cougaar.servicediscovery.Constants;
 import org.cougaar.servicediscovery.SDDomain;
 import org.cougaar.servicediscovery.SDFactory;
-import org.cougaar.servicediscovery.description.LineageList;
-import org.cougaar.servicediscovery.description.LineageListWrapper;
-import org.cougaar.servicediscovery.transaction.LineageListRelay;
+import org.cougaar.servicediscovery.description.Lineage;
+import org.cougaar.servicediscovery.description.LineageImpl;
+import org.cougaar.servicediscovery.transaction.LineageRelay;
 import org.cougaar.util.UnaryPredicate;
 
 /**
- * LineagePlugin generates the LineageLists for the Agent.
+ * LineagePlugin generates the Lineages for the Agent.
  */
 public class LineagePlugin extends SimplePlugin
 {
   private IncrementalSubscription myReportForDutySubscription;
-  private IncrementalSubscription mySuperiorLineageListRelaySubscription;
-  private IncrementalSubscription mySubordinateLineageListRelaySubscription;
-  private IncrementalSubscription myLineageListWrapperSubscription;
+  private IncrementalSubscription mySuperiorLineageRelaySubscription;
+  private IncrementalSubscription mySubordinateLineageRelaySubscription;
+  private IncrementalSubscription myLineageSubscription;
 
   private String myAgentName;
 
   private LoggingService myLoggingService;
   private SDFactory mySDFactory;
 
-  private UnaryPredicate myLineageListWrapperPred = new UnaryPredicate() {
+  private UnaryPredicate myLineagePred = new UnaryPredicate() {
     public boolean execute(Object o) {
-      if (o instanceof LineageListWrapper) {
+      if (o instanceof Lineage) {
 	return true;
       } else {
 	return false;
@@ -77,10 +77,10 @@ public class LineagePlugin extends SimplePlugin
     }
   };
 
-  private UnaryPredicate mySubordinateLineageListRelayPred = new UnaryPredicate() {
+  private UnaryPredicate mySubordinateLineageRelayPred = new UnaryPredicate() {
     public boolean execute(Object o) {
-      if (o instanceof LineageListRelay) {
-	LineageListRelay relay = (LineageListRelay) o;
+      if (o instanceof LineageRelay) {
+	LineageRelay relay = (LineageRelay) o;
 	return (relay.getAgentName().equals(myAgentName));
       } else {
 	return false;
@@ -88,10 +88,10 @@ public class LineagePlugin extends SimplePlugin
     }
   };
 
-  private UnaryPredicate mySuperiorLineageListRelayPred = new UnaryPredicate() {
+  private UnaryPredicate mySuperiorLineageRelayPred = new UnaryPredicate() {
     public boolean execute(Object o) {
-      if (o instanceof LineageListRelay) {
-	LineageListRelay relay = (LineageListRelay) o;
+      if (o instanceof LineageRelay) {
+	LineageRelay relay = (LineageRelay) o;
 	return (!relay.getAgentName().equals(myAgentName));
       } else {
 	return false;
@@ -108,21 +108,21 @@ public class LineagePlugin extends SimplePlugin
 
     myReportForDutySubscription = 
       (IncrementalSubscription) subscribe(myReportForDutyPred);
-    mySubordinateLineageListRelaySubscription = 
-      (IncrementalSubscription) subscribe(mySubordinateLineageListRelayPred);
-    mySuperiorLineageListRelaySubscription = 
-      (IncrementalSubscription) subscribe(mySuperiorLineageListRelayPred);
-    myLineageListWrapperSubscription = 
-      (IncrementalSubscription) subscribe(myLineageListWrapperPred);
+    mySubordinateLineageRelaySubscription = 
+      (IncrementalSubscription) subscribe(mySubordinateLineageRelayPred);
+    mySuperiorLineageRelaySubscription = 
+      (IncrementalSubscription) subscribe(mySuperiorLineageRelayPred);
+    myLineageSubscription = 
+      (IncrementalSubscription) subscribe(myLineagePred);
 
     mySDFactory = (SDFactory) getFactory(SDDomain.SD_NAME);
 
     // Add initial seed for command lineage?
     boolean addSeed = true;
-    for (Iterator iterator = myLineageListWrapperSubscription.iterator();
+    for (Iterator iterator = myLineageSubscription.iterator();
 	 iterator.hasNext();) {
-      LineageListWrapper wrapper = (LineageListWrapper) iterator.next();
-      if (wrapper.getType() == LineageList.COMMAND) {
+      Lineage lineage = (Lineage) iterator.next();
+      if (lineage.getType() == Lineage.ADCON) {
 	addSeed = false;
 	break;
       }
@@ -131,14 +131,17 @@ public class LineagePlugin extends SimplePlugin
     if (addSeed) {
       if (myLoggingService.isDebugEnabled()) {
 	myLoggingService.debug(getAgentIdentifier() + 
-			       " publishing initial command lineage.");
+			       " publishing initial administrative command lineage.");
       }
 
-      LineageList list = mySDFactory.newLineageList(LineageList.COMMAND);
+      ArrayList list = new ArrayList();
       list.add(myAgentName);
-      LineageListWrapper wrapper =
-	mySDFactory.newLineageListWrapper(list);
-      publishAdd(wrapper);
+      Lineage lineage =
+	mySDFactory.newLineage(Lineage.ADCON, list);
+      publishAdd(lineage);
+      lineage =
+	mySDFactory.newLineage(Lineage.OPCON, list);
+      publishAdd(lineage);
     }
   }
 
@@ -168,25 +171,25 @@ public class LineagePlugin extends SimplePlugin
       //   remove published lineage list associated with the superior
     }
 
-    if (mySubordinateLineageListRelaySubscription.hasChanged()) {
+    if (mySubordinateLineageRelaySubscription.hasChanged()) {
       Collection addedSubordinateRelays =
-	mySubordinateLineageListRelaySubscription.getAddedCollection();
+	mySubordinateLineageRelaySubscription.getAddedCollection();
 
       for (Iterator adds = addedSubordinateRelays.iterator();
 	   adds.hasNext();) {
-	updateSubordinate((LineageListRelay) adds.next());
+	updateSubordinate((LineageRelay) adds.next());
       }
 
       // Not interested in modifications or removes
     }
 
-    if (mySuperiorLineageListRelaySubscription.hasChanged()) {
+    if (mySuperiorLineageRelaySubscription.hasChanged()) {
 
       Collection changedSuperiorRelays =
-	mySuperiorLineageListRelaySubscription.getChangedCollection();
+	mySuperiorLineageRelaySubscription.getChangedCollection();
       for (Iterator changes = changedSuperiorRelays.iterator();
 	   changes.hasNext();) {
-	updateLineage((LineageListRelay) changes.next());
+	updateLineage((LineageRelay) changes.next());
       }
 
       // Not handling adds/removes at this point
@@ -194,7 +197,7 @@ public class LineagePlugin extends SimplePlugin
       // plugin.
     }
 
-    if (myLineageListWrapperSubscription.hasChanged()) {
+    if (myLineageSubscription.hasChanged()) {
       if (myLoggingService.isDebugEnabled()) {
 	myLoggingService.debug(myAgentName +
 			       " lineage list subscription has changed.");
@@ -205,26 +208,26 @@ public class LineagePlugin extends SimplePlugin
 
   protected void addSupportLineage(Task rfdTask) {
 
-    LineageList lineageList = mySDFactory.newLineageList(LineageList.SUPPORT);
-    lineageList.add(myAgentName);
-
+    ArrayList list = new ArrayList();
     Asset superior =
       (Asset) findIndirectObject(rfdTask, Constants.Preposition.FOR);
     String scaName = superior.getClusterPG().getMessageAddress().toString();
+
+    list.add(scaName);
     // Okay to support oneself but don't add duplicate entries to the
     // lineage
     if (!myAgentName.equals(scaName)) {
-      lineageList.add(superior.getClusterPG().getMessageAddress().toString());
+      list.add(myAgentName);
     }
 
-    LineageListWrapper wrapper = 
-      mySDFactory.newLineageListWrapper(lineageList);
-    publishAdd(wrapper);
+
+    Lineage lineage = mySDFactory.newLineage(Lineage.SUPPORT, list);
+    publishAdd(lineage);
 
     if (myLoggingService.isDebugEnabled()) {
       myLoggingService.debug(getAgentIdentifier() + 
 			     "addSupportLineage: publishAdd of " +
-			     wrapper.getUID());
+			     lineage.getUID());
     }
 
   }
@@ -233,8 +236,8 @@ public class LineagePlugin extends SimplePlugin
     // Missing command support logic - look at roles specified in the AS
     // prep.
     Asset superior = (Asset) findIndirectObject(rfdTask, Constants.Preposition.FOR);
-    LineageListRelay relay =
-      mySDFactory.newLineageListRelay(superior.getClusterPG().getMessageAddress());
+    LineageRelay relay =
+      mySDFactory.newLineageRelay(superior.getClusterPG().getMessageAddress());
     if (myLoggingService.isDebugEnabled()) {
       myLoggingService.debug(getAgentIdentifier() + 
 			     " querySuperior: publishAdd of " +
@@ -244,81 +247,80 @@ public class LineagePlugin extends SimplePlugin
     publishAdd(relay);
   }
 
-  protected void updateLineage(LineageListRelay relay) {
-    for (Iterator relayListIterator = relay.getLineageLists().iterator();
-	 relayListIterator.hasNext();) {
-      LineageList relayLineage = (LineageList) relayListIterator.next();
-      LineageListWrapper localLineageWrapper = null;
+  protected void updateLineage(LineageRelay relay) {
+    for (Iterator relayLineageIterator = relay.getLineages().iterator();
+	 relayLineageIterator.hasNext();) {
+      Lineage relayLineage = (Lineage) relayLineageIterator.next();
+      Lineage localLineage = null;
 
-      for (Iterator localListIterator = myLineageListWrapperSubscription.iterator();
-	   localListIterator.hasNext();) {
-        LineageListWrapper wrapper = 
-	  (LineageListWrapper) localListIterator.next();
-	if (relayLineage.getType() == wrapper.getType()) {
-          if(relayLineage.getType() == LineageList.SUPPORT) {
-            if(wrapper.getRoot().equals(relayLineage.getRoot())) {
-              localLineageWrapper = wrapper;
+      for (Iterator localLineageIterator = myLineageSubscription.iterator();
+	   localLineageIterator.hasNext();) {
+        Lineage lineage = 
+	  (Lineage) localLineageIterator.next();
+	if (relayLineage.getType() == lineage.getType()) {
+          if(relayLineage.getType() == Lineage.SUPPORT) {
+            if(lineage.getRoot().equals(relayLineage.getRoot())) {
+              localLineage = lineage;
               break;
             }
           } else {
-            localLineageWrapper = wrapper;
+            localLineage = lineage;
             break;
           }
 	}
       }
 
 
-      LineageList localLineage = 
-	mySDFactory.newLineageList(relayLineage.getType());
-      localLineage.add(myAgentName);
-      localLineage.addAll(relayLineage);
+      ArrayList updatedList = new ArrayList(); 
+      updatedList.addAll(relayLineage.getList());
+      updatedList.add(myAgentName);
 
 
-      if (localLineageWrapper != null) {
+      if (localLineage != null) {
 	// Compare lists before publish changing. Required because restart
 	// processing for Relays resends all relays.
-	if (!localLineage.equals(localLineageWrapper.getLineageList())) {
-	  localLineageWrapper.setLineageList(localLineage);
+	if (!updatedList.equals(localLineage.getList())) {
+	  ((LineageImpl) localLineage).setList(updatedList);
 	  
 	  if (myLoggingService.isDebugEnabled()) {
 	    myLoggingService.debug(getAgentIdentifier() + 
 				   " updateLineage: publishChange of " +
-				   localLineageWrapper);
+				   localLineage);
 	  }
 	  
-	  publishChange(localLineageWrapper);
+	  publishChange(localLineage);
 	}
       } else {
-	localLineageWrapper = mySDFactory.newLineageListWrapper(localLineage);
+	localLineage = mySDFactory.newLineage(relayLineage.getType(),
+					      updatedList);
 
 	if (myLoggingService.isDebugEnabled()) {
 	  myLoggingService.debug(getAgentIdentifier() + 
 				 " updateLineage: publishAdd of " +
-				 localLineageWrapper);
+				 localLineage);
 	}
 
-	publishAdd(localLineageWrapper);
+	publishAdd(localLineage);
       }
     }
   }
 
-  protected void updateSubordinate(LineageListRelay relay) {
-    ArrayList lineageLists = new ArrayList();
+  protected void updateSubordinate(LineageRelay relay) {
+    ArrayList lineages = new ArrayList();
 
-    for (Iterator iterator = myLineageListWrapperSubscription.iterator();
+    for (Iterator iterator = myLineageSubscription.iterator();
 	 iterator.hasNext();) {
-      LineageList localLineage = 
-	(LineageList) ((LineageListWrapper) iterator.next()).getLineageList();
-      lineageLists.add(mySDFactory.copyLineageList(localLineage));
+      Lineage localLineage = (Lineage) iterator.next();
+      lineages.add(mySDFactory.copyLineage(localLineage));
       if (myLoggingService.isDebugEnabled()) {
 	myLoggingService.debug(myAgentName +
 			       ":updateSubordinate localLineage " +
 			       localLineage +
-			       " type: " + localLineage.getClass());
+			       " type: " + localLineage.getType());
      }
     }
 
-    relay.setLineageLists(lineageLists);
+    relay.setLineages(lineages);
 
 
     if (myLoggingService.isDebugEnabled()) {
@@ -331,9 +333,9 @@ public class LineagePlugin extends SimplePlugin
   }
 
   protected void updateSubordinates() {
-    for (Iterator iterator = mySubordinateLineageListRelaySubscription.iterator();
+    for (Iterator iterator = mySubordinateLineageRelaySubscription.iterator();
 	 iterator.hasNext();) {
-      updateSubordinate((LineageListRelay) iterator.next());
+      updateSubordinate((LineageRelay) iterator.next());
     }
   }
 

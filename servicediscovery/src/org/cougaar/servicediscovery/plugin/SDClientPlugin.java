@@ -57,8 +57,7 @@ import org.cougaar.planning.plugin.util.PluginHelper;
 import org.cougaar.servicediscovery.SDDomain;
 import org.cougaar.servicediscovery.SDFactory;
 import org.cougaar.servicediscovery.description.LineageEchelonScorer;
-import org.cougaar.servicediscovery.description.LineageList;
-import org.cougaar.servicediscovery.description.LineageListWrapper;
+import org.cougaar.servicediscovery.description.Lineage;
 import org.cougaar.servicediscovery.description.MMRoleQuery;
 import org.cougaar.servicediscovery.description.ProviderCapabilities;
 import org.cougaar.servicediscovery.description.ProviderCapability;
@@ -92,7 +91,7 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
   private IncrementalSubscription myMMRequestSubscription;
   protected IncrementalSubscription myServiceContractRelaySubscription;
   private IncrementalSubscription myFindProvidersTaskSubscription;
-  private IncrementalSubscription myLineageListSubscription;
+  private IncrementalSubscription myLineageSubscription;
 
   /** for knowing when we get our self org asset **/
   private Organization mySelfOrg = null;
@@ -155,10 +154,10 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
     }
   };
 
-  private static UnaryPredicate myLineageListPred = new UnaryPredicate() {
+  private static UnaryPredicate myLineagePred = new UnaryPredicate() {
     public boolean execute(Object o) {
-      return ((o instanceof LineageListWrapper) &&
-	      (((LineageListWrapper) o).getType() == LineageList.COMMAND));
+      return ((o instanceof Lineage) &&
+	      (((Lineage) o).getType() == Lineage.OPCON));
     }
   };
 
@@ -346,22 +345,21 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
     return LineageEchelonScorer.getMinimumEchelonOfSupport(capabilities, role);
   }
 
-  protected LineageListWrapper getCommandLineageList() {
+  protected Lineage getCommandLineage() {
     Collection collection = 
-      getBlackboardService().query(myLineageListPred);
+      getBlackboardService().query(myLineagePred);
     
     if (collection.size() > 0) {
       Iterator iterator = collection.iterator();
-      LineageListWrapper commandListWrapper = 
-	(LineageListWrapper) iterator.next();
+      Lineage commandLineage = (Lineage) iterator.next();
 
       if (iterator.hasNext()) {
 	myLoggingService.warn(getAgentIdentifier() + 
-			      " getCommandLineageList: multiple COMMAND LineageLists found." +
-			      " Using - " + commandListWrapper);
+			      " getCommandLineage: multiple COMMAND LineageLists found." +
+			      " Using - " + commandLineage);
       }
       
-      return commandListWrapper;
+      return commandLineage;
     }
 
     return null;
@@ -373,17 +371,17 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
   protected void queryServices(Role role) {
     String minimumEchelon = getMinimumEchelon(role);
 
-    LineageListWrapper commandListWrapper = getCommandLineageList();
+    Lineage commandLineage = getCommandLineage();
 
-    if (commandListWrapper != null) {
+    if (commandLineage != null) {
       LineageEchelonScorer scorer = 
-	new LineageEchelonScorer(commandListWrapper,
+	new LineageEchelonScorer(commandLineage,
 				 minimumEchelon,
 				 role);
       queryServices(role, scorer);
     } else {
       myLoggingService.error(getAgentIdentifier() + 
-			     " queryServices: no COMMAND LineageList on blackboard." + 
+			     " queryServices: no COMMAND Lineage on blackboard." + 
 			     " Unable to generate MMRoleQuery for " + role);
     }
   }

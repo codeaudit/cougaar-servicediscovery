@@ -33,14 +33,14 @@ import org.cougaar.util.log.Logging;
 /**
  * Relay used to request command chain lineage
  **/
-public class LineageListRelay extends RelayAdapter {
-  private static Logger myLogger = Logging.getLogger(LineageListRelay.class);
+public class LineageRelay extends RelayAdapter {
+  private static Logger myLogger = Logging.getLogger(LineageRelay.class);
 
   private String myAgentName;
-  private Collection myLineageLists;
+  private Collection myLineages;
   private transient String myToString = null;
 
-  public LineageListRelay() {
+  public LineageRelay() {
     super();
   }
 
@@ -56,11 +56,11 @@ public class LineageListRelay extends RelayAdapter {
   /**
    * Returns  the lineage lists for the target agent
    *
-   * @return Collection LineageLists for the targent agent
+   * @return Collection Lineages for the targent agent
    */
-  public Collection getLineageLists() {
-    Collection lists = (myLineageLists == null) ? 
-      Collections.EMPTY_LIST : Collections.unmodifiableCollection(myLineageLists);
+  public Collection getLineages() {
+    Collection lists = (myLineages == null) ? 
+      Collections.EMPTY_LIST : Collections.unmodifiableCollection(myLineages);
 
     return lists;
   }
@@ -68,10 +68,10 @@ public class LineageListRelay extends RelayAdapter {
   /**
    * Sets the Collection of lineages for the target agent
    *
-   * @param lineageLists Collection of lineages for the agent
+   * @param lineages Collection of lineages for the agent
    */
-  public void setLineageLists(Collection lineageLists) {
-    myLineageLists = lineageLists;
+  public void setLineages(Collection lineages) {
+    myLineages = lineages;
     myToString = null;
   }
 
@@ -97,9 +97,9 @@ public class LineageListRelay extends RelayAdapter {
    * or used.
    **/
   public int updateResponse(MessageAddress target, Object response) {
-    LineageListRelay lineageRelay = (LineageListRelay) response;
+    LineageRelay lineageRelay = (LineageRelay) response;
 
-    setLineageLists(lineageRelay.getLineageLists()); 
+    setLineages(lineageRelay.getLineages()); 
     
     return Relay.RESPONSE_CHANGE;
   }
@@ -107,14 +107,14 @@ public class LineageListRelay extends RelayAdapter {
   // Relay.Target:
 
   public Object getResponse() {
-    return (myLineageLists != null ? this : null);
+    return (myLineages != null ? this : null);
   }
 
   public String toString() {
     if (myToString == null) {
       myToString = getClass() + ": agent=<" + getAgentName() + 
-	">, lineageLists=<" +
-        getLineageLists() +
+	">, lineages=<" +
+        getLineages() +
         ">, UID=<" + getUID() + ">";
     }
 

@@ -24,6 +24,7 @@ package org.cougaar.servicediscovery;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 
 import org.cougaar.core.domain.Factory;
 import org.cougaar.core.mts.MessageAddress;
@@ -33,9 +34,8 @@ import org.cougaar.planning.ldm.plan.AspectType;
 import org.cougaar.planning.ldm.plan.HasRelationships;
 import org.cougaar.planning.ldm.plan.Preference;
 import org.cougaar.planning.ldm.plan.Role;
-import org.cougaar.servicediscovery.description.LineageList;
-import org.cougaar.servicediscovery.description.LineageListImpl;
-import org.cougaar.servicediscovery.description.LineageListWrapper;
+import org.cougaar.servicediscovery.description.Lineage;
+import org.cougaar.servicediscovery.description.LineageImpl;
 import org.cougaar.servicediscovery.description.MMQuery;
 import org.cougaar.servicediscovery.description.ProviderCapabilities;
 import org.cougaar.servicediscovery.description.ProviderCapabilitiesImpl;
@@ -45,10 +45,8 @@ import org.cougaar.servicediscovery.description.ServiceContractRelationship;
 import org.cougaar.servicediscovery.description.ServiceContractRelationshipImpl;
 import org.cougaar.servicediscovery.description.ServiceRequest;
 import org.cougaar.servicediscovery.description.ServiceRequestImpl;
-import org.cougaar.servicediscovery.description.SupportLineageList;
-import org.cougaar.servicediscovery.description.SupportLineageListImpl;
 import org.cougaar.servicediscovery.transaction.DAMLReadyRelay;
-import org.cougaar.servicediscovery.transaction.LineageListRelay;
+import org.cougaar.servicediscovery.transaction.LineageRelay;
 import org.cougaar.servicediscovery.transaction.MMQueryRequest;
 import org.cougaar.servicediscovery.transaction.MMQueryRequestImpl;
 import org.cougaar.servicediscovery.transaction.ServiceContractRelay;
@@ -88,108 +86,62 @@ public class SDFactory implements Factory {
   }
 
 
-  /** Generate a new LineageListWrapper
-    * @return LineageListWrapper
+  /** Generate a new Lineage
+    * @return Lineage
     **/
-  public LineageListWrapper newLineageListWrapper(int type) {
-    LineageList lineageList = newLineageList(type);
+  public Lineage newLineage(int type) {
+    Lineage lineage = null;
 
-    if (lineageList != null) {
-      LineageListWrapper wrapper = new LineageListWrapper();
-      wrapper.setLineageList(lineageList);
-      wrapper.setUID(myLDM.getUIDServer().nextUID());
-      return wrapper;
-    } else {
-      return null;
-    }
-  }
-
-  /** Generate a new LineageListWrapper
-    * @return LineageListWrapper
-    **/
-  public LineageListWrapper newLineageListWrapper(LineageList lineageList) {
-    LineageListWrapper wrapper = newLineageListWrapper(lineageList.getType());
-    wrapper.setLineageList(lineageList);
-    return wrapper;
-  }
-
-  /** Generate a new LineageList
-    * @return LineageList
-    **/
-  public LineageList newLineageList(int type) {
-    if (!validLineageListType(type)) {
+    if (!validLineageType(type)) {
       myLogger.error("Invalid lineage type: " + type);
-      return null;
     } else {
-      if (type == LineageList.SUPPORT) {
-	return newSupportLineageList();
-      } else {
-	LineageList lineageList = new LineageListImpl(type);
-	return lineageList;
-      }
+      lineage = new LineageImpl(type);
+      lineage.setUID(myLDM.getUIDServer().nextUID());
     }
+
+    return lineage;
   }
 
-  /** Generate a new LineageList
-    * @return LineageList
+
+  /** Generate a new Lineage
+    * @return Lineage
     **/
-  public LineageList newLineageList(int type, Collection lineage) {
-    if (!validLineageListType(type)) {
+  public Lineage newLineage(int type, List list) {
+    Lineage lineage = null;
+
+    if (!validLineageType(type)) {
       myLogger.error("Invalid lineage type: " + type);
-      return null;
     } else {
-      LineageList lineageList = newLineageList(type);
-      lineageList.addAll(lineage);
-      return lineageList;
+      lineage = new LineageImpl(type, list);
+      lineage.setUID(myLDM.getUIDServer().nextUID());
     }
+
+    return lineage;
   }
 
-  /** Generate a new SupportLineageList
-    * @return SupportLineageList
+  /** Copy an existing Lineage - does not create new UID
+    * @return Lineage
     **/
-  public SupportLineageList newSupportLineageList() {
-    SupportLineageList supportLineageList = new SupportLineageListImpl();
-    return supportLineageList;
+  public Lineage copyLineage(Lineage original){
+    Lineage lineage = new LineageImpl(original);
+    return lineage;
   }
 
-  /** Generate a new SupportLineageList
-    * @return SupportLineageList
+  /** Generate a new LineageRelay
+    * @return LineageRelay
     **/
-  public SupportLineageList newSupportLineageList(Collection lineage) {
-    SupportLineageList supportLineageList = newSupportLineageList();
-    supportLineageList.addAll(lineage);
-    return supportLineageList;
-  }
-
-  /** Copy an existing LineageList or SupportLineageList
-    * @return LineageList
-    **/
-  public LineageList copyLineageList(LineageList list) {
-    LineageList lineageList;
-
-    if (list instanceof SupportLineageList) {
-	lineageList = new SupportLineageListImpl((SupportLineageList) list);
-      } else {
-	lineageList = new LineageListImpl(list);
-      }
-    return lineageList;
-  }
-
-  /** Generate a new LineageListRelay
-    * @return LineageListRelay
-    **/
-  public LineageListRelay newLineageListRelay(MessageAddress superior) {
-    LineageListRelay lineageListRelay = new LineageListRelay();
-    lineageListRelay.setUID(myLDM.getUIDServer().nextUID());
-    lineageListRelay.addTarget(superior);
-    return lineageListRelay;
+  public LineageRelay newLineageRelay(MessageAddress superior) {
+    LineageRelay lineageRelay = new LineageRelay();
+    lineageRelay.setUID(myLDM.getUIDServer().nextUID());
+    lineageRelay.addTarget(superior);
+    return lineageRelay;
   }
 
   /**
    * validate specified lineage type
    */
-  public static boolean validLineageListType(int lineageType) {
-    return LineageListImpl.validType(lineageType);
+  public static boolean validLineageType(int lineageType) {
+    return Lineage.validType(lineageType);
   }
 
   /**

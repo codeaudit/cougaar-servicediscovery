@@ -26,8 +26,7 @@ import java.util.Iterator;
 
 import org.cougaar.planning.ldm.plan.Role;
 import org.cougaar.servicediscovery.Constants;
-import org.cougaar.servicediscovery.description.LineageList;
-import org.cougaar.servicediscovery.description.LineageListWrapper;
+import org.cougaar.servicediscovery.description.Lineage;
 import org.cougaar.servicediscovery.description.ProviderCapabilities;
 import org.cougaar.servicediscovery.description.ProviderCapability;
 import org.cougaar.servicediscovery.description.ServiceInfo;
@@ -40,7 +39,7 @@ public class LineageEchelonScorer implements ServiceInfoScorer, java.io.Serializ
   private static Logger logger = Logging.getLogger(LineageEchelonScorer.class);
   String myMinimumEchelon = null;
   Role myRole;
-  LineageListWrapper myCommandLineageWrapper;
+  Lineage myCommandLineage;
   String myAgentName = null;
 
   public static String getMinimumEchelonOfSupport(ProviderCapabilities capabilities,
@@ -60,35 +59,35 @@ public class LineageEchelonScorer implements ServiceInfoScorer, java.io.Serializ
     return Constants.MilitaryEchelon.ECHELON_ORDER[providedEchelonIndex + 1];
   }
   
-  public LineageEchelonScorer(LineageListWrapper lineageListWrapper,
+  public LineageEchelonScorer(Lineage lineage,
 			      String minimumEchelon,
 			      Role role) {
-    setLineageListWrapper(lineageListWrapper);
+    setLineage(lineage);
     myMinimumEchelon = minimumEchelon;
     myRole = role;
   }
 
   public LineageEchelonScorer() {
-    myCommandLineageWrapper = null;
+    myCommandLineage = null;
     myRole = null;
     myMinimumEchelon = null;
   }
 
-  public void setLineageListWrapper(LineageListWrapper lineageListWrapper) {
-    if (myCommandLineageWrapper != null) {
-      logger.warn("setLineageListWrapper: ignoring attempt to change LineageListWrapper from " + 
-		  myCommandLineageWrapper + " to " + lineageListWrapper);
-    } else if (lineageListWrapper.getType() == LineageList.COMMAND) {
-      myCommandLineageWrapper = lineageListWrapper;
-      myAgentName = myCommandLineageWrapper.getLeaf();
+  public void setLineage(Lineage lineage) {
+    if (myCommandLineage != null) {
+      logger.warn("setLineage: ignoring attempt to change lineage from " + 
+		  myCommandLineage + " to " + lineage);
+    } else if (lineage.getType() == Lineage.OPCON) {
+      myCommandLineage = lineage;
+      myAgentName = myCommandLineage.getLeaf();
     } else {
-      logger.warn("setLineageListWrapper: ignoring " + lineageListWrapper +
-		  ". Must be COMMAND list.");
+      logger.warn("setLineage: ignoring " + lineage +
+		  ". Must be OPCON lineage.");
     }
   }
 
-  public LineageListWrapper getLineageListWrapper() {
-    return myCommandLineageWrapper;
+  public Lineage getLineage() {
+    return myCommandLineage;
   }
 
   public void setRole(Role role) {
@@ -205,7 +204,7 @@ public class LineageEchelonScorer implements ServiceInfoScorer, java.io.Serializ
   }
 
   protected int getLineageScore(ServiceInfo serviceInfo) {
-    if (myCommandLineageWrapper == null) {
+    if (myCommandLineage == null) {
       if (logger.isWarnEnabled()) {
         logger.warn(myAgentName + ": in getLineageScore, has no command lineage");
       }
@@ -222,7 +221,7 @@ public class LineageEchelonScorer implements ServiceInfoScorer, java.io.Serializ
 	(ServiceClassification) iterator.next();
       if (classification.getClassificationSchemeName().equals(UDDIConstants.SUPPORT_COMMAND_ASSIGNMENT)) {
 	int hops = 
-	  myCommandLineageWrapper.countHops(myAgentName,
+	  myCommandLineage.countHops(myAgentName,
 					    classification.getClassificationName());
 	if (hops != -1) {
 	  minHops = Math.min(minHops, hops);

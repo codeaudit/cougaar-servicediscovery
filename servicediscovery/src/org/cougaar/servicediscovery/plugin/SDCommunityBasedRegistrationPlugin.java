@@ -36,11 +36,10 @@ import org.cougaar.core.service.community.CommunityResponse;
 import org.cougaar.core.service.community.CommunityResponseListener;
 import org.cougaar.core.service.community.CommunityService;
 import org.cougaar.servicediscovery.description.AvailabilityChangeMessage;
-import org.cougaar.servicediscovery.description.LineageListWrapper;
+import org.cougaar.servicediscovery.description.Lineage;
 import org.cougaar.servicediscovery.description.ProviderDescription;
 import org.cougaar.servicediscovery.description.ServiceClassification;
 import org.cougaar.servicediscovery.description.ServiceClassificationImpl;
-import org.cougaar.servicediscovery.description.SupportLineageList;
 import org.cougaar.servicediscovery.service.RegistrationService;
 import org.cougaar.servicediscovery.util.UDDIConstants;
 
@@ -85,8 +84,7 @@ public class SDCommunityBasedRegistrationPlugin extends SDRegistrationPluginBase
       // rebuild scaHash & reregister
       for (Iterator iterator = supportLineageSubscription.iterator();
 	   iterator.hasNext();) {
-	SupportLineageList sca = 
-	  (SupportLineageList) ((LineageListWrapper) iterator.next()).getLineageList();
+	Lineage sca = (Lineage) iterator.next();
 	handleNewSCA(sca);
       }
     }
@@ -117,8 +115,7 @@ public class SDCommunityBasedRegistrationPlugin extends SDRegistrationPluginBase
 	if (adds.size() > 0) {
 	  for (Iterator iterator = adds.iterator();
 	       iterator.hasNext();) {
-	    SupportLineageList sca = 
-	      (SupportLineageList) ((LineageListWrapper) iterator.next()).getLineageList();
+	    Lineage sca = (Lineage) iterator.next();
 	    handleNewSCA(sca);
 	  }
 	  
@@ -302,7 +299,7 @@ public class SDCommunityBasedRegistrationPlugin extends SDRegistrationPluginBase
     return true;
   }
 
-  private void handleNewSCA(SupportLineageList sca) {
+  private void handleNewSCA(Lineage sca) {
     if (log.isDebugEnabled()) {
       log.debug(getAgentIdentifier() + " adding sca " + 
 		sca.getRoot());
@@ -432,7 +429,7 @@ public class SDCommunityBasedRegistrationPlugin extends SDRegistrationPluginBase
     }
   }
 
-  private String getYPCommunityName(SupportLineageList sca) {
+  private String getYPCommunityName(Lineage sca) {
     // For now assume every SCA represented by a YPCommunity called
     // <sca>-YPCOMMUNITY
     return sca.getRoot() + "-YPCOMMUNITY";
