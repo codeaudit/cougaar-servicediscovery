@@ -1102,6 +1102,10 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
       } // end of block to change PE conf
     } // end of loop over FindProviders tasks
 
+    if (conf == 1.0) {
+      resetWarningCutoffTime();
+    }
+
     handlePersistEarly(justFoundProviders);
 
   } // end of method
@@ -1145,6 +1149,10 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
     }
     
     return myWarningCutoffTime;
+  }
+
+  protected void resetWarningCutoffTime() {
+    myWarningCutoffTime = -1;
   }
 
   protected int getDesiredNumberOfProviders(Role role) {
