@@ -58,7 +58,15 @@ public class LineagePlugin extends SimplePlugin
 
   private UnaryPredicate myLineageListPred = new UnaryPredicate() {
     public boolean execute(Object o) {
-      return (o instanceof LineageList);
+      if (o instanceof LineageList) {
+	if (myLoggingService.isDebugEnabled()) {
+	myLoggingService.debug(myAgentName + " lineage list: " + o +  
+			       " type: " + o.getClass());
+	}
+	return true;
+      } else {
+	return false;
+      }
     }
   };
 
@@ -168,6 +176,14 @@ public class LineagePlugin extends SimplePlugin
 
       updateSubordinates();
     }
+
+    if (myLineageListSubscription.hasChanged()) {
+      if (myLoggingService.isDebugEnabled()) {
+	myLoggingService.debug(myAgentName + 
+			       " lineage list subscription has changed.");
+      }
+      updateSubordinates();
+    }
   }
 
   protected void addSupportLineage(Task rfdTask) {
@@ -196,22 +212,29 @@ public class LineagePlugin extends SimplePlugin
 
 	publishRemove(localSupportLineage);
       }
+    }
 
     SupportLineageList supportLineage =
       mySDFactory.newSupportLineageList();
+    supportLineage.add(myAgentName);
+
     Asset superior =
       (Asset) findIndirectObject(rfdTask, Constants.Preposition.FOR);
-    supportLineage.add(myAgentName);
-    supportLineage.add(superior.getClusterPG().getMessageAddress().toString());
-
-      publishAdd(supportLineage);
+    String scaName = superior.getClusterPG().getMessageAddress().toString();
+    // Okay to support oneself but don't add duplicate entries to the 
+    // lineage
+    if (!myAgentName.equals(scaName)) {
+      supportLineage.add(superior.getClusterPG().getMessageAddress().toString());
     }
 
+    publishAdd(supportLineage);
 
-    // Let all our subs know.
-    updateSubordinates();
+    if (myLoggingService.isDebugEnabled()) {
+      myLoggingService.debug("addSupportLineage: publishAdd of " + 
+			     supportLineage.getUID());
+    }
   }
-
+    
   protected void querySuperior(Task rfdTask) {
     // Missing command support logic - look at roles specified in the AS
     // prep.
@@ -253,10 +276,12 @@ public class LineagePlugin extends SimplePlugin
 	if ((existingLineage) &&
 	    (localLineage.countHops(localLineage.getLeaf(),
 				    localLineage.getRoot()) == 1)) {
-	  myLoggingService.debug(myAgentName +
-				"  has a direct support command relationship." +
-				" Ignoring support lineage from superior: " +
-				relayLineage);
+	  if (myLoggingService.isDebugEnabled()) {
+	    myLoggingService.debug(myAgentName +
+				   "  has a direct support command relationship." +
+				   " Ignoring support lineage from superior: " +
+				   relayLineage);
+	  }
 	  return;
 	}
       }
@@ -282,6 +307,12 @@ public class LineagePlugin extends SimplePlugin
 	 iterator.hasNext();) {
       LineageList localLineage = (LineageList) iterator.next();
       lineageLists.add(mySDFactory.copyLineageList(localLineage));
+      if (myLoggingService.isDebugEnabled()) {
+	myLoggingService.debug(myAgentName + 
+			       ":updateSubordinates localLineage " + 
+			       localLineage + 
+			       " type: " + localLineage.getClass());
+      }
     }
 
     relay.setLineageLists(lineageLists);
