@@ -1,0 +1,18 @@
+<prototype name = "NSN/6105007262754">
+  <object class="org.cougaar.glm.ldm.asset.ClassIXRepairPart">
+
+      <field name="TypeIdentificationPG" type="object">
+        <value>
+          <object class="org.cougaar.planning.ldm.asset.NewTypeIdentificationPG">
+          <field name="TypeIdentification" type="String">
+            <value> NSN/6105007262754 </value>
+          </field>
+          <field name="Nomenclature" type="String">
+            <value> AC Motor </value>
+          </field>
+          </object>
+        </value>
+      </field>
+
+  </object>
+</prototype> <!-- AC Motor -->

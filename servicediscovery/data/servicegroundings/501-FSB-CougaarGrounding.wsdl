@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions
+  xmlns="http://schemas.xmlsoap.org/wsdl/"
+  name="501-FSB-Services"
+  targetNamespace="file://C:/cougaar/servicediscovery/data/servicegroundings/501-FSB-CougaarGrounding.wsdl"
+  xmlns:supply="file://C:/cougaar/servicediscovery/data/servicegroundings/SupplyProviderCougaarGrounding.wsdl"
+  xmlns:cougaar="file://C:/cougaar/servicediscovery/data/servicegroundings/cougaar.wsdl" >
+
+<service name="501-FSB/Supply">
+  <port binding="supply:SupplyProviderCougaarBinding" name="CougaarAgentCommunicationsPort">
+    <cougaar:address agentName="501-FSB"/>
+  </port>
+</service>
+
+</definitions>

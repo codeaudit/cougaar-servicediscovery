@@ -1,0 +1,257 @@
+:- import atom_to_term/2, term_to_atom/2, concat_atom/2 from string.
+:- import reverse/2 from basics.
+
+/******************************************************************/
+/*  code to test this stuff.... */
+
+test :-
+	matchmaker_initialize('C:/xsbsys/ultralog'),
+	%%matchmaker_initialize('C:/COUGAAR9'),
+	fail.
+
+/***
+setof(P,dlaQ('007606205',P),ALL)
+setof(P,dlaQ('007603370',P),ALL)
+> Grainger
+setof(P,dlaQ('004145989',P),ALL)
+setof(P,dlaQ('007262754',P),ALL)
+setof(P,dlaQ('012017527',P),ALL)
+> Newark
+setof(P,dlaQ('002010273',P),ALL)
+setof(P,dlaQ('011951836',P),ALL)
+***/
+
+:- op(700,xfx,::).
+
+query(4,
+      (attr(id('mil_entity(''2-501-AVNBN'')',ultralog),id('SupportedBy',ultralog),Support)::widen(1,1,_Act),
+       isa(id('BRIGADE','MilitaryEchelonScheme'),id('BRIGADE','MilitaryEchelonScheme'))::widen(10,RealEch),
+       attr(Support,id('MilitaryEchelonScheme',ultralog),RealEch),
+       isa(Support,id('MaintenanceProvider','MilitaryServiceScheme')),
+       attr(ProfileObj, id(serviceCategory,'http://www.daml.org/services/daml-s/0.7/Profile.daml'), Support),
+       attr(id(Service, _), id(presents,'http://www.daml.org/services/daml-s/0.7/Service.daml'), ProfileObj)
+%%       attr(Service, id(providedBy,'http://www.daml.org/services/daml-s/0.7/Service.daml'), id(ServiceProvider, _))
+      ),
+      Service
+     ).
+query(5,
+      (attr(id('mil_entity(''127-DASB'')',ultralog),id('SupportedBy',ultralog),Support)::widen(1,10,_X),
+       isa(id('DIVISION','MilitaryEchelonScheme'),id('DIVISION','MilitaryEchelonScheme'))::widen(1,RealEch),
+       attr(Support,id('MilitaryEchelonScheme',ultralog),RealEch),
+       isa(Support,id('MaintenanceProvider','MilitaryServiceScheme')),
+       attr(ProfileObj, id(serviceCategory,'http://www.daml.org/services/daml-s/0.7/Profile.daml'), Support),
+       attr(id(Service, _), id(presents,'http://www.daml.org/services/daml-s/0.7/Service.daml'), ProfileObj)
+%%       attr(Service, id(providedBy,'http://www.daml.org/services/daml-s/0.7/Service.daml'), id(ServiceProvider, _))
+      ),
+      Service
+     ).
+query(6,
+      (attr(id('mil_entity(''123-MSB'')',ultralog),id('SupportedBy',ultralog),Support)::widen(1,10,_X),
+       isa(id('CORPS','MilitaryEchelonScheme'),id('CORPS','MilitaryEchelonScheme'))::widen(1,RealEch),
+       attr(Support,id('MilitaryEchelonScheme',ultralog),RealEch),
+       isa(Support,id('MaintenanceProvider','MilitaryServiceScheme')),
+       attr(ProfileObj, id(serviceCategory,'http://www.daml.org/services/daml-s/0.7/Profile.daml'), Support),
+       attr(id(Service, _), id(presents,'http://www.daml.org/services/daml-s/0.7/Service.daml'), ProfileObj)
+%%       attr(Service, id(providedBy,'http://www.daml.org/services/daml-s/0.7/Service.daml'), id(ServiceProvider, _))
+      ),
+      Service
+     ).
+query(8,
+      (attr(id('mil_entity(''18-MAINTBN'')',ultralog),id('SupportedBy',ultralog),Support)::widen(1,10,_X),
+       isa(id('US-ARMY','MilitaryEchelonScheme'),id('US-ARMY','MilitaryEchelonScheme'))::widen(1,RealEch),
+       attr(Support,id('MilitaryEchelonScheme',ultralog),RealEch),
+       isa(Support,id('SupplyProvider','MilitaryServiceScheme')),
+       attr(ProfileObj, id(serviceCategory,'http://www.daml.org/services/daml-s/0.7/Profile.daml'), Support),
+       attr(id(Service, _), id(presents,'http://www.daml.org/services/daml-s/0.7/Service.daml'), ProfileObj)
+%%       attr(Service, id(providedBy,'http://www.daml.org/services/daml-s/0.7/Service.daml'), id(ServiceProvider, _))
+      ),
+      Service
+     ).
+query(9,
+      (attr(id('mil_entity(''CCAD'')',ultralog),id('SupportedBy',ultralog),Support)::widen(1,10,_X),
+       isa(id('JOINT','MilitaryEchelonScheme'),id('JOINT','MilitaryEchelonScheme'))::widen(1,RealEch),
+       attr(Support,id('MilitaryEchelonScheme',ultralog),RealEch),
+       isa(Support,id('SupplyProvider','MilitaryServiceScheme')),
+       attr(ProfileObj, id(serviceCategory,'http://www.daml.org/services/daml-s/0.7/Profile.daml'), Support),
+       attr(id(Service, _), id(presents,'http://www.daml.org/services/daml-s/0.7/Service.daml'), ProfileObj)
+%%       attr(Service, id(providedBy,'http://www.daml.org/services/daml-s/0.7/Service.daml'), id(ServiceProvider, _))
+      ),
+      Service
+     ).
+
+
+query(QN,
+      (attr(id(NSN,ultralog),id('hasNAICSCategory',ultralog),NaicsCat),
+       (isa(PartProvCat,NaicsCat)
+	;      
+	attr(NaicsCat,id('coveredBy',ultralog),DistNaicsCat),
+	isa(PartProvCat,DistNaicsCat)
+       ),
+       
+       attr(ProfObj,id('serviceCategory','http://www.daml.org/services/daml-s/0.7/Profile.daml'),PartProvCat),
+       attr(id(Service,ServiceSource),id('presents','http://www.daml.org/services/daml-s/0.7/Service.daml'),ProfObj),
+       attr(id(Service,ServiceSource),id('providedBy','http://www.daml.org/services/daml-s/0.7/Service.daml'),ServiceProvider),
+       isa(ServiceProvider,id('Commercial','OrganizationTypes'))::widen(10,ActType),
+       isa(ActType,id('OrganizationTypes','OrganizationTypes')),
+       attr(PartProvCat,id('SourcingCapabilityScheme',ultralog),CapType),
+       isa(CapType,id('COTS','SourcingCapabilityScheme'))::widen(5,ActCType),
+       (isa(CapType,id('ODM','SourcingCapabilityScheme'))
+	->     attr(PartProvCat,id('hasNSNProductionHistory',ultralog),id(NSN,ultralog))::opt(15)
+	;      true
+       ),
+       isa(ActCType,id('SourcingCapability','SourcingCapabilityScheme')) ),
+      Service
+     ) :-
+	nsn_query(QN,NSN).
+
+nsn_query(10,'4710007606205'). %ODM
+nsn_query(11,'1730007603370'). %ODM
+nsn_query(12,'4310004145989'). %Grainger
+nsn_query(13,'6105007262754'). %Grainger
+nsn_query(14,'4320012017527'). %Grainger
+nsn_query(15,'5945002010273'). %Newark
+nsn_query(16,'5930011951836'). %Newark
+
+/**query(11,
+      (isa(CategoryObj,id('421','ntis-gov:naics:1997')),
+       attr(ProfileObj, id(serviceCategory,'http://www.daml.org/services/daml-s/0.7/Profile.daml'), CategoryObj),
+       attr(ServiceObj, id(presents,'http://www.daml.org/services/daml-s/0.7/Service.daml'), ProfileObj),
+       attr(ServiceObj, id(providedBy,'http://www.daml.org/services/daml-s/0.7/Service.daml'), id(ServiceProvider, _))),ServiceProvider
+     ).**/
+
+
+test(X) :-
+	ensure_loaded(javaMessage),
+	matchmaker_initialize('C:/xsbsys/ultralog'),
+	%%matchmaker_initialize('C:/COUGAAR9'),
+	test1(X).
+
+test1(X) :-
+	query(X,Query,Service),
+	term_to_atom(query(Query,Service),MMQuery),
+	concat_atom([MMQuery,'.'],MMQueryP),
+	matchmaker(string(MMQueryP),
+		   10000.0, refMMService, ScoredServiceArray,string(Exception)),
+	  writeln(ScoredServiceArray),
+	  writeln('Exceptions (if any)'-Exception).
+
+
+/******************************************************************/
+
+%% Call to initalize matchmaker - consult files, load ontologies, etc.
+%% CougaarInstallPath0 is the path where servicediscovery directory is located, like C:\Cougaar
+matchmaker_initialize(CougaarInstallPath0):-
+	expand_filename(CougaarInstallPath0,CougaarInstallPath),
+
+	%% load cdf files
+	ensure_loaded(cdf),
+	ensure_loaded('oms_io'),
+	ensure_loaded('oms_queries'),
+	ensure_loaded('oms_q_annot'),
+
+	%% temporarily, instead of loading oms
+	init_oms_rels,
+	concat_atom([CougaarInstallPath,'\servicediscovery\data\matchmaker\oms_ontologies'],OMSDirLocation),
+	load_mergeomsext(OMSDirLocation),
+	%%
+	%% load file containing intensional oms
+	concat_atom([CougaarInstallPath,'\servicediscovery\data\matchmaker\matchmaker_dyn'],ExtIntOMSLocation),
+	load_dyn(ExtIntOMSLocation),
+
+	concat_atom([CougaarInstallPath,'\servicediscovery\data\matchmaker\yp_interface'],YPIntOMSLocation),
+	ensure_loaded(YPIntOMSLocation),
+	concat_atom([CougaarInstallPath,'\servicediscovery\data\matchmaker\historical'],HistIntOMSLocation),
+	ensure_loaded(HistIntOMSLocation),
+	javaMessage('java.lang.System'-out,println(string('Success initializing matchmaker'))).
+
+
+%% call to matchmaker with Query string
+%% JavaRef - reference to java object (mmservice) to use to query YP
+%% to use JavaRef call javaMessage(JavaRef,ServiceArray,MethodName(MethodParams))
+%% returns ScoredServiceArray - java array if ScoredServiceInfo objects
+%% for now ScoredServiceArray is a list of pair(ID,Score) terms.
+
+:- dynamic serviceReference/1.
+
+matchmaker(string(Query),JCutoff, JavaRef,ScoredServiceArray,string(ExceptionString)):-
+	abolish_all_tables,
+	javaMessage(JavaRef,printDebugInfo(string('MATCHMAKER STARTED'))),
+
+	ipObjectSpec(float,JCutoff,[Cutoff],_),
+	retractall(serviceReference(_)),
+	assert(serviceReference(JavaRef)),
+
+	string_to_term(Query,QueryTerm),
+	QueryTerm = query(MMQuery,Service),
+	nonvar(MMQuery),
+
+	catch(findall(bpair(ServiceObj,Penalty),
+%%%		      (call(MMQuery),
+		      (relaxing_query(MMQuery,Cutoff,Penalty),
+		       object(_,_,Service,ultralog), %% may be this check is redundant
+		       atom_to_term_check(Service,service_obj(ServiceObj))
+		      ),
+		      ServiceObjList),
+	      Exception,
+	      handle_exception(Exception,ExceptionString)
+	     ),
+
+	(nonvar(Exception)%% there was an exception
+	 ->	javaMessage(JavaRef,printDebugInfo(string('Exception in Prolog:'))),
+		javaMessage(JavaRef,printDebugInfo(string(ExceptionString))),
+		ScoredList=[]
+	 ;	%% need to remove duplicate answers
+	        sort(ServiceObjList,ServiceObjList1),
+		elim_worse_penalties(ServiceObjList1,ServiceObjList2),
+		sort(ServiceObjList2,ServiceObjList3),
+	        %% and also sort by score (not done yet)
+		%% create ranked list of services
+		create_scored_service_list(ServiceObjList3,ScoredList),
+		ExceptionString='',
+		javaMessage(JavaRef,printDebugInfo(string('MATCHMAKER SUCCEEDED')))
+	),
+	ipObjectSpec('ArrayOfInvisibleObject',ScoredServiceArray,[ScoredList],_).
+
+elim_worse_penalties([],[]) :- !.
+elim_worse_penalties([bpair(Serv,Pen)],[bpair(Pen,Serv)]) :- !.
+elim_worse_penalties([bpair(Serv,Pen),bpair(Serv,_)|List],ServiceList) :- !,
+	elim_worse_penalties([bpair(Serv,Pen)|List],ServiceList).
+elim_worse_penalties([bpair(Serv,Pen)|List],[bpair(Pen,Serv)|ServiceList]) :- !,
+	elim_worse_penalties(List,ServiceList).
+
+%% create ranked list of providers
+%% elements of the list are pairs (ServiceKey,Score)
+%% right now the score is always 1.5
+create_scored_service_list([],[]).
+create_scored_service_list([bpair(Penalty,Service)|List],[Pair|ScoredList]) :-	
+	FltPenalty is float(Penalty),
+	ipObjectSpec(float,Score,[FltPenalty],_),
+	%% java_debug(Service,'--Service'),
+	javaMessage('org.cougaar.servicediscovery.matchmaker.ScoredServiceInfo',
+		    Pair,'ScoredServiceInfo'(Service,Score)),
+	%%ipPrologEngine(Engine),
+	%%javaMessage(Engine,PairReal,getRealJavaObject(Pair)),
+	
+	create_scored_service_list(List,ScoredList).
+
+java_debug(Term,Padding):-
+	term_to_atom(Term,Atom),
+	javaMessage('java.lang.System'-out,println(string(Padding))),
+	javaMessage('java.lang.System'-out,println(string(Atom))).
+
+java_debug0(Object,Padding):-
+	javaMessage('java.lang.System'-out,println(string(Padding))),
+	javaMessage('java.lang.System'-out,println(Object)).
+
+:- import file_open/3, file_close/1
+     from file_io.
+:- import file_read_foe/3 from xsb_read.
+
+string_to_term(Atom,Goal) :-
+	file_open(Atom,sr,Fp),
+	file_read_foe(Fp,Goal,_),
+	file_close(Fp).
+
+handle_exception(Exception,ExceptionString):-
+	term_to_atom(Exception,ExceptionString).
+

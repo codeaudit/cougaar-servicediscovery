@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<schema xmlns="http://www/w3.org/2001/XMLSchema"
+xmlns:cougaar="http://stout.bbn.com/~aleung/cougaar.wsdl"
+xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+targetnamespace="http://stout.bbn.com/~aleung/cougaar.wsdl">
+
+<import namespace="http://schemas.xmlsoap.org/wsdl/" />
+
+<element name="binding" type="cougaar:tBinding"/>
+<complexType name="tBinding>
+  <complexContent>
+    <extension base="wsdl:tExtensibilityElement">
+      <sequence />
+      <attribute name="style" type="cougaar:tStyleChoice" use="required" />
+    </extension>
+  </complexContent>
+</complexType>
+<simpleType name="tStyleChoice">
+  <restriction base="string">
+    <enumeration value="task" />
+    <enumeration value="relay" />
+  </restriction>
+</simpleType>
+
+<element name="task" type="cougaar:tTask"/>
+<complexType name=tTask">
+  <complexContent>
+    <extension base="wsdl:tExtensibilityElement">
+      <sequence />
+      <attribute name="verb" type="string" use="required" />
+      <attribute name="itemDescription" type="string" use="optional" />
+      <attribute name="quantity" type="string" use="optional" />
+      <attribute name="deliveryDate" type="string" use="required" />
+      <attribute name="customer" type="string" use="required" />
+      <attribute name="pickupDate" type="string" use="optional" />
+      <attribute name="pickupLocation" type="string" use="optional" />
+      <attribute name="deliveryLocation" type="string" use="optional" />
+      <attribute name="package" type="string" use="required" />
+      <attribute name="className" type="string" use="required" />
+    </extention>
+  </complexContent>
+</complexType>
+
+<element name="allocationResult" type="cougaar:tAllocationResult" />
+<complexType name=tAllocationResult">
+  <complexContent>
+    <extension base="wsdl:tExtensibilityElement">
+      <sequence />
+      <attribute name="result" type="string" use="required" />
+      <attribute name="confidence" type="string" use="required" />
+      <attribute name="package" type="string" use="required" />
+      <attribute name="className" type="string" use="required" />
+    </extension>
+  </complexContent>
+</complexType>
+
+</schema>
+
+
+
+
+
+
+
+
+
+
+
+

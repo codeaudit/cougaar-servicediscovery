@@ -1,0 +1,510 @@
+<?xml version="1.0"?>
+
+<!-- =======================================================================-->
+<!-- CSMART Build File				                            -->
+<!--	Requires Ant1.4.1 or better!!					    -->
+<!-- This build file was created to simplify the build process of CSMART    -->
+<!-- However, it should work for any module if you change a few props -->
+<!-- Note that files are compiled into module/tmpdir -->
+<!-- Unit test source files are expected to end in Test.java -->
+<!-- No effort is made to compile other modules this module may depend on -->
+<!-- zip targets wont preserve permissions - use for convenience only -->
+<!-- Be sure to customize per your module -->
+<!-- Some things to customize: module name -->
+<!-- and fancy, jar file dependencies, packages to include in javadocs, -->
+<!-- and list of files to rmic -->
+<!-- Note that to generate code build.jar is required -->
+<!-- Also note that Ant will require optional.jar in its lib, and possibly junit.jar -->
+<!-- =======================================================================-->
+
+<project name="SD" default="compile" basedir="../">
+
+        <!-- Per user properties can be specified here. In particular,
+	use this to specify the Jikes compiler, with properties:
+	build.compiler=jikes
+        build.compiler.pedantic=true
+	build.compiler.emacs=true
+
+	This latter makes the error messages prettier in Emacs
+
+	You may also toggle deprecation warnings and debug/optimize.
+	Default is to include debug & deprecation, not optimize. Turn them off with:
+	build.compiler.debug=off
+	build.compiler.deprecation=off
+	build.compiler.optimize=on
+	-->
+	<property file="${user.home}/.ant.properties" />
+
+	<!-- Set some global properties -->
+	<property name="lib" value="../lib" />
+
+	<!-- Third party jar files go in CIP/sys -->
+	<property name="sys" value="../sys" />
+                
+	<property name="src" value="./src" />
+	<property name="testsrc" value="./regress" />
+	<property name="examples" value="./examples" />
+	<property name="examples.build" value="./tmpdir/examples" />
+
+	<property name="bin" value="./bin" />
+	<property name="doc" value="./doc" />
+	<property name="data" value="./data" />
+	<property name="configs" value="./configs" />
+	
+	<!-- Classfiles go in module/tmpdir -->
+	<property name="build" value="./tmpdir" />
+	<property name="testbuild" value="./tmpdir/regress" />
+
+	<!-- Single module Javadocs go in doc/javadoc -->
+	<property name="build.javadocs" value="./doc/javadoc" />
+
+	<!-- These are defaults. You may override them in your
+	.ant.properties file -->
+	<!-- Note that a popular alternative build.compiler is 'jikes' -->
+	<property name="build.compiler" value="modern"/>
+	<!-- Include extra debug info in compilations -->
+	<property name="build.compiler.debug" value="on"/>
+	<!-- Include deprecation warnings -->
+	<property name="build.compiler.deprecation" value="on"/>
+	<!-- Don't exclude basic debug info -->
+	<property name="build.compiler.optimize" value="off"/>
+
+	<!-- ========================================================== -->
+	<!-- ========================================================== -->
+	<!-- Module specific values for properties are set here: -->
+	
+	<!-- Name of the module being compiled -->
+	<!-- determines jar file name, etc -->
+	<property name="module" value="servicediscovery" />
+
+	<!-- Label for Javadocs, etc -->
+	<property name="UpModule" value="SERVICEDISCOVERY" />
+
+	<!-- Specify which packages to include for Javadoc purposes -->
+	<property name="packages" value="org.cougaar.*" />
+
+	<!-- What are the dependencies of this module at compile time -->
+	<!-- Note that no effort is made to build any of these jars
+	or even see if they exist -->
+	<!-- Change name of this path to match the module name as approp -->
+	<path id="servicediscovery.classpath">
+	   <pathelement location="${lib}/util.jar" />
+           <pathelement location="${lib}/core.jar" />
+           <pathelement location="${lib}/planning.jar" />
+           <pathelement location="${lib}/glm.jar" />
+	   <pathelement location="${sys}/xerces.jar" />
+           <pathelement location="${sys}/log4j.jar" />
+           <pathelement location="${sys}/jena.jar" />
+           <pathelement location="${sys}/wasp.jar" />
+           <pathelement location="${sys}/uddiclient.jar" />
+           <pathelement location="${sys}/soap.jar" />
+           <pathelement location="${sys}/uddi4j.jar" />
+           <pathelement location="${sys}/servlet.jar" />
+           <pathelement location="${sys}/interprolog.jar" />
+	</path>
+
+	<!-- Set this to the comma separate list of class files to run rmic on -->
+<!--	<property name="rmicfiles.list" value="none"/> -->
+	<property name="rmicfiles.list" value="***/Impl.class"/> 
+	
+	<!-- End of module specific properties -->
+	<!-- ========================================================== -->
+	<!-- ========================================================== -->
+	
+	<!-- Set paths for use in creating zip files -->
+	<property name="zipbase" value="./ziptmp"/>
+	
+	<!-- Build up classpath for junit.jar and classes when running
+	tests -->
+	<!-- Note that the current JUnit is 3.7, from http://junit.org -->
+	<path id="junit.classpath">
+	   <path location="${build}" />
+	   <path location="${testbuild}" />
+	   <path refid="${module}.classpath"/>
+	   <pathelement path="${java.class.path}"/>
+	   <pathelement path="${jikes.class.path}"/>
+        </path> 
+
+	<!-- Define paths for doing codegen stuff -->
+	<path id="codegen.path">
+	  <pathelement path="${lib}/build.jar"/>
+	  <path refid="${module}.classpath"/>
+	</path>
+	<property name="genpath" refid="codegen.path"/>
+
+	<!-- ========================================================== -->
+	<!-- Define dirs for copying files into for zipping -->
+	<!-- All based on property zipbase -->
+	<!-- ========================================================== -->
+	<target name="set-zip-dirs">
+	  <property name="zipdir.javadocs" value="${zipbase}/${module}/${build.javadocs}"/>
+	  <property name="zipdir.src" value="${zipbase}/${module}/${src}"/>
+	  <property name="zipdir.bin" value="${zipbase}/${module}/${bin}"/>
+	  <property name="zipdir.data" value="${zipbase}/${module}/${data}"/>
+	  <property name="zipdir.configs" value="${zipbase}/${module}/${configs}"/>
+	  <property name="zipdir.doc" value="${zipbase}/${module}/${doc}"/>
+	  <property name="zipdir.regress" value="${zipbase}/${module}/${testsrc}"/>
+	  <property name="zipdir.examples" value="${zipbase}/${module}/${examples}"/>
+	  <property name="zipdir.lib" value="${zipbase}/lib"/>
+	</target>
+		
+	<!-- ========================================================== -->
+	<!-- Test for presence of JUnit. Skip JUnit targets if not found. -->
+	<!-- Also skip if there is no regress directory -->	
+	<!-- ========================================================== -->
+	<target name="junit" depends="prepare" if="has.Regress">
+	  <available property="junit.present" classname="junit.framework.TestCase" classpathref="junit.classpath"/>
+	</target>
+
+	<!-- ========================================================== -->
+	<!-- Run RMIC on built classes			                -->
+	<!-- ========================================================== -->
+	<!-- Mikes build script does: -->
+	<!-- fileset of all files named *Impl.java that
+	contain UnicaseRemoteObject-->
+	<!-- command is rmic -g -v1.2 -d destdir -classpath
+	destdir:restofclasspath listoffiles -->
+	<target name="rmic-source" depends="prepare" unless="rmic.notRequired" if="has.build">
+<!--	  <rmic base="${build}" stubversion="1.2" verify="true"
+	        debug="${build.compiler.debug}" includes="${rmicfiles.list}" > -->
+<!-- New command does both 1.2 and 1.1 RMI without debug -->
+	  <rmic base="${build}" verify="true" debug="off"
+	        includes="${rmicfiles.list}" >
+	    <classpath>
+  	      <path location="${build}" />
+	      <path refid="${module}.classpath"/>
+	    </classpath>
+	  </rmic>	    
+	</target>
+
+	<!-- ============================================================= -->
+	<!-- Run the code generators                            	-->
+	<!-- ============================================================= -->
+	<target name="defrunner" depends="prepare-defrunner, prepare" unless="defrunner.notRequired" if="have.buildjar">
+	   <apply executable="java"
+	           parallel="false"
+		   failonerror="false" >
+	     <arg line="-classpath ${genpath} org.cougaar.tools.build.DefRunner" />
+	     <fileset dir="${src}" >
+		<include name="**/*.def" />
+	     </fileset>
+	   </apply>
+	</target>
+	
+	<!-- ============================================================= -->
+	<!-- Clean up generated code                             	-->
+	<!-- ============================================================= -->
+	<target name="clean-gencode" depends="prepare, prepare-defrunner" description="Delete generated code" if="have.buildjar">
+	   <apply executable="java"
+	           parallel="false"
+		   failonerror="false" >
+	     <arg line="-classpath ${genpath} org.cougaar.tools.build.DefCleaner" />
+	     <fileset dir="${src}" >
+		<include name="**/*.gen" />
+	     </fileset>
+	   </apply>
+	</target>
+	
+	<!-- ========================================================== -->
+	<!-- Compiles the example Code			                -->
+	<!-- ========================================================== -->	
+	<target name="compile-examples" depends="prepare, compile" description="Compiles the example Code" if="has.examples">
+		<mkdir dir="${examples.build}" />
+		<javac srcdir="${examples}" destdir="${examples.build}" 
+		       includeAntRuntime="no"
+		       deprecation="${build.compiler.deprecation}"
+		       debug="${build.compiler.debug}"
+		       optimize="${build.compiler.optimize}">
+ 	             	<classpath>
+			  <path location="${build}" />
+        	          <path refid="${module}.classpath" />
+              		</classpath>
+		</javac>
+		<!-- Copy any gifs and HTML help files over as well -->
+		<copy todir="${examples.build}" >
+		  <fileset dir="${examples}">
+		    <patternset id="images.and.html.and.def"/>
+		  </fileset>
+		</copy>
+	</target>
+
+	<!-- ====================================================================== -->
+	<!-- Clean up built example code     				    -->
+	<!-- ====================================================================== -->	
+	<target name="clean-examples" description="Delete compiled example code">
+	       <delete dir="${examples.build}" />
+	</target>
+
+	<!-- ============================================================= -->
+	<!-- Prepares all the build directories		               	   -->
+	<!-- ============================================================= -->
+	<target name="prepare">
+	        <available property="has.examples" file="${examples}"/>
+		<available property="has.build" file="${build}"/>
+		<available property="has.src" file="${src}"/>
+		<available property="has.bin" file="${bin}"/>
+		<available property="has.data" file="${data}"/>
+		<available property="has.configs" file="${configs}"/>
+		<available property="has.doc" file="${doc}"/>
+		<available property="has.Regress" file="${testsrc}"/>
+		
+		<!-- Create the timestamp -->
+		<tstamp/>
+	</target>
+	
+	<target name="prepare-defrunner" depends="prepare"
+		if="has.src">
+		
+		<!-- Need build.jar -->
+		<available property="have.buildjar" file="${lib}/build.jar"/>
+		
+		<!-- Check if defrunner is required -->
+		<uptodate property="defrunner.notRequired">
+		  <srcfiles dir="${src}" includes="**/*.def"/>
+		  <!-- If file.gen newer than .def, don't rerun -->
+		  <mapper type="glob" from="*.def" to="${basedir}/${src}/*.gen"/>
+		  <!-- FIXME: even better: if above is true AND every file
+		  listed in .gen exists and is newer than .def, dont
+		  rerun -->
+		  <!-- Even better: parse out the @generated tag and
+		  ensure that the date is more recent than on the listed .def file -->
+		</uptodate>
+	</target>
+	
+	<target name="prepare-rmic" depends="prepare" if="has.build">
+		<!-- Check if rmic is required -->
+		<uptodate property="rmic.notRequired">
+		  <srcfiles dir="${build}"
+		  includes="${rmicfiles.list}"/>
+		  <!-- FIXME: What am I looking for here? -->
+		  <mapper type="identity"/>
+		</uptodate>		
+	</target>
+
+	<!-- ========================================================== -->
+	<!-- Compiles the Module Code			                -->
+	<!-- ========================================================== -->	
+	<target name="compile" depends="prepare, defrunner, really-compile, rmic-source"
+		description="Compiles the Code"> </target>
+
+	<!-- This really does the compilation. The above just calls this -->
+	<target name="really-compile" depends="prepare, defrunner" if="has.src">
+		<mkdir dir="${build}" />
+		<available property="has.build" file="${build}"/>
+		<javac srcdir="${src}" destdir="${build}" 
+		       includeAntRuntime="no"
+		       debug="${build.compiler.debug}"
+		       optimize="${build.compiler.optimize}"
+		       deprecation="${build.compiler.deprecation}">
+ 	             	<classpath>
+        	          <path refid="${module}.classpath" />
+              		</classpath>
+		</javac>
+		<!-- Copy any gifs and HTML help files over as well -->
+		<copy todir="${build}" >
+		  <fileset dir="${src}">
+		    <patternset id="images.and.html.and.def">
+		      <include name="**/*.def"/>
+		      <include name="**/*.gif"/>
+		      <include name="**/*.html"/>
+		      <include name="**/*.htm"/>
+		      <include name="**/*.jpg"/>
+		      <include name="**/*.bmp"/>
+		      <include name="**/*.png"/>
+		    </patternset>
+		  </fileset>
+		</copy>
+	</target>
+
+	<!-- ========================================================== -->
+	<!-- Compile EVERYTHING			                -->
+	<!-- ========================================================== -->	
+	<target name="compile-all" depends="compile, compile-tests, compile-examples" description="Compile all Module code plus examples and unit testing code" />
+
+	<!-- ========================================================== -->
+	<!-- Clean up all built code                    	-->
+	<!-- ========================================================== -->
+	<target name="clean" depends="clean-gencode" description="Delete compiled code">
+	       <delete dir="${build}" />
+	       <delete>
+	              <fileset dir="${lib}" includes="**/${module}.jar" />
+	       </delete>
+	</target>
+
+	<!-- ====================================================================== -->
+	<!-- Compile regression test code     				          -->
+	<!-- ====================================================================== -->	
+	<target name="compile-tests" depends="prepare, junit, compile" description="Compile unit tests" if="junit.present"> 
+	     <mkdir dir="${testbuild}" />
+	     <javac srcdir="${testsrc}" destdir="${testbuild}"
+	            deprecation="${build.compiler.depreacation}"
+		    optimize="off"
+		    debug="on">
+	            <classpath>
+		          <path refid="junit.classpath"/>
+		    </classpath>
+	     </javac>
+	</target>
+
+	<!-- ====================================================================== -->
+	<!-- Clean up built regress test code     				    -->
+	<!-- ====================================================================== -->	
+	<target name="clean-tests" description="Delete compiled junit code">
+	       <delete dir="${testbuild}" />
+	</target>
+
+	<!-- ====================================================================== -->
+	<!-- Run the regression tests     				          -->
+	<!-- ====================================================================== -->
+	<target name="test-module" depends="compile-all" if="junit.present" description="Run JUnit tests for this module">
+		<junit printsummary="yes" fork="yes" dir="">
+			<classpath>
+				<pathelement location="${testbuild}" />
+			        <path refid="junit.classpath" />
+			</classpath>
+		        <formatter type="plain" />
+			<batchtest>				
+				<fileset dir="${testbuild}">
+				    <include name="**/*Test.class" />
+				</fileset>  				
+			</batchtest> 
+<!--			<test name="Regress" /> -->
+		</junit>
+	</target>
+
+	<!-- ====================================================================== -->
+	<!-- Create a Jar for the module     				          -->
+	<!-- ====================================================================== -->	
+	<target name="dist-module" depends="compile, clean-tests, clean-examples" description="Jars the module" if="has.build">
+	     <jar jarfile="${lib}/${module}-${DSTAMP}.jar" basedir="${build}" />
+             <exec dir="${lib}" executable="ln" os="Linux">
+		<arg line=" -s ${module}-${DSTAMP}.jar ${module}.jar" />
+	     </exec>
+	</target>
+	
+
+	<!-- ====================================================================== -->
+	<!-- Clean up the JavaDocs for the module			          -->
+	<!-- ====================================================================== -->	
+	<target name="clean-docs" description="Delete javadocs">
+	    <delete dir="${build.javadocs}" />
+	</target>
+	
+	<!-- ====================================================================== -->
+	<!-- Generates the JavaDocs for the one module			          -->
+	<!-- ====================================================================== -->	
+	<target name="javadocs" depends="prepare, defrunner, clean-docs" description="Create javadocs for this module" if="has.src">
+		<mkdir dir="${build.javadocs}"/>
+		<javadoc packagenames="${packages}"
+		         sourcepath="${src}"
+				 destdir="${build.javadocs}"
+				 author="true"
+				 version="true"
+				 windowtitle="${UpModule} API"
+				 doctitle="${UpModule} API"
+				 bottom="Copyright &#169; 2002 by BBNT Solutions LLC, all rights reserved.">
+			<classpath refid="${module}.classpath" />
+		</javadoc>
+	</target>
+
+	<!-- ====================================================================== -->
+	<!-- Zip up the built JavaDocs				          -->
+	<!-- ====================================================================== -->	
+	<target name="zip-docs" depends="javadocs, set-zip-dirs, zip-copy-docs" description="Zip up
+				 built javadocs" if="has.src">
+		<zip zipfile="../${module}-api.zip" basedir="${zipbase}" />
+		<delete dir="${zipdir.javadocs}"/>
+	</target>
+	<target name="zip-copy-docs" depends="javadocs, set-zip-dirs" if="has.src">
+		<mkdir dir="${zipdir.javadocs}"/>
+		<copy todir="${zipdir.javadocs}">
+		  <fileset dir="${build.javadocs}" />
+		</copy>
+	</target>
+	
+
+	<!-- ====================================================================== -->
+	<!-- Zip up the source: src, examples, regress		          -->
+	<!-- ====================================================================== -->	
+	<target name="zip-dev" depends="clean-gencode, set-zip-dirs, zip-prep, zip-copy-src, zip-copy-ex, zip-copy-test"
+	description="Create -dev zip file">
+		<zip zipfile="../${module}-dev.zip" basedir="${zipbase}" />
+		<delete dir="${zipdir.src}"/>
+		<delete dir="${zipdir.examples}"/>
+		<delete dir="${zipdir.regress}"/>
+	</target>
+	<target name="zip-prep">
+		<delete dir="${zipbase}"/>
+	</target>
+	<target name="zip-copy-src" depends="set-zip-dirs, prepare" if="has.src">
+		<mkdir dir="${zipdir.src}"/>
+		<copy todir="${zipdir.src}">
+		<!-- skip CVS, #, ~, .class -->
+		  <fileset dir="${src}">
+		    <patternset id="real.sources">
+		      <exclude name="**/CVS"/>
+		      <exclude name="**/*#"/>
+		      <exclude name="**/*~"/>
+		      <exclude name="**/*.class"/>
+		      <exclude name="**/.cvsignore"/>
+		    </patternset>
+		  </fileset>
+		</copy>
+	</target>
+	<target name="zip-copy-ex" depends="set-zip-dirs, prepare" if="has.examples">
+		<mkdir dir="${zipdir.examples}"/>
+		<copy todir="${zipdir.examples}">
+		  <fileset dir="${examples}">
+		    <patternset id="real.sources"/>
+		  </fileset>
+		</copy>
+	</target>
+	<target name="zip-copy-test" depends="set-zip-dirs, junit" if="has.Regress">
+		<mkdir dir="${zipdir.regress}"/>
+		<copy todir="${zipdir.regress}">
+		  <fileset dir="${testsrc}">
+		    <patternset id="real.sources"/>
+		  </fileset>
+		</copy>
+	</target>
+
+	<!-- ====================================================================== -->
+	<!-- Zip up the runtime: bin, data, doc (less javadocs), plus the jar file -->
+	<!-- ====================================================================== -->	
+	<target name="zip-runtime" depends="clean-docs, compile, dist-module,
+	set-zip-dirs, zip-prep, zip-copy-bin, zip-copy-data, zip-copy-configs, zip-copy-doc" description="Create runtime zip file">
+		<copy todir="${zipdir.lib}">
+		  <fileset dir="${lib}" includes="${module}*.jar"/>
+		</copy>
+		<zip zipfile="../${module}.zip" basedir="${zipbase}"/>
+		<delete dir="${zipdir.lib}"/>
+		<delete dir="${zipdir.bin}"/>
+		<delete dir="${zipdir.data}"/>
+		<delete dir="${zipdir.configs}"/>
+		<delete dir="${zipdir.doc}"/>
+	</target>
+	<target name="zip-copy-bin" depends="prepare, set-zip-dirs" if="has.bin">
+		<mkdir dir="${zipdir.bin}"/>
+		<copy todir="${zipdir.bin}">
+		  <fileset dir="${bin}" />
+		</copy>
+	</target>
+	<target name="zip-copy-data" depends="prepare, set-zip-dirs" if="has.data">
+		<mkdir dir="${zipdir.data}"/>
+		<copy todir="${zipdir.data}">
+		  <fileset dir="${data}" />
+		</copy>
+	</target>
+	<target name="zip-copy-configs" depends="prepare, set-zip-dirs" if="has.configs">
+		<mkdir dir="${zipdir.configs}"/>
+		<copy todir="${zipdir.configs}">
+		  <fileset dir="${configs}" />
+		</copy>
+	</target>
+	<target name="zip-copy-doc" depends="prepare, set-zip-dirs" if="has.doc">
+		<mkdir dir="${zipdir.doc}"/>
+		<copy todir="${zipdir.doc}">
+		  <fileset dir="${doc}" />
+		</copy>
+	</target>
+</project>

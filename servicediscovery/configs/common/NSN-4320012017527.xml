@@ -1,0 +1,18 @@
+<prototype name = "NSN/4320012017527">
+  <object class="org.cougaar.glm.ldm.asset.ClassIXRepairPart">
+
+      <field name="TypeIdentificationPG" type="object">
+        <value>
+          <object class="org.cougaar.planning.ldm.asset.NewTypeIdentificationPG">
+          <field name="TypeIdentification" type="String">
+            <value> NSN/4320012017527 </value>
+          </field>
+          <field name="Nomenclature" type="String">
+            <value> Rotary pump </value>
+          </field>
+          </object>
+        </value>
+      </field>
+
+  </object>
+</prototype> <!-- Rotary pump -->

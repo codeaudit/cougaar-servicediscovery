@@ -1,0 +1,114 @@
+
+
+			INSTALLATION SUMMARY
+			--------------------
+
+XSB Version:	   2.5
+Code name:	   Okocim
+Release date:	   2002-03-11
+Configuration:	   i686-pc-linux-gnu
+Installation date: Wed Dec 18 12:26:18 EST 2002
+
+  Build process is looking for XSB sources in:	  /home/tvidrevich/XSB
+  XSB should be installed in:			  /home/tvidrevich/XSB
+  Configuration-specific executables go in:	  /home/tvidrevich/XSB/config/i686-pc-linux-gnu/bin
+  Configuration-specific libraries go in:	  /home/tvidrevich/XSB/config/i686-pc-linux-gnu/lib
+  Object code goes in:				  /home/tvidrevich/XSB/config/i686-pc-linux-gnu/saved.o
+  Site-specific code goes in:			  /home/tvidrevich/XSB/site 
+  Site configuration-specific code goes in:	  /home/tvidrevich/XSB/site/config/i686-pc-linux-gnu
+  XSB will be built with:			  gcc  -O4 -fomit-frame-pointer -finline-functions -Winline -Wall 
+  builtin.c will be built with: 		  gcc  -O4 -fomit-frame-pointer -finline-functions -Winline -Wall 
+  emuloop.c will be built with: 		  gcc  -O4 -fomit-frame-pointer -finline-functions -Winline -Wall 
+  tr_utils.c will be built with:		  gcc  -O1 -fomit-frame-pointer -finline-functions -Winline -Wall 
+  Loader flags: 				    -lm -ldl -Wl,-export-dynamic
+  Compilation mode:				  optimal
+  XSB abstract machine: 			  slg-wam
+  XSB scheduling strategy:			  local
+  Garbage Collection Stress-Test:		  no
+  Jumptable-based emulator loop:		  yes
+  Demand support:                                 no
+	POSIX regexp matching libraries:		  yes
+	POSIX wildcard matching libraries:		  yes
+	Perl support:					  yes
+  Perl archlib: 				  /usr/lib/perl5/5.6.0/i386-linux/CORE
+  Perl C compiler:				  gcc
+  Perl C flags: 				  -fno-strict-aliasing -I/usr/local/include
+  Perl loader flags:				  -lnsl -ldl -lm -lc -lcrypt
+
+  Libwww support: 				  no
+  Java compiler:				  javac
+
+
+make[1]: Entering directory `/home/tvidrevich/XSB/emu'
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  main_xsb.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  auxlry.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  biassert.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  builtin.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  cinterf.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  debug_xsb.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  dis.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  dynload.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  dynamic_stack.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  emuloop.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  error_xsb.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  findall.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  function.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  hash_xsb.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  hashtable_xsb.c
+hashtable_xsb.c: In function `search_bucket':
+hashtable_xsb.c:86: warning: implicit declaration of function `memcpy'
+hashtable_xsb.c:89: warning: implicit declaration of function `memset'
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  heap_xsb.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  init_xsb.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  inst_xsb.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  io_builtins_xsb.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  loader_xsb.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  memory_xsb.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  orient_xsb.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  pathname_xsb.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  private_builtin.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  psc_xsb.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  random_xsb.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  remove_unf.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  residual.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  scc_xsb.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  slgdelay.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  socket_xsb.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  string_xsb.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  storage_xsb.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  struct_manager.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  sub_delete.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  subp.c
+subp.c: In function `compare':
+subp.c:559: warning: implicit declaration of function `strcmp'
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  system_xsb.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  table_stats.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  tables.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  timer_xsb.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  token_xsb.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O1 -fomit-frame-pointer -finline-functions -Winline -Wall  tr_utils.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  trace_xsb.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  trie_lookup.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  trie_search.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  tries.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  tst_insert.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  tst_retrv.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  tst_unify.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  tst_utils.c
+gcc -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu  -c -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  varstring.c
+
+Making XSB executable /home/tvidrevich/XSB/config/i686-pc-linux-gnu/bin/xsb 
+
+cd /home/tvidrevich/XSB/emu; \
+gcc -o /home/tvidrevich/XSB/config/i686-pc-linux-gnu/bin/xsb  main_xsb.o auxlry.o biassert.o builtin.o cinterf.o debug_xsb.o dis.o dynload.o dynamic_stack.o emuloop.o error_xsb.o findall.o function.o hash_xsb.o  hashtable_xsb.o heap_xsb.o init_xsb.o inst_xsb.o io_builtins_xsb.o loader_xsb.o memory_xsb.o orient_xsb.o pathname_xsb.o private_builtin.o psc_xsb.o random_xsb.o remove_unf.o residual.o scc_xsb.o slgdelay.o socket_xsb.o string_xsb.o storage_xsb.o struct_manager.o sub_delete.o subp.o system_xsb.o table_stats.o tables.o timer_xsb.o token_xsb.o tr_utils.o trace_xsb.o trie_lookup.o trie_search.o tries.o tst_insert.o tst_retrv.o tst_unify.o tst_utils.o varstring.o   -lm -ldl -Wl,-export-dynamic 
+system_xsb.o: In function `sys_system':
+system_xsb.o(.text+0x2f8): the use of `tmpnam' is dangerous, better use `mkstemp'
+make[1]: Leaving directory `/home/tvidrevich/XSB/emu'
+make[1]: Entering directory `/home/tvidrevich/XSB/gpp'
+
+gcc -c  gpp.c
+gcc -lm -ldl -Wl,-export-dynamic -o gpp /home/tvidrevich/XSB/config/i686-pc-linux-gnu/saved.o/gpp.o
+
+make[1]: Leaving directory `/home/tvidrevich/XSB/gpp'
+
+

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<taxonomy>
+  <tModelKey>uuid:f0f45111-5af0-f451-8a06-0d5979065559</tModelKey>
+  <name>MilitaryEchelonScheme</name>
+  <description>Echelon level of service</description>
+  <checked>true</checked>
+  <compatibility>
+    <type>businessEntity</type>
+    <type>businessService</type>
+    <type>tModel</type>
+  </compatibility>
+  <categorization>
+    <type>categorization</type>
+  </categorization>
+  <categories>
+    <category>
+      <keyName>JOINT</keyName>
+      <keyValue>JOINT</keyValue>
+      <category>
+        <keyName>US-ARMY</keyName>
+        <keyValue>US-ARMY</keyValue>
+        <category>
+          <keyName>THEATER</keyName>
+          <keyValue>THEATER</keyValue>
+          <category>
+            <keyName>CORPS</keyName>
+            <keyValue>CORPS</keyValue>
+            <category>
+              <keyName>DIVISION</keyName>
+              <keyValue>DIVISION</keyValue>
+              <category>
+                <keyName>BRIGADE</keyName>
+                <keyValue>BRIGADE</keyValue>
+              </category>
+            </category>
+          </category>
+        </category>
+      </category>
+    </category>
+  </categories>
+</taxonomy>

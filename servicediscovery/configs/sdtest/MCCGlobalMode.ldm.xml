@@ -1,0 +1,42 @@
+<?xml version="1.0"  encoding="US-ASCII"?>
+
+<!DOCTYPE clusterassets SYSTEM "ClusterAssets.ldm.dtd" []>
+
+<clusterassets>
+  <prototype name="NSN/2320013189902">
+    <object class="org.cougaar.glm.ldm.asset.Truck" 
+      id="proto-001">
+      <property class="org.cougaar.planning.ldm.asset.TypeIdentificationPG"
+	id="property-001">
+	<field value="NSN/2320013189902" type="java.lang.String"
+	  name="TypeIdentification"/>
+	<field value="MCC_M1070_HET_TRACTOR"
+	  type="java.lang.String" name="Nomenclature"/>
+      </property>
+    </object>
+  </prototype>
+  <prototype name="MAINTENANCE">
+    <object class="org.cougaar.planning.ldm.asset.AbstractAsset"
+      id="proto-002">
+      <property class="org.cougaar.planning.ldm.asset.TypeIdentificationPG"
+        id="property-002">
+        <field value="MAINTENANCE" type="java.lang.String"
+          name="TypeIdentification"/>
+        <field value="MAINTENANCE_ORGANIZATION"
+          type="java.lang.String" name="Nomenclature"/>
+      </property>
+    </object>
+  </prototype>
+  <instance prototype="NSN/2320013189902" id="vin-001">
+    <schedule end="12/31/99" start="01/01/99"/>
+  </instance>
+  <instance prototype="NSN/2320013189902" id="vin-002">
+    <schedule end="12/31/99" start="01/01/99"/>
+  </instance>
+  <instance prototype="NSN/2320013189902" id="vin-003">
+    <schedule end="12/31/99" start="01/01/99"/>
+  </instance>
+  <instance prototype="MAINTENANCE" id="org-001">
+    <schedule end="12/31/99" start="01/01/99"/>
+  </instance>
+</clusterassets>

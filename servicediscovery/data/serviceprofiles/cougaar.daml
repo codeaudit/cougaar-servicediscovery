@@ -1,0 +1,198 @@
+<?xml version='1.0' encoding='ISO-8859-1'?> 
+<!DOCTYPE uridef[
+  <!ENTITY rdf     "http://www.w3.org/1999/02/22-rdf-syntax-ns">
+  <!ENTITY rdfs    "http://www.w3.org/2000/01/rdf-schema">
+  <!ENTITY xsd     "http://www.w3.org/2000/10/XMLSchema">
+  <!ENTITY daml    "http://www.daml.org/2001/03/daml+oil">
+  <!ENTITY service "http://www.daml.org/services/daml-s/2001/10/Service.daml">
+  <!ENTITY profile "http://www.daml.org/services/daml-s/2001/10/Profile.daml"> 
+  <!ENTITY process "http://www.daml.org/services/daml-s/2001/10/Process.daml"> 
+]>
+
+<rdf:RDF
+  xmlns:rdf =     "&rdf;#"
+  xmlns:rdfs =    "&rdfs;#"
+  xmlns:xsd =     "&xsd;#"
+  xmlns:daml =    "&daml;#"
+  xmlns:service = "&service;#"
+  xmlns:process = "&process;#"
+  xmlns:profile = "&profile;#">
+
+<daml:Ontology rdf:about="">
+  <daml:versionInfo>
+    $Id: cougaar.daml,v 1.1 2003-01-20 19:32:23 mthome Exp $
+  </daml:versionInfo>
+  <rdfs:comment>
+	cougaar name space
+  </rdfs:comment>
+  <daml:imports rdf:resource="&daml;"/>
+  <daml:imports rdf:resource="&service;"/>
+  <daml:imports rdf:resource="&process;"/>
+  <daml:imports rdf:resource="&profile;"/>
+</daml:Ontology>
+
+
+
+<daml:Class rdf:ID="NSN">
+  <rdfs:subClassOf rdf:resource="&xsd;#string"/>
+</daml:Class>
+
+<daml:Class rdf:ID="Quantity">
+  <rdfs:subClassOf rdf:resource="&xsd;#decimal"/>
+</daml:Class>
+
+<daml:Class rdf:ID="DeliveryDate">
+  <rdfs:subClassOf rdf:resource="&xsd;#decimal"/>
+</daml:Class>
+
+<daml:Class rdf:ID="DeliveryLocation">
+  <rdfs:subClassOf rdf:resource="&xsd;#string"/>
+</daml:Class>
+
+<daml:Class rdf:ID="Customer">
+  <rdfs:subClassOf rdf:resource="&xsd;#string"/>
+</daml:Class>
+
+<daml:Class rdf:ID="Result">
+  <rdfs:subClassOf rdf:resource="&xsd;#boolean"/>
+</daml:Class>
+
+<daml:Class rdf:ID="Confidence">
+  <rdfs:subClassOf rdf:resource="&xsd;#decimal"/>
+</daml:Class>
+
+  <daml:Class rdf:ID="Actor">
+    <daml:label>Actor</daml:label> 
+    <daml:subClassOf rdf:resource="&profile;#Actor" /> 
+    <daml:comment>
+      Cougaar agent actor.
+    </daml:comment>
+  </daml:Class>
+
+  <daml:Class rdf:ID="ServiceRequester">
+    <daml:label>ServiceRequester</daml:label> 
+    <daml:subClassOf rdf:resource="&profile;#ServiceRequester" /> 
+    <daml:subClassOf rdf:resource="#Actor" /> 
+    <daml:comment>
+      ServiceRequester is extended to hold Agent type information.
+    </daml:comment>
+  </daml:Class>
+
+  <daml:Class rdf:ID="WsdlGrounding">
+    <daml:label>WsdlGrounding</daml:label>
+    <daml:subClassOf rdf:resource="&service;#ServiceGrounding" />
+    <daml:comment>
+       ServiceGrounding is extended to have the wsdlDocument property.
+    </daml:comment>
+  </daml:Class>
+
+  <daml:DatatypeProperty rdf:ID="wsdlDocument">
+    <daml:domain rdf:resource="#WsdlGrounding" />
+    <daml:range rdf:resource="&xsd;#string" />
+  </daml:DatatypeProperty>
+
+  <daml:DatatypeProperty rdf:ID="bindingType">
+    <daml:domain rdf:resource="#WsdlGrounding" />
+    <daml:range rdf:resource="&xsd;#string" />
+  </daml:DatatypeProperty>
+
+  <daml:Class rdf:ID="ServiceProvider">
+    <daml:label>ServiceProvider</daml:label> 
+    <daml:subClassOf rdf:resource="&profile;#ServiceProvider" /> 
+    <daml:subClassOf rdf:resource="#Actor" /> 
+    <daml:comment>
+      ServiceProvider is extended to hold Agent type information.
+    </daml:comment>
+  </daml:Class>
+
+  <daml:Class rdf:ID="MilitaryServiceProvider">
+    <daml:label>MilitaryServiceProvider</daml:label>
+    <daml:subClassOf rdf:resource="#ServiceProvider" />
+    <daml:comment>
+      Military/government organizations.
+    </daml:comment>
+  </daml:Class>
+
+  <daml:Class rdf:ID="CommercialServiceProvider">
+    <daml:label>CommercialServiceProvider</daml:label>
+    <daml:subClassOf rdf:resource="#ServiceProvider" />
+    <daml:comment>
+      Commercial (ie, non government) organizations.
+    </daml:comment>
+  </daml:Class>
+
+  <daml:DatatypeProperty rdf:ID="organizationType">
+    <daml:domain rdf:resource="#Actor"/>
+    <daml:range rdf:resource="&xsd;#string"/>
+  </daml:DatatypeProperty>
+
+  <daml:Class rdf:ID="ServiceProfile">
+    <daml:label>ServiceProfile</daml:label> 
+    <daml:subClassOf rdf:resource="&service;#ServiceProfile" /> 
+    <daml:comment>
+      Cougaar agent service profile, may extend or subclass
+    </daml:comment>
+  </daml:Class>
+
+
+<!-- we extend the existing service category to have -->
+<!-- service category name, service naming scheme, and -->
+<!-- additional qualifications -->
+  <daml:ObjectProperty rdf:ID="serviceCategory">
+    <daml:subPropertyOf rdf:resource="&profile;#serviceCategory"/>
+    <daml:domain rdf:resource="&service;#ServiceProfile"/>
+    <daml:range rdf:resource="#ServiceCategory"/>
+  </daml:ObjectProperty>
+
+  <daml:Class rdf:ID="ServiceCategory">
+    <daml:label>ServiceCategory</daml:label> 
+    <daml:subClassOf rdf:resource="&daml;#Thing" /> 
+    <daml:comment>
+      Information about the category/classification of the service.
+    </daml:comment>
+  </daml:Class>
+
+  <daml:DatatypeProperty rdf:ID="serviceCategoryName">
+    <daml:domain rdf:resource="#ServiceCategory"/>
+    <daml:range rdf:resource="&xsd;#string"/>
+  </daml:DatatypeProperty>
+  <daml:DatatypeProperty rdf:ID="serviceCategoryCode">
+    <daml:domain rdf:resource="#ServiceCategory"/>
+    <daml:range rdf:resource="&xsd;#string"/>
+  </daml:DatatypeProperty>
+  <daml:DatatypeProperty rdf:ID="serviceNamingScheme">
+    <daml:domain rdf:resource="#ServiceCategory"/>
+    <daml:range rdf:resource="&xsd;#string"/>
+  </daml:DatatypeProperty>
+
+  <daml:ObjectProperty rdf:ID="additionalQualification">
+    <daml:domain rdf:resource="#ServiceCategory"/>
+    <daml:range rdf:resource="#AdditionalQualification"/>
+  </daml:ObjectProperty>
+
+  <daml:Class rdf:ID="AdditionalQualification">
+    <daml:label>AdditionalQualification</daml:label> 
+    <daml:subClassOf rdf:resource="&daml;#Thing" /> 
+    <daml:comment>
+      More information about the category/classification of the service.
+    </daml:comment>
+  </daml:Class>
+
+  <daml:DatatypeProperty rdf:ID="qualificationName">
+    <daml:domain rdf:resource="#AdditionalQualification"/>
+    <daml:range rdf:resource="&xsd;#string"/>
+  </daml:DatatypeProperty>
+  <daml:DatatypeProperty rdf:ID="qualificationValue">
+    <daml:domain rdf:resource="#AdditionalQualification"/>
+    <daml:range rdf:resource="&xsd;#string"/>
+  </daml:DatatypeProperty>
+
+</rdf:RDF>
+
+
+
+
+
+
+
+

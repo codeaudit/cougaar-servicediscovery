@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions
+  xmlns="http://schemas.xmlsoap.org/wsdl/"
+  name="%INDEX%_%AGENT_NAME%-Service"
+  targetNamespace="%SPECIFIC_GROUNDING_FILEPATH%"
+  xmlns:provider="%GENERIC_GROUNDING_FILEPATH%"
+  xmlns:cougaar="%COUGAAR_GROUNDING_FILEPATH%" >
+
+<service name="%INDEX%_%AGENT_NAME%">
+  <port binding="provider:%GENERIC_PROVIDER_BINDING%" name="CougaarAgentCommunicationsPort">
+    <cougaar:address agentName="%AGENT_NAME%"/>
+  </port>
+</service>
+
+</definitions>

@@ -1,0 +1,112 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<!DOCTYPE uridef[
+  <!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns">
+  <!ENTITY rdfs    "http://www.w3.org/2000/01/rdf-schema">
+  <!ENTITY daml "http://www.daml.org/2001/03/daml+oil">
+  <!ENTITY process "http://www.daml.org/services/daml-s/2001/10/Process.daml">
+  <!ENTITY service "http://www.daml.org/services/daml-s/2001/10/Service.daml">
+  <!ENTITY profile "http://www.daml.org/services/daml-s/2001/10/Profile.daml"> 
+  <!ENTITY xsd "http://www.w3.org/2000/10/XMLSchema.xsd">
+  <!ENTITY cougaar "%FULL_COUGAAR_DAML_FILEPATH%">
+]>
+ 
+<rdf:RDF
+  xmlns:rdf=     "&rdf;#"
+  xmlns:rdfs =   "&rdfs;#"
+  xmlns:daml=    "&daml;#"
+  xmlns:service= "&service;#"
+  xmlns:process= "&process;#"
+  xmlns:profile= "&profile;#"
+  xmlns:xsd=     "&xsd;#"
+  xmlns:cougaar= "&cougaar;#">
+
+
+  <daml:Ontology about="">
+    <daml:versionInfo>
+      $Id: profile-template.txt,v 1.1 2003-01-20 19:32:23 mthome Exp $
+    </daml:versionInfo>
+    <rdfs:comment>
+      DAML-S service profile for %AGENT_NAME%
+ 
+    </rdfs:comment>
+    <daml:imports rdf:resource="&rdf;" />
+    <daml:imports rdf:resource="&daml;" />
+    <daml:imports rdf:resource="&service;" />
+    <daml:imports rdf:resource="&process;" />
+    <daml:imports rdf:resource="&profile;" />
+    <daml:imports rdf:resource="&cougaar;" />
+  </daml:Ontology>
+
+  <service:Service rdf:ID="%INDEX%_%AGENT_NAME%">
+    <service:presents rdf:resource="#%INDEX%_%AGENT_NAME%_Profile"/>
+    <service:supports rdf:resource="#%INDEX%_%AGENT_NAME%_Grounding"/>
+  </service:Service>
+
+  <cougaar:ServiceProfile rdf:ID="%INDEX%_%AGENT_NAME%_Profile">
+    <service:isPresentedBy rdf:resource="#%INDEX%_%AGENT_NAME%"/>
+<!--military-->
+    <cougaar:serviceCategory>
+    <cougaar:ServiceCategory>
+      <cougaar:serviceCategoryName>%ROLE_NAME%</cougaar:serviceCategoryName>
+      <cougaar:serviceCategoryCode>%ROLE_NAME%</cougaar:serviceCategoryCode>
+      <cougaar:serviceNamingScheme>MilitaryServiceScheme</cougaar:serviceNamingScheme>
+      <cougaar:additionalQualification>
+      <cougaar:AdditionalQualification>
+        <cougaar:qualificationName>%QNAME%</cougaar:qualificationName>
+        <cougaar:qualificationValue>%QVALUE%</cougaar:qualificationValue>
+      </cougaar:AdditionalQualification>
+      </cougaar:additionalQualification>
+    </cougaar:ServiceCategory>	
+    </cougaar:serviceCategory>
+<!--naics-->
+    <cougaar:serviceCategory>
+    <cougaar:ServiceCategory>
+      <cougaar:serviceCategoryName>%NAICS_NAME%</cougaar:serviceCategoryName>
+      <cougaar:serviceCategoryCode>%NAICS_CODE%</cougaar:serviceCategoryCode>
+      <cougaar:serviceNamingScheme>ntis-gov:naics:1997</cougaar:serviceNamingScheme>
+    </cougaar:ServiceCategory>	
+    </cougaar:serviceCategory>
+
+
+    <profile:textDescription>%SERVICE_DESCRIPTION%</profile:textDescription>
+
+    <profile:providedBy>
+      <cougaar:MilitaryServiceProvider>
+        <profile:name>%AGENT_NAME%</profile:name>
+      </cougaar:MilitaryServiceProvider>
+    </profile:providedBy>
+
+  </cougaar:ServiceProfile>
+
+  <cougaar:WsdlGrounding rdf:ID="%INDEX%_%AGENT_NAME%_Grounding">
+    <cougaar:wsdlDocument>%FULL_GROUNDING_FILEPATH%</cougaar:wsdlDocument>
+    <cougaar:bindingType>COUGAAR</cougaar:bindingType>
+    <service:isSupportedBy rdf:resource="#%INDEX%_%AGENT_NAME%"/> 
+  </cougaar:WsdlGrounding>
+
+
+</rdf:RDF>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

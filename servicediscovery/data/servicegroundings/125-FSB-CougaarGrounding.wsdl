@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions
+  xmlns="http://schemas.xmlsoap.org/wsdl/"
+  name="125-FSB-Services"
+  targetNamespace="http://stout.bbn.com/~aleung/125-FSB-CougaarGrounding.wsdl"
+  xmlns:supply="http://stout.bbn.com/~aleung/SupplyProviderCougaarGrounding.wsdl"
+  xmlns:cougaar="http://stout.bbn.com/~aleung/cougaar.wsdl" >
+
+<service name="125-FSB/Supply">
+  <port binding="supply:SupplyProviderCougaarBinding" name="CougaarAgentCommunicationsPort">
+    <cougaar:address agentName="125-FSB"/>
+  </port>
+</service>
+
+</definitions>

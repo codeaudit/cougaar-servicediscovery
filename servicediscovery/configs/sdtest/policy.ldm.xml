@@ -1,0 +1,36 @@
+<?xml version="1.0"  encoding="US-ASCII"?>
+
+<!DOCTYPE Policy SYSTEM "Policy.ldm.dtd" []>
+
+<Policies>
+
+ <Policy name="ShipPolicy" type="org.cougaar.glm.ldm.policy.ShipPolicy">
+    <RuleParam name="ShipDays">
+	<Integer value="3" min="1" max="10"> 
+	</Integer>
+    </RuleParam>
+    <RuleParam name="ShipMode">
+       <Enumeration value="Ground">
+	  <EnumOption value="Ground"> </EnumOption>
+	  <EnumOption value="Sea"> </EnumOption>
+	  <EnumOption value="Air"> </EnumOption>
+       </Enumeration>
+    </RuleParam>
+  </Policy>
+
+ <Policy name="StockageLevelPolicy" type="org.cougaar.glm.ldm.policy.StockageLevelPolicy">
+    <RuleParam name="DaysOfSupply">
+	<Integer value="7" min="0" max="365"> 
+	</Integer>
+    </RuleParam>
+    <RuleParam name="HostNation">
+       <Boolean value="false"> </Boolean>
+    </RuleParam>
+    <RuleParam name="WarReserves">
+       <Boolean value="false"> </Boolean>
+    </RuleParam>
+    <RuleParam name="PrepositionStock">
+       <Boolean value="false"> </Boolean>
+    </RuleParam>
+  </Policy>
+</Policies>

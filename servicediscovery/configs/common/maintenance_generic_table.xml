@@ -1,0 +1,16 @@
+<!-- USE THIS INSTEAD OF default_allocations_rules.xml FOR -->
+<!-- 2-501-AVNBN, 127-DASB, 123-MSB FOR PASS-THROUGH ALLOCATION -->
+<!-- OF MAINTAIN TASKS -->
+
+<commands>
+
+  <command>
+    <task verb="Maintain" />
+    <allocate>
+      <relation type="Supporting" />
+      <role name="AircraftMaintenanceProvider" />
+    </allocate>
+  </command>
+
+
+</commands>

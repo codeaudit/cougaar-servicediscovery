@@ -1,0 +1,78 @@
+<?xml version="1.0"  encoding="US-ASCII"?>
+
+<!DOCTYPE ClusterAssets SYSTEM "ClusterAssets.ldm.dtd" []>
+
+<clusterassets>
+  <prototype name="NSN/2350010871095">
+    <object class="org.cougaar.glm.ldm.asset.SelfPropelledGroundWeapon"
+      id="proto-001">
+      <property class="org.cougaar.planning.ldm.asset.TypeIdentificationPG"
+	id="property-001">
+	<field value="NSN/2350010871095" type="java.lang.String"
+	  name="TypeIdentification"/>
+	<field value="ARBN_M1A1_120_MM_TANK_COMBAT"
+	  type="java.lang.String" name="Nomenclature"/>
+      </property>
+    </object>
+  </prototype>
+  <instance prototype="NSN/2350010871095" id="vin-001">
+	 <schedule end="12/31/99" start="01/01/99"/>
+  </instance>
+  <instance prototype="NSN/2350010871095" id="vin-002">
+	 <schedule end="12/31/99" start="01/01/99"/>
+  </instance>  
+  <instance prototype="NSN/2350010871095" id="vin-003">
+  	 <schedule end="12/31/99" start="01/01/99"/>
+  </instance>
+  <instance prototype="NSN/2350010871095" id="vin-004">
+  	 <schedule end="12/31/99" start="01/01/99"/>
+  </instance>
+  <instance prototype="NSN/2350010871095" id="vin-005">
+	 <schedule end="12/31/99" start="01/01/99"/>
+  </instance>
+  <instance prototype="NSN/2350010871095" id="vin-006">
+	 <schedule end="12/31/99" start="01/01/99"/>
+  </instance>
+  <instance prototype="NSN/2350010871095" id="vin-007">
+	 <schedule end="12/31/99" start="01/01/99"/>
+  </instance>
+  <instance prototype="NSN/2350010871095" id="vin-008">
+	 <schedule end="12/31/99" start="01/01/99"/>
+  </instance>
+  <instance prototype="NSN/2350010871095" id="vin-009">
+	 <schedule end="12/31/99" start="01/01/99"/>
+  </instance>
+  <instance prototype="NSN/2350010871095" id="vin-010">
+	 <schedule end="12/31/99" start="01/01/99"/>
+  </instance>
+  <instance prototype="NSN/2350010871095" id="vin-011">
+	 <schedule end="12/31/99" start="01/01/99"/>
+  </instance>
+  <instance prototype="NSN/2350010871095" id="vin-012">
+	 <schedule end="12/31/99" start="01/01/99"/>
+  </instance>
+  <instance prototype="NSN/2350010871095" id="vin-013">
+	 <schedule end="12/31/99" start="01/01/99"/>
+  </instance>
+  <instance prototype="NSN/2350010871095" id="vin-014">
+	 <schedule end="12/31/99" start="01/01/99"/>
+  </instance>
+  <instance prototype="NSN/2350010871095" id="vin-015">
+	 <schedule end="12/31/99" start="01/01/99"/>
+  </instance>
+  <instance prototype="NSN/2350010871095" id="vin-016">
+	 <schedule end="12/31/99" start="01/01/99"/>
+  </instance>
+  <instance prototype="NSN/2350010871095" id="vin-017">
+	 <schedule end="12/31/99" start="01/01/99"/>
+  </instance>
+  <instance prototype="NSN/2350010871095" id="vin-018">
+	 <schedule end="12/31/99" start="01/01/99"/>
+  </instance>
+  <instance prototype="NSN/2350010871095" id="vin-019">
+	 <schedule end="12/31/99" start="01/01/99"/>
+  </instance>
+  <instance prototype="NSN/2350010871095" id="vin-020">
+	 <schedule end="12/31/99" start="01/01/99"/>
+  </instance>
+</clusterassets>

@@ -1,0 +1,85 @@
+:-(dynamic(object_ext(A,B,C))).
+:-(index(object_ext(A,B,C),'.'(2,[]),17)).
+object_ext('','','http://www.daml.org/services/daml-s/0.7/Grounding.daml').
+object_ext('','','http://www.daml.org/services/daml-s/0.7/Process.daml').
+object_ext('Aborted','Aborted','http://www.daml.org/services/daml-s/0.7/Process.daml').
+object_ext('Canceled','Canceled','http://www.daml.org/services/daml-s/0.7/Process.daml').
+object_ext('Completed','Completed','http://www.daml.org/services/daml-s/0.7/Process.daml').
+object_ext('ConsumableAllocation','ConsumableAllocation','http://www.daml.org/services/schemata/resources').
+object_ext('ContinuousCapacity','ContinuousCapacity','http://www.daml.org/services/schemata/resources').
+object_ext('DiscreteCapacity','DiscreteCapacity','http://www.daml.org/services/schemata/resources').
+object_ext('False','False','http://www.daml.org/services/daml-s/0.7/Process.daml').
+object_ext('Ongoing','Ongoing','http://www.daml.org/services/daml-s/0.7/Process.daml').
+object_ext('Ontology1455','Ontology1455','http://www.daml.org/2001/03/daml+oil').
+object_ext('Ready','Ready','http://www.daml.org/services/daml-s/0.7/Process.daml').
+object_ext('ReusableAllocation','ReusableAllocation','http://www.daml.org/services/schemata/resources').
+object_ext('Suspended','Suspended','http://www.daml.org/services/daml-s/0.7/Process.daml').
+object_ext('True','True','http://www.daml.org/services/daml-s/0.7/Process.daml').
+object_ext('http://www.daml.org/services/schemata/resources#','http://www.daml.org/services/schemata/resources#',global).
+:-(dynamic(memberof_ext(A,B,C,D))).
+:-(index(memberof_ext(A,B,C,D),'.'(1,'.'(1027,[])),17)).
+memberof_ext('','http://www.daml.org/services/daml-s/0.7/Grounding.daml','Ontology','http://www.daml.org/2001/03/daml+oil').
+memberof_ext('','http://www.daml.org/services/daml-s/0.7/Process.daml','Ontology','http://www.daml.org/2001/03/daml+oil').
+memberof_ext('Aborted','http://www.daml.org/services/daml-s/0.7/Process.daml','Thing','http://www.daml.org/2001/03/daml+oil').
+memberof_ext('Canceled','http://www.daml.org/services/daml-s/0.7/Process.daml','Thing','http://www.daml.org/2001/03/daml+oil').
+memberof_ext('Completed','http://www.daml.org/services/daml-s/0.7/Process.daml','Thing','http://www.daml.org/2001/03/daml+oil').
+memberof_ext('ConsumableAllocation','http://www.daml.org/services/schemata/resources','AllocationType','http://www.daml.org/services/schemata/resources').
+memberof_ext('ContinuousCapacity','http://www.daml.org/services/schemata/resources','CapacityType','http://www.daml.org/services/schemata/resources').
+memberof_ext('DiscreteCapacity','http://www.daml.org/services/schemata/resources','CapacityType','http://www.daml.org/services/schemata/resources').
+memberof_ext('False','http://www.daml.org/services/daml-s/0.7/Process.daml','TestValue','http://www.daml.org/services/daml-s/0.7/Process.daml').
+memberof_ext('Ongoing','http://www.daml.org/services/daml-s/0.7/Process.daml','Thing','http://www.daml.org/2001/03/daml+oil').
+memberof_ext('Ontology1455','http://www.daml.org/2001/03/daml+oil','Ontology','http://www.daml.org/2001/03/daml+oil').
+memberof_ext('Ready','http://www.daml.org/services/daml-s/0.7/Process.daml','Thing','http://www.daml.org/2001/03/daml+oil').
+memberof_ext('ReusableAllocation','http://www.daml.org/services/schemata/resources','AllocationType','http://www.daml.org/services/schemata/resources').
+memberof_ext('Suspended','http://www.daml.org/services/daml-s/0.7/Process.daml','Thing','http://www.daml.org/2001/03/daml+oil').
+memberof_ext('True','http://www.daml.org/services/daml-s/0.7/Process.daml','TestValue','http://www.daml.org/services/daml-s/0.7/Process.daml').
+memberof_ext('http://www.daml.org/services/schemata/resources#',global,'Ontology','http://www.daml.org/2001/03/daml+oil').
+:-(dynamic(attribute_ext(A,B,C,D,E,F))).
+:-(index(attribute_ext(A,B,C,D,E,F),'.'(328449,[]),17)).
+attribute_ext('','http://www.daml.org/services/daml-s/0.7/Grounding.daml',comment,'http://www.w3.org/2000/01/rdf-schema',atom('
+    Upper-level DAML ontology for Groundings that employ WSDL.
+    Part of the DAML-S ontology; see http://www.daml.org/services/.
+
+    Note that other approaches to grounding may be accommodated
+    within the DAML-S framework.  This is the only approach produced
+    to date by the DAML-S Coalition.
+
+    This version does not cover all possible cases of mapping
+    DAML-S atomic processes onto WSDL services.  For information
+    about the limits of this version, please see documentation
+    available on the WebSite mentioned above.
+
+    TBD: In each place where range is given as Literal, we need
+    to consider whether something more specific can be expressed.
+  '),'OMS').
+attribute_ext('','http://www.daml.org/services/daml-s/0.7/Grounding.daml',imports,'http://www.daml.org/2001/03/daml+oil','http://www.daml.org/2001/03/daml+oil',global).
+attribute_ext('','http://www.daml.org/services/daml-s/0.7/Grounding.daml',versionInfo,'http://www.daml.org/2001/03/daml+oil',atom('
+    $Id: data_omsext.P,v 1.1 2003-01-20 19:32:22 mthome Exp $
+  '),'OMS').
+attribute_ext('','http://www.daml.org/services/daml-s/0.7/Process.daml',comment,'http://www.w3.org/2000/01/rdf-schema',atom('
+    Upper-level DAML ontology for Processes.
+    Part of the DAML-S effort; see http://www.daml.org/services/.
+  '),'OMS').
+attribute_ext('','http://www.daml.org/services/daml-s/0.7/Process.daml',versionInfo,'http://www.daml.org/2001/03/daml+oil',atom('
+    $Id: data_omsext.P,v 1.1 2003-01-20 19:32:22 mthome Exp $
+  '),'OMS').
+attribute_ext('Ontology1455','http://www.daml.org/2001/03/daml+oil',comment,'http://www.daml.org/2001/03/daml+oil',atom('
+      Process and Service Coalition
+      First cut at DAML ontology for Advertisements (i.e. Profiles) based
+      upon the Service Model.
+      Version of Profile for DAML-S 0.7 Release
+      Created by Terry Payne (terryp@cs.cmu.edu).
+      Modified by Massimo Paolucci (paolucci@cs.cmu.edu)
+
+    '),'OMS').
+attribute_ext('Ontology1455','http://www.daml.org/2001/03/daml+oil',imports,'http://www.daml.org/2001/03/daml+oil','http://www.daml.org/2001/03/daml+oil',global).
+attribute_ext('Ontology1455','http://www.daml.org/2001/03/daml+oil',imports,'http://www.daml.org/2001/03/daml+oil','http://www.daml.org/services/daml-s/0.7/Process.daml',global).
+attribute_ext('Ontology1455','http://www.daml.org/2001/03/daml+oil',imports,'http://www.daml.org/2001/03/daml+oil','http://www.daml.org/services/daml-s/0.7/Service.daml',global).
+attribute_ext('Ontology1455','http://www.daml.org/2001/03/daml+oil',versionInfo,'http://www.daml.org/2001/03/daml+oil',atom('
+      $Id: data_omsext.P,v 1.1 2003-01-20 19:32:22 mthome Exp $
+    '),'OMS').
+attribute_ext('http://www.daml.org/services/schemata/resources#',global,comment,'http://www.w3.org/2000/01/rdf-schema',atom('Resource Ontology for DAML-S'),'OMS').
+attribute_ext('http://www.daml.org/services/schemata/resources#',global,imports,'http://www.daml.org/2001/03/daml+oil','http://www.daml.org/2001/03/daml+oil',global).
+attribute_ext('http://www.daml.org/services/schemata/resources#',global,versionInfo,'http://www.daml.org/2001/03/daml+oil',atom('no version number yet...'),'OMS').
+:-(dynamic(attribute_object_ext(A,B,C,D,E,F))).
+:-(index(attribute_object_ext(A,B,C,D,E,F),'.'(328449,[]),17)).

@@ -1,0 +1,18 @@
+<prototype name = "NSN/5930011951836">
+  <object class="org.cougaar.glm.ldm.asset.ClassIXRepairPart">
+
+      <field name="TypeIdentificationPG" type="object">
+        <value>
+          <object class="org.cougaar.planning.ldm.asset.NewTypeIdentificationPG">
+          <field name="TypeIdentification" type="String">
+            <value> NSN/5930011951836 </value>
+          </field>
+          <field name="Nomenclature" type="String">
+            <value> Sensitive switch </value>
+          </field>
+          </object>
+        </value>
+      </field>
+
+  </object>
+</prototype> <!-- Sensitive switch -->

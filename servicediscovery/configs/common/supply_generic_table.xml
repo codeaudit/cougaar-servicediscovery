@@ -1,0 +1,15 @@
+<!-- USE THIS INSTEAD OF default_allocations_rules.xml FOR -->
+<!-- 18-MAINTBN FOR ALLOCATION OF SUPPLY TASKS -->
+
+<commands>
+
+  <command>
+    <task verb="Supply" />
+    <allocate>
+      <relation type="Supporting" />
+      <role name="SparePartsDistributor" />
+    </allocate>
+  </command>
+
+
+</commands>

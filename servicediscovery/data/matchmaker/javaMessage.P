@@ -1,0 +1,375 @@
+/* fake javaMessage/3 and ipObjectSpec/4 calls for matchmaker */
+:- import append/3, member/2 from basics.
+:- index javaMessage/3-3.
+javaMessage('java.lang.System'-out,println(X) ):- !,
+	write(' (FAKE!)'), writeln(X).
+javaMessage(refMMService,printDebugInfo(X) ):- !,
+	write(' (FAKE!)'), writeln(X).
+
+javaMessage(refMMService,Services,findServices(string(_Name),string(Code),string(Naics))) :-
+	nonvar(Code), nonvar(Naics),
+	Naics = 'ntis-gov:naics:1997',
+	!,
+	findall(Cage,(provider(Cage,_CompanyName,_,_),
+		      provider_registration_node(Cage,Code,Naics)),
+		Services).
+
+javaMessage(refMMService,Providers,findServices(string(_Name),string(MilEnt),string('SupportCommandAssignment'))) :-
+	nonvar(MilEnt),
+	!,
+	findall(Suppliers,suppby(MilEnt,Suppliers),Providers).
+
+javaMessage(refMMService,MilProvList,findServices(string(_Name),string(MilType),string('MilitaryServiceScheme'))) :-
+	nonvar(MilType),
+	!,
+	findall(MilEnt,miltyp(MilEnt,MilType),MilProvList).
+
+javaMessage(refMMService,MilProvList,findServices(string(_Name),string(Echelon),string('MilitaryEchelonScheme'))) :-
+	nonvar(Echelon),
+	!,
+	findall(MilEnt,ech(MilEnt,Echelon),MilProvList).
+
+javaMessage(refMMService,[],findServices(string(_),string(_),string(_))) :-
+	!.
+
+javaMessage(refMMService,ServiceArray,findServices(CategoryArray)):-
+	is_list(CategoryArray),
+	!,
+	find_list_of_service_objects(CategoryArray,ServiceArray0), %% may return duplicates
+	sort(ServiceArray0,ServiceArray).
+
+find_list_of_service_objects([],[]).
+find_list_of_service_objects([Name,Code,Source|CategoryArray],ServiceObjList):-
+	findall(ServiceObj,(javaMessage(refMMService,ServiceObjSubList,findServices(string(Name),string(Code),string(Source))),
+			    member(ServiceObj,ServiceObjSubList)),ServiceObjList0),
+	find_list_of_service_objects(CategoryArray,ServiceObjList1),
+	append(ServiceObjList0,ServiceObjList1,ServiceObjList).
+
+javaMessage(refMMService,ProvList,findProviders(string('Commercial'),string('Commercial'),string('OrganizationTypes'))) :- !,
+	findall(Cage,(provider(Cage,_,_,_),\+provider_registration_node(Cage,_,'MilitaryServiceScheme')),ProvList).
+
+javaMessage(refMMService,ProvList,findProviders(string('Military'),string('Military'),string('OrganizationTypes'))) :- !,
+	findall(Cage,(provider(Cage,_,_,_),provider_registration_node(Cage,_,'MilitaryServiceScheme')),ProvList).
+
+javaMessage(refMMService,MilCatList,getServiceCategories(MilEnt)) :-
+	nonvar(MilEnt),
+	mil(MilEnt),!,
+	findall(p(SuppType,Scheme),
+		(miltyp(MilEnt,SuppType),Scheme = 'MilitaryServiceScheme'
+		 ;
+		 ech(MilEnt,SuppType),Scheme = 'MilitaryEchelonScheme'
+		),		 
+		MilCatList).
+
+javaMessage(refMMService,ServList,getServiceCategories(Cage)) :-
+	nonvar(Cage),
+	provider(Cage,_,_,_),!,
+	findall(p(Code,Attr),
+		(provider_registration_node(Cage,Code,Attr)
+		 ;
+		 provider(Cage,_,_,SCode),transSCode(SCode,Code),
+		 Attr = 'SourcingCapabilityScheme'
+		),
+		ServList).
+
+transSCode(custom_mfr,'ODM').
+transSCode(finished_goods,'COTS').
+transSCode('','COTS').
+
+javaMessage(refMMService,BusProvList,getBusinessCategories(Cage)) :-
+	provider(Cage,_,_,_),!,
+	findall(p(Val,Attr),
+		(Attr = 'OrganizationTypes',
+		 (provider_registration_node(Cage,_,'MilitaryServiceScheme')
+		  ->	 Val = 'Military'
+		  ;	 Val = 'Commercial'
+		 )
+		),
+		BusProvList).
+
+javaMessage(p(ClassCode,_NameScheme),string(ClassCode),getClassificationCode) :- !.
+javaMessage(p(_ClassCode,NameScheme),string(NameScheme),getClassificationSchemeName) :- !.
+
+javaMessage(refMMService,1,isMilitaryEntity(string(NatID))) :- !,
+	mil(NatID).
+
+javaMessage(prologEngine,X,getRealJavaObject(X)) :- !.
+
+javaMessage('org.cougaar.servicediscovery.matchmaker.ScoredServiceInfo',
+	    pair(Service,Score),'ScoredServiceInfo'(Service,Score)) :- !.
+
+%% for a given service object get provider name
+javaMessage(Cage,string(ProviderName),getProviderName) :-
+	nonvar(Cage), 
+	provider(Cage,ProviderName,_,_),!.
+
+javaMessage(MilEnt,string(MilEnt),getProviderName) :-
+	nonvar(MilEnt),mil(MilEnt), !.
+
+javaMessage(refMMService,[MilEnt],findProvidersByName(string(MilEnt))) :-
+	nonvar(MilEnt),mil(MilEnt), !.
+
+javaMessage(refMMService,Providers,findProvidersByName(string(ProviderName))) :-
+	nonvar(ProviderName), !,
+	findall(Cage,provider(Cage,ProviderName,_,_),Providers). %% should be exactly one provider though
+
+javaMessage(MilEnt,string(MilEnt),getServiceName) :-
+	nonvar(MilEnt),mil(MilEnt), !.
+
+javaMessage(Cage,string(ServiceName),getServiceName) :-
+	nonvar(Cage),
+	(service_to_name_mapping(Cage,ServiceName)->true;provider(Cage,ServiceName,_,_)),!.
+
+javaMessage(refMMService,Services,findServicesByName(string(ServiceName))) :-
+	atom(ServiceName), !,
+	findall(Cage,(service_to_name_mapping(Cage,ServiceName)->true;provider(Cage,ServiceName,_,_)),Services). 
+
+javaMessage(refMMService,[Cage],getServicesOfProvider(Cage)) :-
+	nonvar(Cage), !.
+
+ipObjectSpec(float,Float,[Float],_) :- !.
+ipObjectSpec('ArrayOfInvisibleObject',List,[List],_) :- !.
+ipObjectSpec('MilServProv',SOC_Mil_Supp,[SOC_Mil_Supp],_) :- !.
+ipObjectSpec('java.lang.Boolean',Bool,[Bool],_) :- !.
+
+ipPrologEngine(prologEngine).
+
+stringArraytoList(List,List).
+
+
+/**:- assert((
+object_int(ProvName,provider_obj(ProvCAGE),ultralog) :-
+	provider(ProvCAGE,ProvName,_,_)
+	  )).
+***/
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% military support data, for now.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+javaMessage(refMMService,string(Mil_Sup_Jobj),getCommandSuperior(string(SOC_Mil_Sub)) ):- !,
+	milsup(SOC_Mil_Sub,Mil_Sup_Jobj).
+
+javaMessage(refMMService,1,hasServiceCategory(Mil_Ent,string(Echelon),string('MilitaryEchelonScheme'))) :- !,
+	ech(Mil_Ent,Echelon).
+
+javaMessage(refMMService,1,hasServiceCategory(Mil_Ent,string(MilType),string('MilitaryServiceScheme'))) :-
+	nonvar(MilType),
+	!,
+	miltyp(Mil_Ent,MilType).
+
+javaMessage(refMMService,1,hasServiceCategory(Cage,string(Code),string(Naics))) :- !,
+	nonvar(Code), nonvar(Naics),
+	Naics = 'ntis-gov:naics:1997',
+	!,
+	provider_registration_node(Cage,Code,Naics).
+
+javaMessage(A,B,C) :-
+	write('No clause for: '),writeln(javaMessage(A,B,C)),
+	fail.
+
+ipObjectSpec(A,B,C,D) :-
+	write('No clause for: '),writeln(ipObjectSpec(A,B,C,D)),
+	fail.
+
+
+/**milsup('soc(m3)','soc(m4)').
+milsup('soc(m4)','soc(m5)').
+milsup('soc(m5)','soc(m7)').
+milsup('soc(m1)','soc(m2)').
+milsup('soc(m2)','soc(m5)').
+milsup('soc(m6)','soc(m5)').
+
+ech(m1,'BRIGADE').
+ech(m6,'CORPS').
+
+suppby(m5,m1).  %% should this to be the provider?, not SOC
+suppby(m7,m6).
+**/
+
+milsup('1-36-INFBN','1-BDE-1-AD').
+milsup('1-37-ARBN','1-BDE-1-AD').
+milsup('1-BDE-1-AD','1-AD').
+milsup('1-41-INFBN','3-BDE-1-AD').
+milsup('1-13-ARBN','3-BDE-1-AD').
+milsup('3-BDE-1-AD','1-AD').
+milsup('2-501-AVNBN','AVNBDE-1-AD').
+milsup('1-501-AVNBN','AVNBDE-1-AD').
+milsup('1-1-CAVSQDN','AVNBDE-1-AD').
+milsup('AVNBDE-1-AD','1-AD').
+milsup('127-DASB','DISCOM-1-AD').
+milsup('125-FSB','DISCOM-1-AD').
+milsup('501-FSB','DISCOM-1-AD').
+milsup('123-MSB','DISCOM-1-AD').
+milsup('DISCOM-1-AD','1-AD').
+milsup('1-AD','5-CORPS').
+milsup('5-CORPS','USAEUR').
+milsup('3-SUPCOM-HQ','5-CORPS').
+milsup('102-POL-SUPPLYCO','485-CSB').
+milsup('592-ORDCO','485-CSB').
+milsup('485-CSB','16-CSG(1-AD)').
+milsup('227-SUPPLYCO','18-MAINTBN').
+milsup('18-MAINTBN','16-CSG(1-AD)').
+milsup('16-CSG(1-AD)','3-SUPCOM-HQ').
+milsup('7-CSG(5-CORPS)','3-SUPCOM-HQ').
+milsup('71-MAINTBN','7-CSG(5-CORPS)').
+milsup('565-RPRPTCO','71-MAINTBN').
+milsup('21-TSC-HQ','USAEUR').
+milsup('29-SPTGP','21-TSC-HQ').
+milsup('51-MAINTBN','29-SPTGP').
+milsup('343-SUPPLYCO','51-MAINTBN').
+milsup('191-ORDBN','29-SPTGP').
+milsup('AWR-2','21-TSC-HQ').
+milsup('37-TRANSGP','21-TSC-HQ').
+milsup('28-TCBN','37-TRANSGP').
+milsup('6-TCBN','37-TRANSGP').
+milsup('110-POL-SUPPLYCO','6-TCBN').
+milsup('USAEUR','USEUCOM').
+milsup('USEUCOM','NCA').
+milsup('TRANSCOM','NCA').
+milsup('OSC','NCA').
+milsup('HNS','NCA').
+milsup('CCAD','NCA').
+milsup('WARNER-rOBBINS','NCA').
+milsup('PWC-SAN-DIEGO','NCA').
+milsup('DLAHQ','NCA').
+milsup('DLA-OTHER','DLAHQ').
+milsup('DLA-CLASS-9','DLAHQ').
+%%milsup('NCA','').
+
+ech('127-DASB','BRIGADE').
+ech('125-FSB','BRIGADE').
+ech('501-FSB','BRIGADE').
+ech('123-MSB','DIVISION').
+ech('18-MAINTBN','CORPS').
+ech('7-CSG(5-CORPS)','CORPS').
+ech('21-TSC-HQ','THEATER').
+ech('CCAD','US-ARMY').
+ech('DLA-CLASS-9','JOINT').
+
+suppby('1-BDE-1-AD','501-FSB').
+suppby('3-BDE-1-AD','125-FSB').
+suppby('AVNBDE-1-AD','127-DASB').
+suppby('1-AD','123-MSB').
+suppby('1-AD','18-MAINTBN').
+suppby('5-CORPS','7-CSG(5-CORPS)').
+suppby('USAEUR','21-TSC-HQ').
+suppby('NCA','CCAD').
+suppby('NCA','DLA-CLASS-9').
+
+miltyp('1-36-INFBN','MaintenanceProvider').
+miltyp('1-37-ARBN','MaintenanceProvider').
+miltyp('1-BDE-1-AD','MaintenanceProvider').
+miltyp('1-41-INFBN','MaintenanceProvider').
+miltyp('1-13-ARBN','MaintenanceProvider').
+miltyp('3-BDE-1-AD','MaintenanceProvider').
+miltyp('2-501-AVNBN','MaintenanceProvider').
+miltyp('1-501-AVNBN','MaintenanceProvider').
+miltyp('1-1-CAVSQDN','MaintenanceProvider').
+miltyp('AVNBDE-1-AD','MaintenanceProvider').
+miltyp('127-DASB','MaintenanceProvider').
+miltyp('125-FSB','MaintenanceProvider').
+miltyp('501-FSB','MaintenanceProvider').
+miltyp('123-MSB','MaintenanceProvider').
+miltyp('DISCOM-1-AD','MaintenanceProvider').
+miltyp('1-AD','MaintenanceProvider').
+miltyp('5-CORPS','MaintenanceProvider').
+miltyp('3-SUPCOM-HQ','MaintenanceProvider').
+miltyp('102-POL-SUPPLYCO','MaintenanceProvider').
+miltyp('592-ORDCO','MaintenanceProvider').
+miltyp('485-CSB','MaintenanceProvider').
+miltyp('227-SUPPLYCO','MaintenanceProvider').
+miltyp('18-MAINTBN','MaintenanceProvider').
+miltyp('16-CSG(1-AD)','MaintenanceProvider').
+miltyp('7-CSG(5-CORPS)','MaintenanceProvider').
+miltyp('71-MAINTBN','MaintenanceProvider').
+miltyp('565-RPRPTCO','MaintenanceProvider').
+miltyp('21-TSC-HQ','MaintenanceProvider').
+miltyp('29-SPTGP','MaintenanceProvider').
+miltyp('51-MAINTBN','MaintenanceProvider').
+miltyp('343-SUPPLYCO','MaintenanceProvider').
+miltyp('191-ORDBN','MaintenanceProvider').
+miltyp('AWR-2','MaintenanceProvider').
+miltyp('37-TRANSGP','MaintenanceProvider').
+miltyp('28-TCBN','MaintenanceProvider').
+miltyp('6-TCBN','MaintenanceProvider').
+miltyp('110-POL-SUPPLYCO','MaintenanceProvider').
+miltyp('USAEUR','MaintenanceProvider').
+miltyp('USEUCOM','MaintenanceProvider').
+miltyp('TRANSCOM','MaintenanceProvider').
+miltyp('OSC','MaintenanceProvider').
+miltyp('HNS','MaintenanceProvider').
+miltyp('CCAD','SupplyProvider').
+miltyp('WARNER-ROBBINS','SupplyProvider').
+miltyp('PWC-SAN-DIEGO','SupplyProvider').
+miltyp('DLAHQ','MaintenanceProvider').
+miltyp('DLA-OTHER','SupplyProvider').
+miltyp('DLA-CLASS-9','SupplyProvider').
+miltyp('NCA','MaintenanceProvider').
+
+
+mil('1-36-INFBN').
+mil('1-37-ARBN').
+mil('1-BDE-1-AD').
+mil('1-41-INFBN').
+mil('1-13-ARBN').
+mil('3-BDE-1-AD').
+mil('2-501-AVNBN').
+mil('1-501-AVNBN').
+mil('1-1-CAVSQDN').
+mil('AVNBDE-1-AD').
+mil('127-DASB').
+mil('125-FSB').
+mil('501-FSB').
+mil('123-MSB').
+mil('DISCOM-1-AD').
+mil('1-AD').
+mil('5-CORPS').
+mil('3-SUPCOM-HQ').
+mil('102-POL-SUPPLYCO').
+mil('592-ORDCO').
+mil('485-CSB').
+mil('227-SUPPLYCO').
+mil('18-MAINTBN').
+mil('16-CSG(1-AD)').
+mil('106-TCBN').
+mil('7-CSG(5-CORPS)').
+mil('71-MAINTBN').
+mil('565-RPRPTCO').
+
+mil('21-TSC-HQ').
+mil('29-SPTGP').
+mil('51-MAINTBN').
+mil('343-SUPPLYCO').
+mil('191-ORDBN').
+mil('AWR-2').
+mil('37-TRANSGP').
+mil('28-TCBN').
+mil('6-TCBN').
+mil('110-POL-SUPPLYCO').
+mil('USAEUR').
+mil('USEUCOM').
+mil('TRANSCOM').
+mil('OSC').
+mil('HNS').
+mil('CCAD').
+mil('WARNER-rOBBINS').
+mil('PWC-SAN-DIEGO').
+mil('DLAHQ').
+mil('DLA-OTHER').
+mil('DLA-CLASS-9').
+mil('NCA').
+
+
+%% Native id for both services and providers are their cage numbers.
+%% Provider name is obtained from provider/4.
+%% Service name is obtained from service_to_name_mapping/2 if exists for the cage,
+%% otherwise from provider/4.
+%% Service name is needed for odm_niin/2 mapping.
+service_to_name_mapping('0S180','A_DRYTECH_Profile').
+service_to_name_mapping('0WUC6','A_PWCSANDIEGO_Profile').
+service_to_name_mapping('0A9P5','A_PARTSALACARTE_Profile').
+service_to_name_mapping('98752','A_WARNERROBBINS_Profile').
+

@@ -1,0 +1,297 @@
+/* File:      file_io.P
+** Author(s): kifer
+** Contact:   xsb-contact@cs.sunysb.edu
+** 
+** Copyright (C) The Research Foundation of SUNY, 1999
+** 
+** XSB is free software; you can redistribute it and/or modify it under the
+** terms of the GNU Library General Public License as published by the Free
+** Software Foundation; either version 2 of the License, or (at your option)
+** any later version.
+** 
+** XSB is distributed in the hope that it will be useful, but WITHOUT ANY
+** WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+** FOR A PARTICULAR PURPOSE.  See the GNU Library General Public License for
+** more details.
+** 
+** You should have received a copy of the GNU Library General Public License
+** along with XSB; if not, write to the Free Software Foundation,
+** Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+**
+** $Id: file_io.P,v 1.1 2003-01-20 19:32:20 mthome Exp $
+** 
+*/
+
+
+:- compiler_options([xpp_on]).
+#include "io_defs_xsb.h"
+#include "system_defs_xsb.h"
+#include "standard.h"
+#include "flag_defs_xsb.h"
+#include "psc_defs.h"
+
+
+	       /********************************/
+	       /*  Formatted I/O    	       */
+	       /********************************/
+
+fmt_write(Fmt, Args) :-
+       stat_flag(CURRENT_OUTPUT, IOport),   % Current output
+	fmt_write(IOport, Fmt, Args).
+
+fmt_write(IOport, Fmt, Args) :-
+	formatted_io(FMT_WRITE, IOport, Fmt, Args, _Ret).
+
+fmt_write_string(Str, Fmt, Args) :-
+	formatted_io(FMT_WRITE_STRING, Str, Fmt, Args, _Ret).
+
+
+fmt_read(Fmt,Result,Status) :-
+        stat_flag(CURRENT_INPUT, IOport),  % Current input
+	fmt_read(IOport, Fmt,Result,Status).
+
+fmt_read(IOport, Fmt, Result, Status) :-
+	formatted_io(FMT_READ, IOport, Fmt, Result, Status).
+
+
+/***************************************************************/
+/*    	      	      	      	      	      	      	       */
+/*       file_flush, file_seek, file_truncate, file_pos, etc.  */
+/*    	      	      	      	      	      	      	       */
+/***************************************************************/
+
+file_flush(IOport, Ret) :-
+	file_function(FILE_FLUSH, IOport, Ret, _D, _E, _,_).
+file_seek(IOport, Offset, Place, Ret) :-
+	file_function(FILE_SEEK, IOport, Offset, Place, Ret, _,_).
+file_truncate(IOport, Length, Ret) :-
+	file_function(FILE_TRUNCATE, IOport, Length, Ret, _E, _,_).
+file_pos(IOport, Pos) :-
+	file_function(FILE_POS, IOport, Pos, _Ret, _E, _,_).
+file_open(FileName, Mode, IOport) :-
+	file_function(FILE_OPEN, FileName, Mode, IOport, _E, _,_).
+file_close(IOport) :-
+	file_function(FILE_CLOSE,IOport,_X,_Y,_Z, _,_).
+file_get(IOport,Char) :-
+	file_function(FILE_GET, IOport, Char, _X, _Y, _,_).
+file_put(IOport,Char) :-
+	file_function(FILE_PUT, IOport, Char, _X, _Y, _,_).
+file_clearerr(IOport) :-
+	file_function(FILE_CLEARERR, IOport, _, _, _, _, _).
+tmpfile_open(IOport) :-
+	file_function(TMPFILE_OPEN, IOport, _, _, _, _, _).
+is_valid_ioport(IOport) :-
+	file_function(IS_VALID_IOPORT, IOport, _, _, _, _, _).
+
+
+file_getbuf(IOport, ByteCount, ToAtom, BytesRead) :-
+	(var(ToAtom), var(BytesRead) ->
+	    file_function(FILE_GETBUF, IOport,ByteCount,ToAtom,BytesRead,_,_)
+	; abort('Usage: file_getbuf([+IOport,] +ByteCount, -ToAtom, -BytesRead)')
+        ).
+
+%% same as file_getbuf
+file_getbuf_atom(IOport, ByteCount, ToAtom, BytesRead) :-
+	(var(ToAtom), var(BytesRead) ->
+	    file_function(FILE_GETBUF, IOport,ByteCount,ToAtom,BytesRead,_,_)
+	; abort('Usage: file_getbuf_atom([+IOport,] +ByteCount, -ToAtom, -BytesRead)')
+        ).
+
+file_getbuf_atom(ByteCount, ToAtom, BytesRead) :-
+	stat_flag(CURRENT_INPUT, IOport),
+	(var(ToAtom), var(BytesRead) ->
+	    file_function(FILE_GETBUF, IOport,ByteCount,ToAtom,BytesRead,_,_)
+	; abort('Usage: file_getbuf_atom([+IOport,] +ByteCount, -ToAtom, -BytesRead)')
+        ).
+
+file_getbuf_list(IOport, ByteCount, ToList, BytesRead) :-
+	(var(ToList), var(BytesRead) ->
+	    file_function(FILE_GETBUF, IOport,ByteCount,TmpStr,BytesRead,_,_),
+	    atom_codes(TmpStr, ToList)
+	;
+	abort('Usage: file_getbuf_list([+IOport,] +ByteCount, -ToList, -BytesRead)')).
+
+file_getbuf_list(ByteCount, ToList, BytesRead) :-
+	stat_flag(CURRENT_INPUT, IOport),
+	(var(ToList), var(BytesRead) ->
+	    file_function(FILE_GETBUF, IOport,ByteCount,TmpStr,BytesRead,_,_),
+	    atom_codes(TmpStr, ToList)
+	;
+	abort('Usage: file_getbuf_list([+IOport,] +ByteCount, -ToList, -BytesRead)')).
+
+file_putbuf(IOport, ByteCount, FromString, Offset, BytesWritten) :-
+	(var(BytesWritten) ->
+	    file_function(FILE_PUTBUF, IOport,ByteCount,FromString,Offset,BytesWritten,_)
+	;
+	abort('Usage: file_putbuf([+IOport,] +ByteCount, +FromString, +Offset, -BytesWritten)')
+    ).
+
+file_putbuf(ByteCount, FromString, Offset, BytesWritten) :-
+	stat_flag(CURRENT_OUTPUT, IOport),
+	(var(BytesWritten) ->
+	    file_function(FILE_PUTBUF, IOport,ByteCount,FromString,Offset,BytesWritten,_)
+	; abort('Usage: file_putbuf([+IOport,] +ByteCount, +FromString, +Offset, -BytesWritten)')
+	).
+
+
+file_read_line(IOport, Str) :-
+	( var(Str) ->
+	    file_function(FILE_READ_LINE, IOport, Str, _, _, _,_)
+	; abort('Usage: file_read_line(+IOport, -InputStr)')
+        ).
+
+%% same as file_read_line
+file_read_line_atom(IOport, Str) :-
+	( var(Str) ->
+	    file_function(FILE_READ_LINE, IOport, Str, _, _, _,_)
+	; abort('Usage: file_read_line_atom([+IOport,] -InputStr)')
+        ).
+
+%% Read line from current input stream (previously set by 'see')
+file_read_line_atom(Str) :-
+	stat_flag(CURRENT_INPUT, IOport),  % Current input
+	file_read_line_atom(IOport, Str).
+
+%% Like file_read_line_atom, but returns list of characters
+file_read_line_list(IOport, CharLst) :-
+	( var(Str) ->
+	    file_function(FILE_READ_LINE, IOport, Str, _, _, _,_),
+	    atom_codes(Str,CharLst)
+	; abort('Usage: file_read_line_list([+IOport,] -InputStr)')
+        ).
+
+%% Read line from current input stream (previously set by 'see')
+%% Return list of chars
+file_read_line_list(Lst) :-
+	stat_flag(CURRENT_INPUT, IOport),  % Current input
+	file_read_line_list(IOport, Lst).
+
+%% Write Str out to IOport. Str must be atom or list of chars.
+%% This is checked in C, by the builtin.
+file_write_line(IOport, Str, Offset) :-
+	file_function(FILE_WRITE_LINE, IOport, Str, Offset, _,_,_).
+
+%% Same as file_write_line/3, but write to current output
+file_write_line(Str, Offset) :-
+	stat_flag(CURRENT_OUTPUT, IOport),  % Current output
+	file_function(FILE_WRITE_LINE, IOport, Str, Offset, _,_,_).
+
+
+/* Fancy stuff */
+%% Like freopen
+file_reopen(FileName, Mode, IOport,ErrCode) :-
+	file_function(FILE_REOPEN, FileName,  Mode, IOport, ErrCode,_,_).
+
+%% Like dup/dup2: make DestIOport into the same file descriptor as SrcIOport
+%% If DestIOport is var, then behaves like dup; else like dup2 
+%% (and then expects DestIOport to be a file descriptor).
+%% ErrCode=0 - ok
+file_clone(SrcIOport, DestIOport, ErrorCode) :-
+	file_function(FILE_CLONE, SrcIOport, DestIOport, ErrorCode,_,_,_).
+
+%% Open pipe. ReadPipe is for reading from pipe,
+%% WritePipe is for writing to the pipe.
+pipe_open(ReadPipe, WritePipe) :-
+	file_function(PIPE_OPEN, ReadPipe, WritePipe, _,_,_,_).
+
+%% Convert pipe into an XSB file descriptor.
+%% This should be done on both ends: by the parent XSB process and by 
+%% the child XSB process
+fd2ioport(Pipe, IOport) :-
+	file_function(FD2IOPORT, Pipe, IOport,_,_,_,_).
+
+
+%% ioport2iostream(+IOport, -Stream)
+%% Promotes I/O port to a strean, which can be manipulated 
+%% using see/seen/tell/told
+%% The I/O port must be a valid open I/O port
+ioport2iostream(IOport,Stream) :-
+	gensym('_$newstream_#', Stream),
+	conpsc(Stream,PSC),
+	psc_set_prop(PSC,IOport),
+	psc_set_type(PSC,T_FILE).
+
+
+/***************************************************************
+**
+** print_file_contents/1
+**
+****************************************************************/
+
+print_file_contents(Filename) :-
+	stat_flag(CURRENT_OUTPUT, ToIOport),  % current output
+	print_file_contents(Filename, ToIOport).
+
+print_file_contents(FileName, ToIOport) :-
+	file_open(FileName, r, FromIOport),
+	copyIOport(FromIOport, ToIOport),
+	file_close(FromIOport).
+copyIOport(FromIOport, ToIOport) :-
+	repeat,
+	(file_read_line(FromIOport, Line) 
+	-> file_write(ToIOport, Line),fail
+	; true
+	), !.
+copyIOport(_,_).
+
+/***************************************************************/
+
+file_time(FileName, Time) :-
+	sys_system(STAT_FILE_TIME,FileName,Time, _,_,_,_).
+
+file_size(FileName, Size) :-
+	sys_system(STAT_FILE_SIZE,FileName,[H,L], _,_,_,_),
+	Size is L + (H << 16).
+
+
+/************************************************************************
+    	    	Path Operations
+************************************************************************/
+
+%% These fail if the op doesn't succeed
+path_sysop(isplain, Path) :- !, is_plain_file(Path).
+path_sysop(isdir, Path) :- !, is_directory(Path).
+path_sysop(rename, OldPath, NewPath) :- !, rename(OldPath,NewPath).
+path_sysop(copy, FromPath, ToPath) :- !,
+	file_open(FromPath, r, FromIOport),
+	FromIOport >= 0,
+	file_open(ToPath, w, ToIOport),
+	ToIOport >= 0,
+	copyIOport(FromIOport, ToIOport),
+	file_close(ToIOport),
+	file_close(FromIOport).
+path_sysop(rm, Path) :- !, rm(Path).
+path_sysop(unlink, Path) :- !, rm(Path).
+path_sysop(link, SrsPath, DestPath) :- !,
+	sys_link(SrsPath,DestPath,Res), Res=:=0.
+path_sysop(cwd, Path) :- !, cwd(Path).
+path_sysop(chdir, Path) :- !, cd(Path).
+path_sysop(mkdir, Path) :- !, sys_mkdir(Path,Res), Res=:=0.
+path_sysop(rmdir, Path) :- !, sys_rmdir(Path,Res), Res=:=0.
+path_sysop(exists, Path) :- !, file_exists(Path).
+path_sysop(readable, Path) :- !, sys_access(Path, 'r', Res), Res =:= 0.
+path_sysop(writable, Path) :- !, sys_access(Path, 'w', Res), Res =:= 0.
+path_sysop(executable, Path) :- !, sys_access(Path, 'x', Res), Res =:= 0.
+path_sysop(modtime,Path,Time) :- !,
+	file_time(Path,time(Time1,Time2)), Time = [Time1,Time2], Time \= [0,0].
+path_sysop(newerthan,Path1,Path2) :- !,
+	file_time(Path1,time(Time11,Time12)),
+	file_time(Path2,time(Time21,Time22)),
+	time(Time11,Time12) @>= time(Time21,Time22).
+path_sysop(size,Path,Size) :- !,
+	sys_system(STAT_FILE_SIZE,Path,Size, _,_,_,_).
+path_sysop(tmpfilename,TmpName) :- !,
+	sys_system(GET_TMP_FILENAME,TmpName,_,_,_,_,_).
+path_sysop(extension,Filename,Extension) :- !,
+	parse_filename(Filename,_,_,Extension).
+path_sysop(basename,Filename,Basename) :- !,
+	parse_filename(Filename,_,Basename,_).
+path_sysop(dirname,Filename,Dirname) :- !,
+	parse_filename(Filename,Dirname,_,_).
+path_sysop(isabsolute,Filename) :- !,
+	is_absolute_filename(Filename).
+path_sysop(expand,Filename,ExpandedName) :- !,
+	expand_filename(Filename,ExpandedName).
+path_sysop(X,_,_) :- abort(('[PATH_SYSOP]: Invalid request for path_sysop/3, ', X)).
+path_sysop(X,_) :- abort(('[PATH_SYSOP]: Invalid request for path_sysop/2, ', X)).
+

@@ -1,0 +1,63 @@
+<?xml version="1.0"?>
+<definitions name="MaintenanceProviderCougaarGrounding">
+
+targetNamespace="http://stout.bbn.com/~aleung/MaintenanceProviderCougaarGrounding.wsdl"
+xmlns:tns="http://stout.bbn.com/~aleung/MaintenanceProviderCougaarGrounding.wsdl"
+xmlns:cougaar="http://stout.bbn.com/~aleung/cougaar.wsdl"
+xmlns="http://schemas.xmlsoap.org/wsdl/">
+
+<message name="task">
+  <part name="verb" type="xsd.string"/>
+  <part name="itemDescription" type="xsd.string"/>
+  <part name="quantity" type="xsd.decimal"/>
+  <part name="deliveryDate" type="xsd.decimal"/>
+  <part name="pickupDate" type="xsd.decimal"/>
+  <part name="pickupLocation" type="string" />
+  <part name="customer" type="xsd.string"/>
+</message>
+
+<message name="allocationResult">
+  <part name="result" type="xsd.boolean"/>
+  <part name="confidence" type="xsd.decimal"/>
+</message>
+
+<portType name="CougaarAgentCommunicationsPortType">
+  <operation name="requestMaintenance">
+    <documentation>Transmit a Cougaar task directive</documentation>
+    <input message="tns:task"/>
+    <output message="tns:allocationResult"/>
+  </operation>
+</portType>
+
+<binding name="MaintenanceProviderCougaarBinding"
+type="tns:CougaarAgentCommunicationsPortType">
+  <cougaar:binding xmlns:cougaar="http://stout.bbn.com/~aleung/cougaar.wsdl">style="task"</cougaar:binding>
+    <operation name="requestMaintenance">
+      <cougaar:operation name="requestMaintenance"/>
+      <input>
+        <cougaar:task>
+          verb="task.getVerb()=org.cougaar.glm.ldm.Constants.Verb.MAINTAIN"
+          itemDescription="task.getDirectObject.getItemIdentificationPG().getItemIdentification()"
+	  quantity="task.getPreference(AspectType.QUANTITY).getScoringFunction().getBest().getAspectValue().getValue()"
+	  deliveryDate="task.getPreference(AspectType.END_TIME).getScoringFunction().getBest().getAspectValue().getValue()"
+	  pickupDate="task.getPreference(AspectType.START_TIME).getScoringFunction().getBest().getAspectValue().getValue()"
+          customer="task.getPrepositionalPhrase(org.cougaar.planning.Constants.Preposition.FOR).getIndirectObject()"
+	  pickupLocation="task.getPrepositionalPhrase(org.cougaar.planning.Constants.Preposition.FROM).getIndirectObject()"
+          package="org.cougaar.planning.ldm.plan"
+          className="Task"
+        </cougaar:task>
+      </input>
+      <output>
+        <cougaar:allocationResult>
+          result="allocationResult.isSuccess()"
+          confidence="allocationResult.getConfidenceRating()"
+          package="org.cougaar.planning.ldm.plan"
+          className="AllocationResult"
+        </cougaar:allocationResult>
+      </output>
+    </operation>
+</binding>          
+
+</definitions>
+
+

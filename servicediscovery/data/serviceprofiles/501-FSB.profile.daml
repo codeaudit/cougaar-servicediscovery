@@ -1,0 +1,200 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<!DOCTYPE uridef[
+  <!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns">
+  <!ENTITY rdfs    "http://www.w3.org/2000/01/rdf-schema">
+  <!ENTITY daml "http://www.daml.org/2001/03/daml+oil">
+  <!ENTITY process "http://www.daml.org/services/daml-s/2001/10/Process.daml">
+  <!ENTITY service "http://www.daml.org/services/daml-s/2001/10/Service.daml">
+  <!ENTITY profile "http://www.daml.org/services/daml-s/2001/10/Profile.daml"> 
+  <!ENTITY xsd "http://www.w3.org/2000/10/XMLSchema.xsd">
+  <!ENTITY cougaar "http://localhost:8800/$DAML/cougaar.daml">
+]>
+ 
+<rdf:RDF
+  xmlns:rdf=     "&rdf;#"
+  xmlns:rdfs =   "&rdfs;#"
+  xmlns:daml=    "&daml;#"
+  xmlns:service= "&service;#"
+  xmlns:process= "&process;#"
+  xmlns:profile= "&profile;#"
+  xmlns:xsd=     "&xsd;#"
+  xmlns:cougaar= "&cougaar;#">
+
+
+  <daml:Ontology about="">
+    <daml:versionInfo>
+      $Id: 501-FSB.profile.daml,v 1.1 2003-01-20 19:32:23 mthome Exp $
+    </daml:versionInfo>
+    <rdfs:comment>
+      DAML-S service profile for 501-FSB
+ 
+    </rdfs:comment>
+    <daml:imports rdf:resource="&rdf;" />
+    <daml:imports rdf:resource="&daml;" />
+    <daml:imports rdf:resource="&service;" />
+    <daml:imports rdf:resource="&process;" />
+    <daml:imports rdf:resource="&profile;" />
+    <daml:imports rdf:resource="&cougaar;" />
+  </daml:Ontology>
+
+  <service:Service rdf:ID="A_501-FSB">
+    <service:presents rdf:resource="#A_501-FSB_Profile"/>
+    <service:supports rdf:resource="#A_501-FSB_Grounding"/>
+  </service:Service>
+
+  <cougaar:ServiceProfile rdf:ID="A_501-FSB_Profile">
+    <service:isPresentedBy rdf:resource="#A_501-FSB"/>
+    <cougaar:serviceCategory>
+    <cougaar:ServiceCategory>
+      <cougaar:serviceCategoryName>AmmunitionProvider</cougaar:serviceCategoryName>
+      <cougaar:serviceCategoryCode>AmmunitionProvider</cougaar:serviceCategoryCode>
+      <cougaar:serviceNamingScheme>MilitaryServiceScheme</cougaar:serviceNamingScheme>
+
+    </cougaar:ServiceCategory>	
+    </cougaar:serviceCategory>
+
+    <profile:textDescription>Provide ammunition supply. </profile:textDescription>
+
+    <profile:providedBy>
+      <cougaar:MilitaryServiceProvider>
+        <profile:name>501-FSB</profile:name>
+      </cougaar:MilitaryServiceProvider>
+    </profile:providedBy>
+
+  </cougaar:ServiceProfile>
+
+  <cougaar:WsdlGrounding rdf:ID="A_501-FSB_Grounding">
+    <cougaar:wsdlDocument>http://localhost:8800/$501-FSB/wsdl?file=A-501-FSB.wsdl</cougaar:wsdlDocument>
+    <cougaar:bindingType>COUGAAR</cougaar:bindingType>
+    <service:isSupportedBy rdf:resource="#A_501-FSB"/> 
+  </cougaar:WsdlGrounding>
+
+  <service:Service rdf:ID="B_501-FSB">
+    <service:presents rdf:resource="#B_501-FSB_Profile"/>
+    <service:supports rdf:resource="#B_501-FSB_Grounding"/>
+  </service:Service>
+
+  <cougaar:ServiceProfile rdf:ID="B_501-FSB_Profile">
+    <service:isPresentedBy rdf:resource="#B_501-FSB"/>
+    <cougaar:serviceCategory>
+    <cougaar:ServiceCategory>
+      <cougaar:serviceCategoryName>FuelSupplyProvider</cougaar:serviceCategoryName>
+      <cougaar:serviceCategoryCode>FuelSupplyProvider</cougaar:serviceCategoryCode>
+      <cougaar:serviceNamingScheme>MilitaryServiceScheme</cougaar:serviceNamingScheme>
+
+    </cougaar:ServiceCategory>	
+    </cougaar:serviceCategory>
+
+    <profile:textDescription>Provide fuel supply. </profile:textDescription>
+
+    <profile:providedBy>
+      <cougaar:MilitaryServiceProvider>
+        <profile:name>501-FSB</profile:name>
+      </cougaar:MilitaryServiceProvider>
+    </profile:providedBy>
+
+  </cougaar:ServiceProfile>
+
+  <cougaar:WsdlGrounding rdf:ID="B_501-FSB_Grounding">
+    <cougaar:wsdlDocument>http://localhost:8800/$501-FSB/wsdl?file=B-501-FSB.wsdl</cougaar:wsdlDocument>
+    <cougaar:bindingType>COUGAAR</cougaar:bindingType>
+    <service:isSupportedBy rdf:resource="#B_501-FSB"/> 
+  </cougaar:WsdlGrounding>
+
+  <service:Service rdf:ID="C_501-FSB">
+    <service:presents rdf:resource="#C_501-FSB_Profile"/>
+    <service:supports rdf:resource="#C_501-FSB_Grounding"/>
+  </service:Service>
+
+  <cougaar:ServiceProfile rdf:ID="C_501-FSB_Profile">
+    <service:isPresentedBy rdf:resource="#C_501-FSB"/>
+    <cougaar:serviceCategory>
+    <cougaar:ServiceCategory>
+      <cougaar:serviceCategoryName>PackagedPOLSupplyProvider</cougaar:serviceCategoryName>
+      <cougaar:serviceCategoryCode>PackagedPOLSupplyProvider</cougaar:serviceCategoryCode>
+      <cougaar:serviceNamingScheme>MilitaryServiceScheme</cougaar:serviceNamingScheme>
+
+    </cougaar:ServiceCategory>	
+    </cougaar:serviceCategory>
+
+    <profile:textDescription>Provide packaged POL supply. </profile:textDescription>
+
+    <profile:providedBy>
+      <cougaar:MilitaryServiceProvider>
+        <profile:name>501-FSB</profile:name>
+      </cougaar:MilitaryServiceProvider>
+    </profile:providedBy>
+
+  </cougaar:ServiceProfile>
+
+  <cougaar:WsdlGrounding rdf:ID="C_501-FSB_Grounding">
+    <cougaar:wsdlDocument>http://localhost:8800/$501-FSB/wsdl?file=C-501-FSB.wsdl</cougaar:wsdlDocument>
+    <cougaar:bindingType>COUGAAR</cougaar:bindingType>
+    <service:isSupportedBy rdf:resource="#C_501-FSB"/> 
+  </cougaar:WsdlGrounding>
+
+  <service:Service rdf:ID="D_501-FSB">
+    <service:presents rdf:resource="#D_501-FSB_Profile"/>
+    <service:supports rdf:resource="#D_501-FSB_Grounding"/>
+  </service:Service>
+
+  <cougaar:ServiceProfile rdf:ID="D_501-FSB_Profile">
+    <service:isPresentedBy rdf:resource="#D_501-FSB"/>
+    <cougaar:serviceCategory>
+    <cougaar:ServiceCategory>
+      <cougaar:serviceCategoryName>SparePartsProvider</cougaar:serviceCategoryName>
+      <cougaar:serviceCategoryCode>SparePartsProvider</cougaar:serviceCategoryCode>
+      <cougaar:serviceNamingScheme>MilitaryServiceScheme</cougaar:serviceNamingScheme>
+
+    </cougaar:ServiceCategory>	
+    </cougaar:serviceCategory>
+
+    <profile:textDescription>Provide spare parts supply. </profile:textDescription>
+
+    <profile:providedBy>
+      <cougaar:MilitaryServiceProvider>
+        <profile:name>501-FSB</profile:name>
+      </cougaar:MilitaryServiceProvider>
+    </profile:providedBy>
+
+  </cougaar:ServiceProfile>
+
+  <cougaar:WsdlGrounding rdf:ID="D_501-FSB_Grounding">
+    <cougaar:wsdlDocument>http://localhost:8800/$501-FSB/wsdl?file=D-501-FSB.wsdl</cougaar:wsdlDocument>
+    <cougaar:bindingType>COUGAAR</cougaar:bindingType>
+    <service:isSupportedBy rdf:resource="#D_501-FSB"/> 
+  </cougaar:WsdlGrounding>
+
+  <service:Service rdf:ID="E_501-FSB">
+    <service:presents rdf:resource="#E_501-FSB_Profile"/>
+    <service:supports rdf:resource="#E_501-FSB_Grounding"/>
+  </service:Service>
+
+  <cougaar:ServiceProfile rdf:ID="E_501-FSB_Profile">
+    <service:isPresentedBy rdf:resource="#E_501-FSB"/>
+    <cougaar:serviceCategory>
+    <cougaar:ServiceCategory>
+      <cougaar:serviceCategoryName>SubsistenceSupplyProvider</cougaar:serviceCategoryName>
+      <cougaar:serviceCategoryCode>SubsistenceSupplyProvider</cougaar:serviceCategoryCode>
+      <cougaar:serviceNamingScheme>MilitaryServiceScheme</cougaar:serviceNamingScheme>
+
+    </cougaar:ServiceCategory>	
+    </cougaar:serviceCategory>
+
+    <profile:textDescription>Provide subsistence supply. </profile:textDescription>
+
+    <profile:providedBy>
+      <cougaar:MilitaryServiceProvider>
+        <profile:name>501-FSB</profile:name>
+      </cougaar:MilitaryServiceProvider>
+    </profile:providedBy>
+
+  </cougaar:ServiceProfile>
+
+  <cougaar:WsdlGrounding rdf:ID="E_501-FSB_Grounding">
+    <cougaar:wsdlDocument>http://localhost:8800/$501-FSB/wsdl?file=E-501-FSB.wsdl</cougaar:wsdlDocument>
+    <cougaar:bindingType>COUGAAR</cougaar:bindingType>
+    <service:isSupportedBy rdf:resource="#E_501-FSB"/> 
+  </cougaar:WsdlGrounding>
+
+</rdf:RDF>

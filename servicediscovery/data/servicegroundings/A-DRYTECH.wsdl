@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions
+  xmlns="http://schemas.xmlsoap.org/wsdl/"
+  name="A_DRYTECH"
+  targetNamespace="http://stout.bbn.com/~aleung/A_DRYTECH.wsdl"
+  xmlns:supply="http://stout.bbn.com/~aleung/SupplyProviderCougaarGrounding.wsdl"
+  xmlns:cougaar="http://stout.bbn.com/~aleung/cougaar.wsdl" >
+
+<service name="A_DRYTECH">
+  <port binding="supply:SupplyProviderCougaarBinding" name="CougaarAgentCommunicationsPort">
+    <cougaar:address agentName="DRYTECH"/>
+  </port>
+</service>
+
+</definitions>

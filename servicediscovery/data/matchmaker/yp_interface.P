@@ -1,0 +1,547 @@
+
+:- import member/2, append/3, reverse/2 from basics.
+:- import closetail/1 from listutil.
+:- import atom_to_term/2, term_to_atom/2 from string.
+
+%% NatId is a pointer to the ProviderInfo or ServiceInfo in YP
+yp_object_int(Name,ANatId,ultralog):-
+	nonvar(ANatId),
+	atom_to_term_check(ANatId,NatId),
+	%% assume that all objects are there as a result of query to YP have source 'ultralog'
+	(NatId = category_obj(CategoryRef), nonvar(CategoryRef), getServiceName(CategoryRef,Name)
+	 ;
+	 NatId = profile_obj(ProfileRef), nonvar(ProfileRef), getServiceName(ProfileRef,Name)
+	 ;
+	 NatId = service_obj(ServiceRef), nonvar(ServiceRef), getServiceName(ServiceRef,Name)
+	 ;
+	 NatId = provider_obj(ProviderRef), nonvar(ProviderRef), getProviderName(ProviderRef,Name)
+         %% following would be the code if provider_obj(_) would not be atom
+	 /*(nonvar(ProviderRef)
+	  ->	 getProviderName(ProviderRef,Name)
+	  ;	 nonvar(Name),
+		 find_provider_by_name(Name,ProviderList),
+		 member(ProviderRef,ProviderList)
+	 )*/
+	).
+
+yp_object_int(Name,ANatId,ultralog):-
+	var(ANatId),
+	nonvar(Name),
+	(find_provider_by_name(Name,ProviderList),
+	 member(ProviderRef,ProviderList), %% most probably will be list with just one element
+	 NatId = provider_obj(ProviderRef)
+	 ;
+	 find_services_by_name(Name,ServiceList),
+	 member(ServiceRef,ServiceList),
+	 NatId = service_obj(ServiceRef)
+	 ;
+	 find_services_by_name(Name,ServiceList),
+	 member(ServiceRef,ServiceList),
+	 NatId = profile_obj(ServiceRef) 
+	 ;
+	 find_services_by_name(Name,ServiceList),
+	 member(ServiceRef,ServiceList),
+	 NatId = category_obj(ServiceRef) 
+
+	),
+	term_to_atom(NatId,ANatId).
+
+%% find providers with name ProviderName
+%% returns ProviderList - list of invisible objects representing provider info
+:- table find_provider_by_name/2.
+find_provider_by_name(ProviderName,ProviderList):-
+	serviceReference(JavaRef),
+	javaMessage(JavaRef,ProviderArray,findProvidersByName(string(ProviderName))),
+	ipPrologEngine(Engine),
+	javaMessage(Engine,RProviderArray,getRealJavaObject(ProviderArray)),
+	ipObjectSpec('ArrayOfInvisibleObject',RProviderArray,[ProviderList],_).
+
+:- table find_services_by_name/2.
+find_services_by_name(ServiceName,ServiceList):-
+	serviceReference(JavaRef),
+	javaMessage(JavaRef,ServiceArray,findServicesByName(string(ServiceName))),
+	ipPrologEngine(Engine),
+	javaMessage(Engine,RServiceArray,getRealJavaObject(ServiceArray)),
+	ipObjectSpec('ArrayOfInvisibleObject',RServiceArray,[ServiceList],_).
+
+%% from category to profile
+yp_attribute_object_int(Profile_obj_OCode,ultralog, serviceCategory,RSource, Category_obj_TCode,ultralog):-
+	var(Profile_obj_OCode),
+	nonvar(Category_obj_TCode),
+	atom_to_term_check(Category_obj_TCode,category_obj(TCode)),
+	%% RSource is http://www.daml.org/services/daml-s/0.7/Profile.daml but if it is different
+	%% may be URL changed??
+	(var(RSource)
+	 ->	RSource = 'http://www.daml.org/services/daml-s/0.7/Profile.daml'
+	 ;	true
+	),
+	OCode=TCode,
+	term_to_atom(profile_obj(OCode),Profile_obj_OCode).
+
+%% from profile to category
+yp_attribute_object_int(Profile_obj_OCode,ultralog, serviceCategory,RSource, Category_obj_TCode,ultralog):-
+	nonvar(Profile_obj_OCode),
+	atom_to_term_check(Profile_obj_OCode,profile_obj(OCode)),
+	%% RSource is http://www.daml.org/services/daml-s/0.7/Profile.daml but if it is different
+	%% may be URL changed??
+	(var(RSource)
+	 ->	RSource = 'http://www.daml.org/services/daml-s/0.7/Profile.daml'
+	 ;	true
+	),
+	OCode=TCode,
+	term_to_atom(category_obj(TCode),Category_obj_TCode).
+
+%% from profile to service
+yp_attribute_object_int(Service_obj_OCode,ultralog, presents, RSource, Profile_obj_TCode,ultralog):-
+	var(Service_obj_OCode),
+	nonvar(Profile_obj_TCode),
+	atom_to_term_check(Profile_obj_TCode,profile_obj(TCode)),
+	(var(RSource)
+	 ->	RSource = 'http://www.daml.org/services/daml-s/0.7/Service.daml'
+	 ;	true
+	),
+	OCode=TCode,
+	term_to_atom(service_obj(OCode),Service_obj_OCode).
+
+%% from service to profile
+yp_attribute_object_int(Service_obj_OCode,ultralog, presents, RSource, Profile_obj_TCode,ultralog):-
+	nonvar(Service_obj_OCode),
+	atom_to_term_check(Service_obj_OCode,service_obj(OCode)),
+	(var(RSource)
+	 ->	RSource = 'http://www.daml.org/services/daml-s/0.7/Service.daml'
+	 ;	true
+	),
+	OCode=TCode,
+	term_to_atom(profile_obj(TCode),Profile_obj_TCode).
+
+%% from service to provider
+yp_attribute_object_int(Service_obj_OCode,ultralog, providedBy, RSource, Provider_obj_TCode,ultralog):-
+	var(Provider_obj_TCode),
+	nonvar(Service_obj_OCode),
+	atom_to_term_check(Service_obj_OCode,service_obj(OCode)),
+	(var(RSource)
+	 ->	RSource = 'http://www.daml.org/services/daml-s/0.7/Service.daml'
+	 ;	true
+	),
+	getProviderName(OCode,ProviderName),
+	find_provider_by_name(ProviderName,ProviderList),
+	member(TCode,ProviderList),
+	term_to_atom(provider_obj(TCode),Provider_obj_TCode).
+
+%% from provider to service
+yp_attribute_object_int(Service_obj_OCode,ultralog, providedBy, RSource, Provider_obj_TCode,ultralog):-
+	nonvar(Provider_obj_TCode),
+	atom_to_term_check(Provider_obj_TCode,provider_obj(TCode)),
+	(var(RSource)
+	 ->	RSource = 'http://www.daml.org/services/daml-s/0.7/Service.daml'
+	 ;	true
+	),
+	getServicesOfProvider(TCode,ServiceList),
+	member(OCode,ServiceList),
+	term_to_atom(service_obj(OCode),Service_obj_OCode).
+
+yp_immediate_memberof_int(ANatId,ultralog,CCode,CSource):-
+	nonvar(ANatId),
+	atom_to_term_check(ANatId,NatId),
+	%% assume that all objects are there as a result of query to YP have source 'ultralog'
+	(
+	 NatId = profile_obj(Ref),
+	 nonvar(Ref),
+	 CCode = 'ServiceProfile',  %% or profile?
+	 CSource = 'http://www.daml.org/services/daml-s/0.7/Service.daml'
+	 ;
+	 NatId = service_obj(Ref),
+	 nonvar(Ref),
+	 CCode = 'Service',  
+	 CSource = 'http://www.daml.org/services/daml-s/0.7/Service.daml'
+	).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Queries that depend on Java-UDDI calls
+%%
+
+%% (CCode,CSource) should be instantiated
+%% (OCode,OSource) is not
+/*yp_immediate_memberof_int(Cat_obj_OCode, ultralog,CCode,CSource):-
+	var(Cat_obj_OCode),
+	nonvar(CCode),
+	nonvar(CSource),
+	class(Cid,_CName,CCode,CSource),
+	\+ immediate_subclass(_,Cid),
+	damls_category(CCode, CSource),
+	
+	subclass(Cid,SCid),
+	class(SCid,CName0,CCode0,CSource0),
+	damls_category(CCode0,CSource0),
+
+	find_services_for_category_class(CName0,CCode0,CSource0,ServiceList),
+	member(OCode,ServiceList),
+	term_to_atom(category_obj(OCode),Cat_obj_OCode).*/
+
+yp_immediate_memberof_int(Cat_obj_OCode, ultralog,CCode,CSource):-
+	var(Cat_obj_OCode),
+	nonvar(CCode),
+	nonvar(CSource),
+
+	class(Cid,_CName,CCode,CSource),
+	class(CatRootCid, _, 'ServiceCategory', 'http://www.daml.org/services/daml-s/0.7/Profile.daml'),
+	path_to_category_root(Cid,CatRootCid,_,CidPath),
+	
+	%% fill up the cache, but after that only succeed for the leaf node -
+	%% Cid returned is for the leaf nodes 
+	get_batch_of_services_for_class(CidPath,CategoryObj,LeafCid),
+	LeafCid=Cid,
+	
+	term_to_atom(category_obj(CategoryObj),Cat_obj_OCode).
+
+:- table path_to_category_root/4.
+path_to_category_root(Cid,Cid,CurTerm,CurTerm) :-!.
+path_to_category_root(Cid,DCid,CurTerm,Path) :-  %% DCid - root of the domain
+   immediate_subclass(Cid,PCid),
+   path_to_category_root(PCid,DCid,[Cid|CurTerm],Path).
+
+:- table get_batch_of_services_for_class/3.
+:- use_subsumptive_tabling get_batch_of_services_for_class(_,_,_).
+%% get all objects registered to all subclasses and parents.
+%% return their leaf classifications - as in our semantics
+%% we interpret object UDDI registration for interior node as
+%% our registration for leaf nodes.
+get_batch_of_services_for_class(CidPath,ServiceObj, LeafCid):-
+%%	writeln(get_batch_of_services_for_class(CidPath,ServiceObj, LeafCid)),
+	/*
+	copy_term(CidPath,CidPath0), %% to make reverse and not to close original list
+	closetail(CidPath0),
+	reverse(CidPath0,[Cid|Ancestors]),
+	*/
+	%% instead of commented above
+	get_last_non_var(CidPath,Cid,AncestorsAndCid),
+	%% find the cone below
+	findall(CCid,proper_subclass(CCid,Cid),Children),
+	append(AncestorsAndCid,Children,CidList),
+	get_classification_list(CidList, ClsList),
+	find_services_for_category_class(ClsList,ServiceList),
+	member(ServiceObj,ServiceList),
+	getServiceCategory(ServiceObj, ActualCCode, ActualCSource),
+	class(ObjParentCid,_,ActualCCode, ActualCSource),
+	get_leaf_subclass(ObjParentCid,LeafCid).
+
+%% returns last non-variable in a list like [nonvar1, nonvar2, ..,nonvarn|Var] and all the list before Var.
+get_last_non_var([H|L],H,[H]):-
+	var(L),!.
+get_last_non_var([H|L],Last,[H|PrefixList]):-
+	nonvar(H),
+	get_last_non_var(L,Last,PrefixList).
+
+get_leaf_subclass(Cid,LeafCid):-
+	subclass(LeafCid,Cid),
+	\+immediate_subclass(_,LeafCid).
+
+get_classification_list([], []).
+get_classification_list([Cid|List], [CName,CCode,CSource|ClsList]):-
+	class(Cid,CName,CCode,CSource),
+	get_classification_list(List, ClsList).
+
+yp_immediate_memberof_int(Cat_obj_OCode, ultralog,CCode,CSource):-
+	nonvar(Cat_obj_OCode),
+	nonvar(CCode),
+	nonvar(CSource),
+	class(Cid,_,CCode,CSource),
+	\+ immediate_subclass(_,Cid),
+	atom_to_term_check(Cat_obj_OCode,category_obj(OCode)),
+	nonvar(OCode),
+	damls_category(CCode, CSource),
+	subclass(Cid,Cid0),
+	class(Cid0,_,CCode0,CSource0),
+	damls_category(CCode0, CSource0),
+	hasServiceCategory(OCode, CCode0, CSource0).
+
+yp_immediate_memberof_int(Category_obj_OCode,ultralog,CCode,CSource):-
+	nonvar(Category_obj_OCode),
+	var(CCode),
+	atom_to_term_check(Category_obj_OCode,category_obj(OCode)),
+	nonvar(OCode),
+
+	getServiceCategory(OCode, CCode0, CSource0),  %% returns multiple answers on backtracking
+	
+	damls_category(CCode0, CSource0),
+	class(ICCode0,_,CCode0,CSource0),
+	subclass(ICCode,ICCode0), \+ immediate_subclass(_,ICCode),
+	class(ICCode,_,CCode,CSource).
+
+damls_category(CCode, CSource):-
+	class(Cid, _, CCode, CSource),
+	class(CatRootCid, _, 'ServiceCategory', 'http://www.daml.org/services/daml-s/0.7/Profile.daml'),
+	proper_subclass(Cid, CatRootCid).
+
+damls_provider_class(CCode, CSource):-
+	class(Cid, _, CCode, CSource),
+	class(ProviderRootCid, _, 'ServiceProvider', 'http://www.daml.org/services/daml-s/0.7/Profile.daml'),
+	proper_subclass(Cid, ProviderRootCid).
+
+
+:- table find_services_for_category_class/4.
+find_services_for_category_class(CName,CCode,CSource,ServiceList):-
+	serviceReference(JavaRef),
+	%% call Java to get services by classification
+	%% ServiceArray - invisible object that represents array of invisible objects
+	%% that represent ServiceInfo
+	javaMessage(JavaRef,ServiceArray,findServices(string(CName),string(CCode),string(CSource))),
+	
+        %% convert Java service array into XSB Prolog list of services
+	ipPrologEngine(Engine),
+	%% for that convert invisible object of array to array
+	javaMessage(Engine,RServiceArray,getRealJavaObject(ServiceArray)),
+	%% convert array to list (list still contains inv. objects for services - will be used as ids)
+	ipObjectSpec('ArrayOfInvisibleObject',RServiceArray,[ServiceList],_).
+
+:- table find_services_for_category_class/2. %% to table or not to table?
+%% CategoryList is the list of the form classCode1, className1, taxonomyScheme1,
+%% classCode2, className2, taxonomyScheme2, ... The connector is OR.
+find_services_for_category_class(CategoryList,ServiceList):-
+	stringArraytoList(CategoryArray,CategoryList),
+	serviceReference(JavaRef),
+	%% call Java to get services by classification
+	%% ServiceArray - invisible object that represents array of invisible objects
+	%% that represent ServiceInfo
+	javaMessage(JavaRef,ServiceArray,findServices(CategoryArray)),
+	
+        %% convert Java service array into XSB Prolog list of services
+	ipPrologEngine(Engine),
+	%% for that convert invisible object of array to array
+	javaMessage(Engine,RServiceArray,getRealJavaObject(ServiceArray)),
+	%% convert array to list (list still contains inv. objects for services - will be used as ids)
+	ipObjectSpec('ArrayOfInvisibleObject',RServiceArray,[ServiceList],_).
+
+
+:- table find_providers_of_resource_class/4.
+find_providers_of_resource_class(CName,CCode,CSource,ProviderList):-
+	serviceReference(JavaRef),
+	%% call Java to get providers by classification
+	%% ProviderArray - invisible object that represents array of invisible objects
+	%% that represent ProviderInfo
+	javaMessage(JavaRef,ProviderArray,findProviders(string(CName),string(CCode),string(CSource))),
+	
+        %% convert Java provider array into XSB Prolog list of providers
+	ipPrologEngine(Engine),
+	%% for that convert invisible object of array to array
+	javaMessage(Engine,RProviderArray,getRealJavaObject(ProviderArray)),
+	%% convert array to list (list still contains inv. objects for service providers - will be used as ids)
+	ipObjectSpec('ArrayOfInvisibleObject',RProviderArray,[ProviderList],_).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Queries on attributes for category objects
+%
+
+%% Need to put corresponding relationships into the DAML-S OMS
+%% Assuming that all relationships have ultralog sources
+%% just checks that given category object does have a certain attribute
+%% (Category_obj_OCode is nonvar,CCode is nonvar)
+yp_immediate_attribute_int(Category_obj_OCode,ultralog,RCode,ultralog,CCode,CSource):-
+	nonvar(Category_obj_OCode),
+	nonvar(CCode),
+	atom_to_term_check(Category_obj_OCode,category_obj(OCode)),
+	nonvar(OCode),
+	RCode=CSource, %% or categorized_to
+	nonvar(CSource),
+	hasServiceCategory(OCode,CCode,CSource).
+
+%% Gets attributes for a given category obiect
+%% (Category_obj_OCode is nonvar, CCode is var-just because there is a previous rule)
+%% Works(?) for enumerated classes so far
+
+yp_immediate_attribute_int(Category_obj_OCode,ultralog,RCode,ultralog,CCode,CSource):-
+	nonvar(Category_obj_OCode),
+	var(CCode),
+	atom_to_term_check(Category_obj_OCode,category_obj(OCode)),
+	nonvar(OCode),
+	getServiceCategory(OCode,CCode,CSource),
+	RCode = CSource. %% or categorized_to?
+
+%% Gets all objects that have a certain attribute
+%% TCode should be instantiated and either TSource or RCode too
+%% (OCode,OSource) might or might not be
+
+yp_immediate_attribute_int(Category_obj_OCode,ultralog,RCode,ultralog,TCode,TSource):-
+	nonvar(TCode),
+	var(Category_obj_OCode), %% would work either way but prev rule will take care of the other case
+
+	TSource=RCode,  %% for now
+	nonvar(TSource),
+
+	class(_,TName,TCode,TSource), %% to get TName
+	find_services_for_category_class(TName,TCode,TSource,ServiceList),
+
+	member(OCode,ServiceList),
+	term_to_atom(category_obj(OCode),Category_obj_OCode).
+
+% 
+% End queries on attributes for category objects
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Queries on memberof for provider objects (not category objects)
+% (providers might also have classifications)
+% No queries for attributes of provider objects yet 
+%
+
+yp_immediate_memberof_int(Provider_obj_OCode,ultralog,CCode,CSource):-
+	nonvar(CCode),
+	nonvar(CSource),
+	var(Provider_obj_OCode),
+	class(_,CName,CCode,CSource),
+	damls_provider_class(CCode, CSource),
+	
+	find_providers_of_resource_class(CName,CCode,CSource,ProviderList),
+	member(OCode,ProviderList),
+	term_to_atom(provider_obj(OCode),Provider_obj_OCode).
+
+yp_immediate_memberof_int(Provider_obj_OCode,ultralog,CCode,CSource):-
+	nonvar(Provider_obj_OCode),
+	var(CCode),
+	atom_to_term_check(Provider_obj_OCode,provider_obj(OCode)),
+	nonvar(OCode),
+	getBusinessCategory(OCode,CCode,CSource),
+	damls_provider_class(CCode, CSource).
+
+yp_immediate_memberof_int(Provider_obj_OCode,ultralog,CCode,CSource):-
+	nonvar(Provider_obj_OCode),
+	nonvar(CCode),
+	nonvar(CSource),
+	atom_to_term_check(Provider_obj_OCode,provider_obj(OCode)),
+	nonvar(OCode),
+	damls_provider_class(CCode, CSource),
+	hasBusinessCategory(OCode,CCode,CSource).
+
+%
+% End queries on attributes for provider objects
+% (providers might also have classifications)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Beginning of attempt at handling military support
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+/*
+attr(SocClient,id('MilProvider',ultralog),id('M3',ultralog)),
+attr(SocClient,id('SupportedBy',ultralog),Support),
+attr(Support,id('Echelon',ultralog),id('Brigade',ultralog)),
+attr(Support,id('MilProvider',ultralog),id(ServiceProvider,_))
+***/
+
+yp_immediate_relationship_int(SOC_Mil,ultralog,'SupportedBy',ultralog,object(SOC_Mil_Supp,ultralog),'OMS') :-
+	nonvar(SOC_Mil),
+	atom_to_term_check(SOC_Mil,soc(MilEnt)),
+	find_services_for_category_class(MilEnt,MilEnt,'SupportCommandAssignment',ServiceList),
+	member(Mil_Supp,ServiceList),
+	term_to_atom(category_obj(Mil_Supp),SOC_Mil_Supp).
+
+yp_immediate_subclass_int(SOC_Mil_Sub,ultralog,SOC_Mil_Sup,ultralog) :-
+	nonvar(SOC_Mil_Sub),
+	atom_to_term_check(SOC_Mil_Sub,soc(Mil_Sub)),
+	getCommandSuperior(Mil_Sub,Mil_Sup_or_null),
+	(Mil_Sup_or_null = string(Mil_Sup)
+	 ->	term_to_atom(soc(Mil_Sup),SOC_Mil_Sup) %% there is a superior in the lineage
+	 ;	SOC_Mil_Sup='Military Entity' %% there is no superior, direct subclass of Military Entity
+	).
+
+%%%%%%%%%%%% for now %%%%%%%%%
+
+yp_class_int('SupportedBy','SupportedBy',ultralog).
+
+yp_immediate_memberof_int(NatID,ultralog,SOCNatID,ultralog) :-
+	nonvar(NatID),
+	atom_to_term_check(NatID,mil_entity(MilProv)),
+	!,
+	term_to_atom(soc(MilProv),SOCNatID).
+yp_immediate_memberof_int(NatID,ultralog,SOCNatID,ultralog) :-
+	nonvar(SOCNatID),
+	atom_to_term_check(SOCNatID,soc(MilProv)),
+	!,
+	term_to_atom(mil_entity(MilProv),NatID).
+
+
+yp_object_int(NatID,NatID,ultralog) :-	
+	nonvar(NatID),
+	atom_to_term_check(NatID,mil_entity(MilEnt)),
+	!,
+	isMilitaryEntity(MilEnt).
+
+yp_class_int(NatID,NatID,ultralog) :-
+	nonvar(NatID),
+	atom_to_term_check(NatID,soc(MilEnt)),
+	!,
+	isMilitaryEntity(MilEnt).
+
+atom_to_term_check(Atom,Term):-
+	atom_to_term(Atom,Term1),
+	nonvar(Term1),
+	Term1=Term.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% tabling javaMessage calls
+:- table getProviderName/2.
+%% Ref is either service or provider reference -
+%% for provider it returns its name, for service it returns its provider name
+getProviderName(Ref,Name):-
+	javaMessage(Ref,string(Name),getProviderName).
+
+:- table getServiceName/2.
+getServiceName(ServiceRef,Name):-
+	javaMessage(ServiceRef,string(Name),getServiceName).
+
+:- table getServicesOfProvider/2.
+getServicesOfProvider(Provider,ServiceList):-
+	serviceReference(JavaRef),
+	javaMessage(JavaRef,ServiceArray,getServicesOfProvider(Provider)),
+	ipPrologEngine(Engine),
+	javaMessage(Engine,RServiceArray,getRealJavaObject(ServiceArray)),
+	ipObjectSpec('ArrayOfInvisibleObject',RServiceArray,[ServiceList],_).
+
+:- table hasServiceCategory/3.
+%% fails or succeeds - everything is instantiated
+hasServiceCategory(ServiceRef,CatNatId,CatSource):-
+	serviceReference(JavaRef),
+	javaMessage(JavaRef,Boolean,hasServiceCategory(ServiceRef, string(CatNatId),string(CatSource))),
+	ipObjectSpec('java.lang.Boolean',Boolean,[1],_).
+
+:- table hasBusinessCategory/3.
+hasBusinessCategory(ProviderRef,CCode,CSource):-
+	serviceReference(JavaRef),
+	javaMessage(JavaRef,Boolean,hasBusinessCategory(ProviderRef, string(CCode),string(CSource))),
+	ipObjectSpec('java.lang.Boolean',Boolean,[1],_).
+
+:- table getServiceCategories/3.
+%% for a given service get its categories
+%% returns multiple answers on backtracking
+getServiceCategory(ServiceRef,CCode,CSource):-
+	serviceReference(JavaRef),
+	javaMessage(JavaRef,CatArray,getServiceCategories(ServiceRef)),
+	ipPrologEngine(Engine),
+	javaMessage(Engine,RCatArray,getRealJavaObject(CatArray)),
+	ipObjectSpec('ArrayOfInvisibleObject',RCatArray,[CatList],_),
+	member(ClassRef, CatList),
+	javaMessage(ClassRef, string(CCode),getClassificationCode),
+	javaMessage(ClassRef, string(CSource),getClassificationSchemeName).
+
+:- table getBusinessCategory/3.
+getBusinessCategory(ProviderRef,CCode,CSource):-
+	serviceReference(JavaRef),
+	javaMessage(JavaRef,CatArray,getBusinessCategories(ProviderRef)),
+	ipPrologEngine(Engine),
+	javaMessage(Engine,RCatArray,getRealJavaObject(CatArray)),
+	ipObjectSpec('ArrayOfInvisibleObject',RCatArray,[CatList],_),
+	member(ClassRef, CatList),
+	javaMessage(ClassRef, string(CCode),getClassificationCode),
+	javaMessage(ClassRef, string(CSource),getClassificationSchemeName).
+
+:- table getCommandSuperior/2.
+getCommandSuperior(Mil_Sub,Mil_Sup_or_null):-
+	serviceReference(JavaRef),
+	javaMessage(JavaRef,Mil_Sup_or_null,'getCommandSuperior'(string(Mil_Sub))).
+
+:- table isMilitaryEntity/1.
+isMilitaryEntity(MilEnt):-
+	serviceReference(JavaRef),
+	javaMessage(JavaRef,Boolean,isMilitaryEntity(string(MilEnt))),
+	ipObjectSpec('java.lang.Boolean',Boolean,[1],_).

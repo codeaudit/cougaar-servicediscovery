@@ -1,0 +1,40 @@
+[Prototype]     Organization
+        
+[Relationship]
+Subordinate        "UIC/3ID"   "UTC/RTOrg" "3ID" "" ""
+        
+[ItemIdentificationPG]
+ItemIdentification String "UIC/1BDE"
+Nomenclature String "1BDE"
+AlternateItemIdentification String "1BDE"
+
+[TypeIdentificationPG]                      
+TypeIdentification          String  "UTC/RTOrg"
+Nomenclature                String  "1st BDE"
+AlternateTypeIdentification String  "SRC/87042L200"
+
+[ClusterPG]
+ClusterIdentifier	ClusterIdentifier "1BDE"
+
+[CommunityPG]
+TimeSpan             TimeSpan   "startTime=03/25/1989 11:00 am, endTime=06/30/2010 4:00 pm" 
+Communities          Collection<String> "Alpine Demo"
+
+
+[OrganizationPG]
+Roles                Collection<Role>   "Headquarters"
+
+[MilitaryOrgPG]
+UIC	                   String   "WAQNA1"
+Echelon                    String   "07"
+UTC			   String   ""
+SRC                        String   "87042L200"
+RequestedEchelonOfSupport  String   "Division"
+Hierarchy2525 String "1.X.3.1.1.5.6"
+IsReserve boolean false
+HomeLocation GeolocLocation "GeolocCode=HKUZ, InstallationTypeCode=AIN, CountryStateCode=13, CountryStateName=GEORGIA, Name=FT_STEWART, Latitude=Latitude 31.8500degrees, Longitude=Longitude -81.6000degrees"
+
+
+
+
+

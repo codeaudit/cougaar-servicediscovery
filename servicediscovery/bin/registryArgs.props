@@ -1,0 +1,4 @@
+org.cougaar.servicediscovery.registry.username=
+org.cougaar.servicediscovery.registry.password=
+org.cougaar.servicediscovery.registry.queryURL=http://localhost:8080/uddi/inquiry
+org.cougaar.servicediscovery.registry.publishURL=http://localhost:8080/uddi/publishing

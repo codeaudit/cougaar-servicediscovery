@@ -1,0 +1,87 @@
+# Generated automatically from smoMakefile.in by configure.
+## File:      packages/sModels/Makefile
+## Author(s): luis (adapted from packages/flora/Makefile)
+## Contact:   xsb-contact@cs.sunysb.edu
+## 
+## Copyright (C) The Research Foundation of SUNY, 1998
+## 
+## XSB is free software; you can redistribute it and/or modify it under the
+## terms of the GNU Library General Public License as published by the Free
+## Software Foundation; either version 2 of the License, or (at your option)
+## any later version.
+## 
+## XSB is distributed in the hope that it will be useful, but WITHOUT ANY
+## WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+## FOR A PARTICULAR PURPOSE.  See the GNU Library General Public License for
+## more details.
+## 
+## You should have received a copy of the GNU Library General Public License
+## along with XSB; if not, write to the Free Software Foundation,
+## Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+##
+## $Id: smoMakefile,v 1.1 2003-01-20 19:32:14 mthome Exp $
+## 
+##
+
+OBJEXT=.xwam
+
+ALL = smodels${OBJEXT} smodelsops${OBJEXT} smodelsint${OBJEXT}
+
+SMODELS = 
+
+SMODELSOBJ = $(SMODELS)/api.o $(SMODELS)/atomrule.o $(SMODELS)/dcl.o \
+	$(SMODELS)/denant.o $(SMODELS)/improve.o $(SMODELS)/list.o \
+	$(SMODELS)/main.o $(SMODELS)/program.o $(SMODELS)/queue.o \
+	$(SMODELS)/read.o $(SMODELS)/smodels.o $(SMODELS)/stable.o \
+	$(SMODELS)/stack.o $(SMODELS)/timer.o $(SMODELS)/tree.o
+
+SMODELSHEADER= $(SMODELS)/api.h $(SMODELS)/atomrule.h $(SMODELS)/dcl.h \
+	$(SMODELS)/defines.h $(SMODELS)/list.h $(SMODELS)/print.h \
+	$(SMODELS)/program.h $(SMODELS)/queue.h $(SMODELS)/read.h \
+	$(SMODELS)/smodels.h $(SMODELS)/stable.h $(SMODELS)/stack.h \
+	$(SMODELS)/timer.h $(SMODELS)/tree.h
+
+Option = [sysmod,optimize]
+
+GCC=gcc
+CFLAGS= -O4 -fomit-frame-pointer -finline-functions -Winline -Wall  -I/home/tvidrevich/XSB/config/i686-pc-linux-gnu
+GMM=g++
+XSB=../../bin/xsb
+Prolog = $(XSB)
+
+.IGNORE:
+
+.SUFFIXES: .P ${OBJEXT} .H .so
+
+.H${OBJEXT}:
+	echo 'compile($*, $(Option)).' >> cmd...
+
+.P${OBJEXT}:
+	echo 'mc($*,$(Option)).' >> cmd...
+
+all: $(ALL)
+	@if [ "${SMODELS}nop" = "nop" ] ; then \
+		echo "SMODELS not configured"; \
+		rm -f cmd... ;\
+	else \
+		../../build/touch.sh cmd... ; \
+		$(Prolog) < cmd... ; \
+		rm -f cmd... ;\
+	fi\
+
+clean: 
+	/bin/rm -f *.o *.so *${OBJEXT} *.h
+
+xsb_wrap_smodels.o: xsb_wrap_smodels.c
+	$(GCC) $(CFLAGS) -c xsb_wrap_smodels.c
+
+module: xsb_wrap_smodels.o 
+	$(GMM) $(CFLAGS) -s -o smodels.so -shared -I$(SMODELS) \
+	-L$(SMODELS) smodels.c \
+	xsb_wrap_smodels.o $(SMODELS)/.libs/libsmodels.a
+
+nope:
+
+
+.DONE:
+	echo Done

@@ -1,0 +1,796 @@
+/********************************************************************************/
+/*										*/
+/*  Historical Data, now stored in memory, but could go to DB to get it. 	*/
+/*										*/
+/********************************************************************************/
+
+:- import member/2 from basics.
+:- import term_to_atom/2 from string.
+
+hist_object_int(ONid,ONid,ultralog) :-
+	part(ONid,_,_,_,_).
+
+hist_immediate_memberof_int(ONid,ultralog,UNSPSC,unspsc) :-
+	part(ONid,INC,_,_,_),
+	inc(INC,_Na,UNSPSC,_NAICS).
+
+hist_immediate_attribute_int(ONid,ultralog,'hasMaterial',ultralog,atom(Mat),'OMS') :-
+	part(ONid,_,MatList,_,_),
+	member(Mat,MatList).
+hist_immediate_attribute_int(ONid,ultralog,'hasProcess',ultralog,atom(Proc),'OMS') :-
+	part(ONid,_,_,ProcList,_),
+	member(Proc,ProcList).
+hist_immediate_attribute_int(ONid,ultralog,'hasPlatform',ultralog,atom(Plat),'OMS') :-
+	part(ONid,_,_,_,PlatList),
+	member(Plat,PlatList).
+
+%% historical knowledge that provider (actually service) produced the given NSN before
+hist_attribute_object_int(ServiceNid,ultralog,'hasNSNProductionHistory',ultralog,NSN,ultralog):-
+	nonvar(ServiceNid),
+	atom_to_term_check(ServiceNid,category_obj(ServiceRef)),
+	javaMessage(ServiceRef,string(ServiceName),getServiceName),
+	odm_niin(NSN,ServiceName).
+hist_attribute_object_int(ServiceNid,ultralog,'hasNSNProductionHistory',ultralog,NSN,ultralog):-
+	var(ServiceNid),
+	nonvar(NSN),
+	odm_niin(NSN,ServiceName),
+	find_service_by_name(ServiceName,ServiceList),
+	member(ServiceRef,ServiceList),%% most probably will be list with just one element
+	term_to_atom(category_obj(ServiceRef),ServiceNid).
+
+hist_immediate_relationship_int(UNSPSC,unspsc,'hasNAICSCategory',ultralog,NAICS,'ntis-gov:naics:1997') :-
+	inc(_,_,UNSPSC,NAICS).
+hist_immediate_relationship_int(NAICS,'ntis-gov:naics:1997',coveredBy,ultralog,NAICSDist,'ntis-gov:naics:1997') :-
+	naics_distrib(NAICS,_,NAICSDist).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%	
+%	part/5 contains information about niins for
+%	queries
+%
+%   format:  part(NIIN, INC, Material_List, Process_list,
+%					Platform_List)
+%   INC -> UNSPCS that part is a memberof.
+%   and Mat, proc, plat are values of those attributes
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%  ODM Parts
+
+part('4710007606205','21989',['METAL','STEEL','CRES'],['MACHINING'],
+			['05A','34A','32A','TWA','40A','02A','VHA','61A']).
+part('1730007603370','35393',['STEEL','CRES'],['MACHINING'],['05A']).
+
+
+%  Parts registered to Grainger
+
+part('4310004145989','03815',['IRON'],[],
+			['05A','34A','32A','TWA','40A','02A','VHA','61A']).
+part('6105007262754','00530',[],['TURNING'],
+			['05A','34A','32A','TWA','40A','02A','VHA','61A','43N']).
+part('4320012017527','30410',['BRONZE'],['MACHINING','TURNING'],
+			['05A','34A','32A','TWA','40A','02A','VHA','61A']).
+			
+%  Parts available from Newark (searchable by MFG and PN)
+
+part('5945002010273','31446',[],[],
+			['ACF','12F','34A','MTN','05A','02A','32A','TWA','VHA']).
+part('5930011951836','00399',[],[],
+			['05F','TWA','05A','ERN','40A','YYA','06F','22F','04F','ESN']).
+			
+%  Parts in DLA stock (these will not necessarliy be requested
+%		from MatchMaker)
+
+part('5930008432366','00206',[],[],['YYA','05A']).
+part('3110005656233','00050',['METAL','PLASTIC','RUBBER','STEEL','CRES'],
+			['MACHINING','PLATING'],['53F','04F','16N','05A','11F','YYA']).
+
+%  Additional parts for ODM matching
+
+part('4730000603395','06074',[],[],[]).
+part('3040000615658','27781',[],[],[]).
+part('4730001873589','23541',[],[],[]).
+part('4730001873579','23541',[],[],[]).
+part('4710001914982','21989',[],[],[]).
+part('4730001972917','03771',[],[],[]).
+part('4730002771921','22676',[],[],[]).
+part('4730002788410','22683',[],[],[]).
+part('5961003595701','20589',[],[],[]).
+part('3110004520110','00014',[],[],[]).
+part('4730004724090','22675',[],[],[]).
+part('4730005417002','23541',[],[],[]).
+part('4720005801989','17972',[],[],[]).
+part('4730006107035','22679',[],[],[]).
+part('4730006259731','29666',[],[],[]).
+part('4710007875811','21989',[],[],[]).
+part('5985008026655','00305',[],[],[]).
+part('4440008032568','13512',[],[],[]).
+part('4730008189800','03809',[],[],[]).
+part('4440008228654','33863',[],[],[]).
+part('4820008574998','33212',[],[],[]).
+part('3040010987625','22321',[],[],[]).
+part('3020011611360','08109',[],[],[]).
+part('3040011618616','22321',[],[],[]).
+part('6685012321103','08357',[],[],[]).
+part('4720012687394','20311',[],[],[]).
+part('5975012859127','06353',[],[],[]).
+part('5935013293285','15093',[],[],[]).
+part('6685013642941','13474',[],[],[]).
+part('6685013814893','08357',[],[],[]).
+part('4440013841165','07159',[],[],[]).
+part('5985013888316','00305',[],[],[]).
+part('5985013888280','00305',[],[],[]).
+part('5985013891920','00305',[],[],[]).
+part('4440013984573','13512',[],[],[]).
+part('5985014153623','00305',[],[],[]).
+part('5985014158366','00305',[],[],[]).
+part('6685014305479','08357',[],[],[]).
+part('4440014571858','13512',[],[],[]).
+part('4440014858740','07159',[],[],[]).
+part('5305000555779','06672',[],[],[]).
+part('5305000563458','06672',[],[],[]).
+part('3020000553970','05466',[],[],[]).
+part('5305000545647','06657',[],[],[]).
+part('5305000546652','06657',[],[],[]).
+part('5355000553497','03263',[],[],[]).
+part('4730000548177','03807',[],[],[]).
+part('5305000549315','06657',[],[],[]).
+part('5305000545646','06657',[],[],[]).
+part('5305000546676','06657',[],[],[]).
+part('5935000046197','15093',[],[],[]).
+part('3110000058271','00014',[],[],[]).
+part('3120000070575','13208',[],[],[]).
+part('5305000224523','06657',[],[],[]).
+part('5305000594552','06657',[],[],[]).
+part('5355000702108','03263',[],[],[]).
+part('5360000757443','04226',[],[],[]).
+part('3020000806010','05464',[],[],[]).
+part('5998001032701','26088',[],[],[]).
+part('3020001047242','05466',[],[],[]).
+part('3110001386433','00014',[],[],[]).
+part('5305001416523','06657',[],[],[]).
+part('5935001677829','01938',[],[],[]).
+part('5935002564486','15093',[],[],[]).
+part('5305002735723','06657',[],[],[]).
+part('5305002818887','06657',[],[],[]).
+part('5920002849206','28908',[],[],[]).
+part('5305002979367','06657',[],[],[]).
+part('5305002984681','06672',[],[],[]).
+part('5998003542360','61638',[],[],[]).
+part('5935004440490','15093',[],[],[]).
+part('5320004648654','29343',[],[],[]).
+part('5306005264279','04905',[],[],[]).
+part('5320005311762','00864',[],[],[]).
+part('4710005598176','21989',[],[],[]).
+part('5930006024004','02134',[],[],[]).
+part('5905006293575','05311',[],[],[]).
+part('5905006448837','05311',[],[],[]).
+part('5305006849772','06657',[],[],[]).
+part('5355006872883','03263',[],[],[]).
+part('5935007262941','15093',[],[],[]).
+part('6105007307393','00530',[],[],[]).
+part('5962007640685','31779',[],[],[]).
+part('5315008123417','02384',[],[],[]).
+part('5915008142859','00765',[],[],[]).
+part('5935008450151','15093',[],[],[]).
+part('3110008950476','00014',[],[],[]).
+part('5305009210049','06657',[],[],[]).
+part('5905009297396','37403',[],[],[]).
+part('5305009515169','06657',[],[],[]).
+part('5355009654881','03263',[],[],[]).
+part('5935009995099','15093',[],[],[]).
+part('4710010065333','21989',[],[],[]).
+part('5945010068470','03883',[],[],[]).
+part('4710010125988','21989',[],[],[]).
+part('5305010159667','06657',[],[],[]).
+part('5935010320158','15093',[],[],[]).
+part('5940010339593','00887',[],[],[]).
+part('5935010394638','30415',[],[],[]).
+part('5925010416341','00136',[],[],[]).
+part('5935010452980','15093',[],[],[]).
+part('4730010457757','03771',[],[],[]).
+part('5330010529007','04522',[],[],[]).
+part('5962010584415','31778',[],[],[]).
+part('5995010621198','35612',[],[],[]).
+part('5935010674911','15093',[],[],[]).
+part('5950010722570','32496',[],[],[]).
+part('5998010792751','61638',[],[],[]).
+part('5950010833305','32496',[],[],[]).
+part('5305010933123','22846',[],[],[]).
+part('5962011023098','31779',[],[],[]).
+part('5962011068161','41015',[],[],[]).
+part('5305011236358','18257',[],[],[]).
+part('5935011276663','61925',[],[],[]).
+part('5995011300436','00886',[],[],[]).
+part('5995011300442','00886',[],[],[]).
+part('5935011405586','01938',[],[],[]).
+part('5315011428456','02384',[],[],[]).
+part('5985011432503','00305',[],[],[]).
+part('5355011468564','03263',[],[],[]).
+part('5998011476211','61638',[],[],[]).
+part('5935011758219','01938',[],[],[]).
+part('5962011765716','41015',[],[],[]).
+part('5935011881701','01938',[],[],[]).
+part('3010011896676','60536',[],[],[]).
+part('5985011932517','00510',[],[],[]).
+part('5360011943176','04226',[],[],[]).
+part('5331012313179','47946',[],[],[]).
+part('5962012550364','31778',[],[],[]).
+part('5935012619012','15093',[],[],[]).
+part('5935012629315','01938',[],[],[]).
+part('5975012815268','61736',[],[],[]).
+part('5330012837494','04522',[],[],[]).
+part('5305012968599','06657',[],[],[]).
+part('3120013008024','13208',[],[],[]).
+part('5330013359470','04522',[],[],[]).
+part('5962013372682','31779',[],[],[]).
+part('9905013466880','30536',[],[],[]).
+part('5935013467224','21538',[],[],[]).
+part('5360013564743','04226',[],[],[]).
+part('5305013569014','06657',[],[],[]).
+part('5935013634953','15093',[],[],[]).
+part('5985013752436','00305',[],[],[]).
+part('5935013767608','61924',[],[],[]).
+part('5320013819866','29343',[],[],[]).
+part('5360013849535','04226',[],[],[]).
+part('2520013983134','05621',[],[],[]).
+part('5330014195226','04531',[],[],[]).
+part('5962014207748','31779',[],[],[]).
+part('5355014232824','03263',[],[],[]).
+part('4710000540110','21989',[],[],[]).
+part('5305000539365','06657',[],[],[]).
+part('5305000597814','06657',[],[],[]).
+part('3020000892378','04456',[],[],[]).
+part('4820001030480','05487',[],[],[]).
+part('5355001310561','03263',[],[],[]).
+part('5305001510684','06657',[],[],[]).
+part('5305002080395','06657',[],[],[]).
+part('5305002086403','06657',[],[],[]).
+part('4710002324427','21989',[],[],[]).
+part('5305002724974','06657',[],[],[]).
+part('5305002761969','06657',[],[],[]).
+part('5305002818523','06657',[],[],[]).
+part('4730002870270','03859',[],[],[]).
+part('5305002972918','06657',[],[],[]).
+part('4710003452773','21989',[],[],[]).
+part('4920004516767','37261',[],[],[]).
+part('1730004846465','40337',[],[],[]).
+part('5355005484908','03263',[],[],[]).
+part('5340005769034','03796',[],[],[]).
+part('4730005850468','18681',[],[],[]).
+part('4720005952025','20311',[],[],[]).
+part('5305006195562','06657',[],[],[]).
+part('5305006385655','06672',[],[],[]).
+part('5355006442054','03263',[],[],[]).
+part('4720007105207','20311',[],[],[]).
+part('5305007167982','06672',[],[],[]).
+part('5355007175110','03263',[],[],[]).
+part('4730007622120','22679',[],[],[]).
+part('5962008203927','31778',[],[],[]).
+part('5305008276880','06657',[],[],[]).
+part('4820008491220','16988',[],[],[]).
+part('5305008575519','06657',[],[],[]).
+part('4920009054706','37261',[],[],[]).
+part('5305009164814','06657',[],[],[]).
+part('5355009525544','03263',[],[],[]).
+part('5305009576645','06657',[],[],[]).
+part('5305009585267','06657',[],[],[]).
+part('5305009939191','06657',[],[],[]).
+part('4720010406855','20311',[],[],[]).
+part('4820010585445','05487',[],[],[]).
+part('5355010718195','03263',[],[],[]).
+part('5985010862038','16132',[],[],[]).
+part('5998010917866','62400',[],[],[]).
+part('1560010921179','41018',[],[],[]).
+part('4730011137768','61784',[],[],[]).
+part('4710011143248','21989',[],[],[]).
+part('5310011459461','13393',[],[],[]).
+part('5305011748211','16282',[],[],[]).
+part('4710012009183','21989',[],[],[]).
+part('4730012486755','18263',[],[],[]).
+part('5305012651172','06657',[],[],[]).
+part('5995012652794','00886',[],[],[]).
+part('4730012687886','06076',[],[],[]).
+part('5355012724653','03263',[],[],[]).
+part('1005012872518','21599',[],[],[]).
+part('5306013056769','15903',[],[],[]).
+part('5305013062534','06657',[],[],[]).
+part('5306013099909','15903',[],[],[]).
+part('5305013109507','06657',[],[],[]).
+part('4935013140435','38312',[],[],[]).
+part('5305013307570','06672',[],[],[]).
+part('4920013639041','06159',[],[],[]).
+part('4820013875453','37940',[],[],[]).
+part('4820013940542','27565',[],[],[]).
+part('5320013990069','00864',[],[],[]).
+part('1660013998265','32351',[],[],[]).
+part('5305014223895','18257',[],[],[]).
+part('4710014483069','21989',[],[],[]).
+part('5305014483318','06657',[],[],[]).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%	inc_info/5  contains information about the relavent INCs
+%
+%	format:		inc(INC_Code, Item_Name, UNSPSC_Code, NAICS_Code)
+%      Maps INCs -> UNSPSC for part memberof
+%      UNSPSC -> NAICS, attribute of UNSPSC (relationship)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+inc('21989','TUBE ASSEMBLY,METAL','3135','3329').
+inc('35393','PIN,GROUND SAFETY','25201903','3364').
+inc('03815','COMPRESSOR,RECIPROCATING','40151606','3339').
+inc('00530','MOTOR,ALTERNATING CURRENT','26101602','3353').
+inc('30410','PUMP,ROTARY','40151521','3339').
+inc('31446','RELAY,SOLID STATE','39121542','3353').
+inc('00399','SWTICH,SENSITIVE','39121509','3353').
+inc('00206','SWITCH,PRESSURE','39121506','3353').
+inc('00050','BEARING,ROLLER,ROD END','31171508','3329').
+inc('15903','BOLT,SHEAR','3116','3327').
+inc('32496','TRANSFORMER,POWER','30211501','3344').
+inc('15093','CONNECTOR,RECEPTACLE,ELECTRICAL','30211806','3353').
+inc('03809','TEE,TUBE','401417','3329').
+inc('21538','PLATE,RETAINING,ELECTRICAL CONNECTOR','302118','3353').
+inc('16988','COCK,DRAIN','40141701','3329').
+inc('02384','PIN,STRAIGHT,HEADED','53141501','3327').
+inc('00014','BEARING,BALL,ANNULAR','31171504','3329').
+inc('22846','SCREW,SHOULDER','3116','3327').
+inc('01938','CONNECTOR,PLUG,ELECTRICAL','30211802','3353').
+inc('06159','ADAPTER,TEST','43172710','3345').
+inc('41015','MICROCIRCUIT,MEMORY','3210','3344').
+inc('07159','DESICCANT CONTAINER,DEHUMIDIFIER','40101902','3333').
+inc('22679','ELBOW,TUBE TO BOSS','401417','3329').
+inc('37403','RESISTOR,FIXED,WIRE WOUND,INDUCTIVE','32121608','3344').
+inc('18257','SCREW,CAP,HEXAGON HEAD','31161501','3327').
+inc('06672','SETSCREW','3116','3327').
+inc('04531','PACKING MATERIAL','24141605','3222').
+inc('22683','TEE,TUBE TO BOSS','401417','3329').
+inc('41018','FITTING,STRUCTURALCOMPONENT,AIRCRAFT','2520','3364').
+inc('27565','VALVE,REGULATING,FLUID PRESSURE','401416','3329').
+inc('61925','CONNECTOR BODY,RECEPTACLE,ELECTRICAL','30211806','3353').
+inc('05466','GEAR,SPUR','31171707','3336').
+inc('33863','PARTS KIT,DEHYDRATOR','41102022','3333').
+inc('00887','TERMINAL,STUD','302118','3353').
+inc('22675','ADAPTER,STRAIGHT,TUBE TO BOSS','43172710','3329').
+inc('32351','DUCT ASSEMBLY,AIR CONDITIONING-HEATING,AIRCRAFT','2520','3364').
+inc('00886','CABLE ASSEMBLY,RADIO FREQUENCY','2612','3359').
+inc('06657','SCREW,MACHINE','31161504','3327').
+inc('05487','VALVE,CHECK','401417','3329').
+inc('05487','VALVE,CHECK','401416','3329').
+inc('04905','BOLT,SHOULDER','3116','3327').
+inc('13393','WASHER,FLAT','31161807','3327').
+inc('30415','ADAPTER,CABLE CLAMP TO CONNECTOR','302118','3353').
+inc('23541','REDUCER,BOSS','401417','3329').
+inc('03263','KNOB','31162801','3364').
+inc('03771','ELBOW,TUBE','401417','3329').
+inc('03859','NUT,TUBE COUPLING','31161728','3329').
+inc('00864','RIVET,BLIND','31162201','3327').
+inc('29666','ELBOW,FLANGE TO HOSE','401417','3329').
+inc('16282','SCREW,CAP,SOCKET HEAD','3116','3327').
+inc('00136','CIRCUIT BREAKER','30212001','3353').
+inc('13512','CARTRIDGE,DEHYDRATOR','41102022','3333').
+inc('00510','WAVEGUIDE','25201710','3359').
+inc('03807','TEE,PIPE TO TUBE','401417','3329').
+inc('02134','SWITCH,ROTARY','30211914','3353').
+inc('20589','SEMICONDUCTOR DEVICE,DIODE','321117','3344').
+inc('04522','GASKET','311815','3399').
+inc('13208','BEARING,PLAIN,SELF-ALIGNING','3117','3329').
+inc('33212','VALVE,CALIBRATED FLOW','401416','3329').
+inc('05311','RESISTOR,FIXED,FILM','321216','3344').
+inc('06076','COUPLING,PIPE','401417','3329').
+inc('31778','MICROCIRCUIT,LINEAR','3210','3344').
+inc('04226','SPRING,HELICAL,COMPRESSION','311619','3399').
+inc('03796','CLEVIS,ROD END','31161604','3325').
+inc('03796','CLEVIS,ROD END','31162405','3325').
+inc('30536','BAND,MARKER','44121708','3399').
+inc('05464','GEAR,HELICAL','311717','3336').
+inc('22676','ELBOW,BOSS','401417','3329').
+inc('31779','MICROCIRCUIT,DIGITAL','3210','3344').
+inc('00305','WAVEGUIDE ASSEMBLY','25201710','3359').
+inc('26088','ELECTRONIC COMPONENTS ASSEMBLY','321015','3344').
+inc('38312','FIXTURE,GUIDED MISSILE MAINTENANCE','461216','3364').
+inc('13474','INDICATOR,HUMIDITY,CARD','411123','3345').
+inc('61924','CONNECTOR BODY,PLUG,ELECTRICAL','39121402','3353').
+inc('22321','BELL CRANK','311628','3336').
+inc('16132','RADOME','25201513','3359').
+inc('00765','FILTER,RADIO FREQUENCY INTERFERENCE','32101522','3344').
+inc('05621','TRANSFER TRANSMISSION ASSEMBLY','251738','3363').
+inc('28908','FUSEHOLDER,BLOCK','39121618','3353').
+inc('06074','CAP,TUBE','311628','3329').
+inc('62400','EXTENDER CARD,ELECTRONIC TEST','3210','3344').
+inc('37940','VALVE,REGULATING,OXYGEN SYSTEM PRESSURE','401416','3329').
+inc('61638','CIRCUIT CARD ASSEMBLY','321015','3344').
+inc('27781','CLAMP,HUB','311629','3336').
+inc('03883','RELAY,THERMAL','39121535','3353').
+inc('04456','SPROCKET WHEEL','311719','3336').
+inc('29343','PIN-RIVET,THREADED','311622','3327').
+inc('61784','MANIFOLD,HYDRAULICSYSTEM ACCESSORIES','2712','3329').
+inc('08109','PULLEY,GROOVE','31171805','3336').
+inc('20311','HOSE ASSEMBLY,NONMETALLIC','401420','3262').
+inc('60536','GEAR SUBASSEMBLY,SPEED DECREASER','311717','3336').
+inc('37261','FIXTURE,AIRCRAFT MAINTENANCE','25191502','3364').
+inc('18263','RESTRICTOR,FLUID FLOW','40142202','3329').
+inc('47946','O-RING','31181506','3399').
+inc('40337','LOCK,AIRCRAFT GROUND SAFETY','252025','3364').
+inc('17972','HOSE ASSEMBLY,METALLIC','401420','3329').
+inc('61736','STRAP,TIEDOWN,ELECTRICAL COMPONENTS','39121703','3353').
+inc('08357','INDICATOR,HUMIDITY,PLUG','411123','3345').
+inc('21599','MACHINE GUN,CALIBER .50','46101501','3399').
+inc('35612','CABLE ASSEMBLY,PRINTED,FLEXIBLE','3210','3359').
+inc('06353','RACK,ELECTRICAL EQUIPMENT','43172605','3353').
+inc('18681','COUPLING HALF,QUICK DISCONNECT','40141734','3329').
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  
+%  odm historical data 
+%
+%  format:  odm_niin(NIIN,ServiceName)
+% ServiceName is used instead of provider name
+% since ODM & COTS are properties of services
+%          
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+odm_niin('4730000603395','A_DRYTECH_Profile').
+odm_niin('3040000615658','A_DRYTECH_Profile').
+odm_niin('4730001873589','A_DRYTECH_Profile').
+odm_niin('4730001873579','A_DRYTECH_Profile').
+odm_niin('4710001914982','A_DRYTECH_Profile').
+odm_niin('4730001972917','A_DRYTECH_Profile').
+odm_niin('4730002771921','A_DRYTECH_Profile').
+odm_niin('4730002788410','A_DRYTECH_Profile').
+odm_niin('5961003595701','A_DRYTECH_Profile').
+odm_niin('3110004520110','A_DRYTECH_Profile').
+odm_niin('4730004724090','A_DRYTECH_Profile').
+odm_niin('4730005417002','A_DRYTECH_Profile').
+odm_niin('4720005801989','A_DRYTECH_Profile').
+odm_niin('4730006107035','A_DRYTECH_Profile').
+odm_niin('4730006259731','A_DRYTECH_Profile').
+odm_niin('4710007875811','A_DRYTECH_Profile').
+odm_niin('5985008026655','A_DRYTECH_Profile').
+odm_niin('4440008032568','A_DRYTECH_Profile').
+odm_niin('4730008189800','A_DRYTECH_Profile').
+odm_niin('4440008228654','A_DRYTECH_Profile').
+odm_niin('4820008574998','A_DRYTECH_Profile').
+odm_niin('3040010987625','A_DRYTECH_Profile').
+odm_niin('3020011611360','A_DRYTECH_Profile').
+odm_niin('3040011618616','A_DRYTECH_Profile').
+odm_niin('6685012321103','A_DRYTECH_Profile').
+odm_niin('4720012687394','A_DRYTECH_Profile').
+odm_niin('5975012859127','A_DRYTECH_Profile').
+odm_niin('5935013293285','A_DRYTECH_Profile').
+odm_niin('6685013642941','A_DRYTECH_Profile').
+odm_niin('6685013814893','A_DRYTECH_Profile').
+odm_niin('4440013841165','A_DRYTECH_Profile').
+odm_niin('5985013888316','A_DRYTECH_Profile').
+odm_niin('5985013888280','A_DRYTECH_Profile').
+odm_niin('5985013891920','A_DRYTECH_Profile').
+odm_niin('4440013984573','A_DRYTECH_Profile').
+odm_niin('5985014153623','A_DRYTECH_Profile').
+odm_niin('5985014158366','A_DRYTECH_Profile').
+odm_niin('6685014305479','A_DRYTECH_Profile').
+odm_niin('4440014571858','A_DRYTECH_Profile').
+odm_niin('4440014858740','A_DRYTECH_Profile').
+odm_niin('5305000555779','A_PWCSANDIEGO_Profile').
+odm_niin('5305000563458','A_PWCSANDIEGO_Profile').
+odm_niin('3020000553970','A_PWCSANDIEGO_Profile').
+odm_niin('5305000545647','A_PWCSANDIEGO_Profile').
+odm_niin('5305000546652','A_PWCSANDIEGO_Profile').
+odm_niin('5355000553497','A_PWCSANDIEGO_Profile').
+odm_niin('4730000548177','A_PWCSANDIEGO_Profile').
+odm_niin('5305000549315','A_PWCSANDIEGO_Profile').
+odm_niin('5305000545646','A_PWCSANDIEGO_Profile').
+odm_niin('5305000546676','A_PWCSANDIEGO_Profile').
+odm_niin('5935000046197','A_PARTSALACARTE_Profile').
+odm_niin('3110000058271','A_PARTSALACARTE_Profile').
+odm_niin('3120000070575','A_PARTSALACARTE_Profile').
+odm_niin('5305000224523','A_PARTSALACARTE_Profile').
+odm_niin('5305000594552','A_PARTSALACARTE_Profile').
+odm_niin('5355000702108','A_PARTSALACARTE_Profile').
+odm_niin('5360000757443','A_PARTSALACARTE_Profile').
+odm_niin('3020000806010','A_PARTSALACARTE_Profile').
+odm_niin('5998001032701','A_PARTSALACARTE_Profile').
+odm_niin('3020001047242','A_PARTSALACARTE_Profile').
+odm_niin('3110001386433','A_PARTSALACARTE_Profile').
+odm_niin('5305001416523','A_PARTSALACARTE_Profile').
+odm_niin('5935001677829','A_PARTSALACARTE_Profile').
+odm_niin('5935002564486','A_PARTSALACARTE_Profile').
+odm_niin('5305002735723','A_PARTSALACARTE_Profile').
+odm_niin('5305002818887','A_PARTSALACARTE_Profile').
+odm_niin('5920002849206','A_PARTSALACARTE_Profile').
+odm_niin('5305002979367','A_PARTSALACARTE_Profile').
+odm_niin('5305002984681','A_PARTSALACARTE_Profile').
+odm_niin('5998003542360','A_PARTSALACARTE_Profile').
+odm_niin('5935004440490','A_PARTSALACARTE_Profile').
+odm_niin('5320004648654','A_PARTSALACARTE_Profile').
+odm_niin('5306005264279','A_PARTSALACARTE_Profile').
+odm_niin('5320005311762','A_PARTSALACARTE_Profile').
+odm_niin('4710005598176','A_PARTSALACARTE_Profile').
+odm_niin('5930006024004','A_PARTSALACARTE_Profile').
+odm_niin('5905006293575','A_PARTSALACARTE_Profile').
+odm_niin('5905006448837','A_PARTSALACARTE_Profile').
+odm_niin('5305006849772','A_PARTSALACARTE_Profile').
+odm_niin('5355006872883','A_PARTSALACARTE_Profile').
+odm_niin('5935007262941','A_PARTSALACARTE_Profile').
+odm_niin('6105007307393','A_PARTSALACARTE_Profile').
+odm_niin('1730007603370','A_PARTSALACARTE_Profile').
+odm_niin('4710007606205','A_PARTSALACARTE_Profile').
+odm_niin('5962007640685','A_PARTSALACARTE_Profile').
+odm_niin('5315008123417','A_PARTSALACARTE_Profile').
+odm_niin('5915008142859','A_PARTSALACARTE_Profile').
+odm_niin('5935008450151','A_PARTSALACARTE_Profile').
+odm_niin('3110008950476','A_PARTSALACARTE_Profile').
+odm_niin('5305009210049','A_PARTSALACARTE_Profile').
+odm_niin('5905009297396','A_PARTSALACARTE_Profile').
+odm_niin('5305009515169','A_PARTSALACARTE_Profile').
+odm_niin('5355009654881','A_PARTSALACARTE_Profile').
+odm_niin('5935009995099','A_PARTSALACARTE_Profile').
+odm_niin('4710010065333','A_PARTSALACARTE_Profile').
+odm_niin('5945010068470','A_PARTSALACARTE_Profile').
+odm_niin('4710010125988','A_PARTSALACARTE_Profile').
+odm_niin('5305010159667','A_PARTSALACARTE_Profile').
+odm_niin('5935010320158','A_PARTSALACARTE_Profile').
+odm_niin('5940010339593','A_PARTSALACARTE_Profile').
+odm_niin('5935010394638','A_PARTSALACARTE_Profile').
+odm_niin('5925010416341','A_PARTSALACARTE_Profile').
+odm_niin('5935010452980','A_PARTSALACARTE_Profile').
+odm_niin('4730010457757','A_PARTSALACARTE_Profile').
+odm_niin('5330010529007','A_PARTSALACARTE_Profile').
+odm_niin('5962010584415','A_PARTSALACARTE_Profile').
+odm_niin('5995010621198','A_PARTSALACARTE_Profile').
+odm_niin('5935010674911','A_PARTSALACARTE_Profile').
+odm_niin('5950010722570','A_PARTSALACARTE_Profile').
+odm_niin('5998010792751','A_PARTSALACARTE_Profile').
+odm_niin('5950010833305','A_PARTSALACARTE_Profile').
+odm_niin('5305010933123','A_PARTSALACARTE_Profile').
+odm_niin('5962011023098','A_PARTSALACARTE_Profile').
+odm_niin('5962011068161','A_PARTSALACARTE_Profile').
+odm_niin('5305011236358','A_PARTSALACARTE_Profile').
+odm_niin('5935011276663','A_PARTSALACARTE_Profile').
+odm_niin('5995011300436','A_PARTSALACARTE_Profile').
+odm_niin('5995011300442','A_PARTSALACARTE_Profile').
+odm_niin('5935011405586','A_PARTSALACARTE_Profile').
+odm_niin('5315011428456','A_PARTSALACARTE_Profile').
+odm_niin('5985011432503','A_PARTSALACARTE_Profile').
+odm_niin('5355011468564','A_PARTSALACARTE_Profile').
+odm_niin('5998011476211','A_PARTSALACARTE_Profile').
+odm_niin('5935011758219','A_PARTSALACARTE_Profile').
+odm_niin('5962011765716','A_PARTSALACARTE_Profile').
+odm_niin('5935011881701','A_PARTSALACARTE_Profile').
+odm_niin('3010011896676','A_PARTSALACARTE_Profile').
+odm_niin('5985011932517','A_PARTSALACARTE_Profile').
+odm_niin('5360011943176','A_PARTSALACARTE_Profile').
+odm_niin('5331012313179','A_PARTSALACARTE_Profile').
+odm_niin('5962012550364','A_PARTSALACARTE_Profile').
+odm_niin('5935012619012','A_PARTSALACARTE_Profile').
+odm_niin('5935012629315','A_PARTSALACARTE_Profile').
+odm_niin('5975012815268','A_PARTSALACARTE_Profile').
+odm_niin('5330012837494','A_PARTSALACARTE_Profile').
+odm_niin('5305012968599','A_PARTSALACARTE_Profile').
+odm_niin('3120013008024','A_PARTSALACARTE_Profile').
+odm_niin('5330013359470','A_PARTSALACARTE_Profile').
+odm_niin('5962013372682','A_PARTSALACARTE_Profile').
+odm_niin('9905013466880','A_PARTSALACARTE_Profile').
+odm_niin('5935013467224','A_PARTSALACARTE_Profile').
+odm_niin('5360013564743','A_PARTSALACARTE_Profile').
+odm_niin('5305013569014','A_PARTSALACARTE_Profile').
+odm_niin('5935013634953','A_PARTSALACARTE_Profile').
+odm_niin('5985013752436','A_PARTSALACARTE_Profile').
+odm_niin('5935013767608','A_PARTSALACARTE_Profile').
+odm_niin('5320013819866','A_PARTSALACARTE_Profile').
+odm_niin('5360013849535','A_PARTSALACARTE_Profile').
+odm_niin('2520013983134','A_PARTSALACARTE_Profile').
+odm_niin('5330014195226','A_PARTSALACARTE_Profile').
+odm_niin('5962014207748','A_PARTSALACARTE_Profile').
+odm_niin('5355014232824','A_PARTSALACARTE_Profile').
+odm_niin('4710000540110','A_WARNERROBBINS_Profile').
+odm_niin('5305000539365','A_WARNERROBBINS_Profile').
+odm_niin('5305000597814','A_WARNERROBBINS_Profile').
+odm_niin('3020000892378','A_WARNERROBBINS_Profile').
+odm_niin('4820001030480','A_WARNERROBBINS_Profile').
+odm_niin('5355001310561','A_WARNERROBBINS_Profile').
+odm_niin('5305001510684','A_WARNERROBBINS_Profile').
+odm_niin('5305002080395','A_WARNERROBBINS_Profile').
+odm_niin('5305002086403','A_WARNERROBBINS_Profile').
+odm_niin('4710002324427','A_WARNERROBBINS_Profile').
+odm_niin('5305002724974','A_WARNERROBBINS_Profile').
+odm_niin('5305002761969','A_WARNERROBBINS_Profile').
+odm_niin('5305002818523','A_WARNERROBBINS_Profile').
+odm_niin('4730002870270','A_WARNERROBBINS_Profile').
+odm_niin('5305002972918','A_WARNERROBBINS_Profile').
+odm_niin('4710003452773','A_WARNERROBBINS_Profile').
+odm_niin('4920004516767','A_WARNERROBBINS_Profile').
+odm_niin('1730004846465','A_WARNERROBBINS_Profile').
+odm_niin('5355005484908','A_WARNERROBBINS_Profile').
+odm_niin('5340005769034','A_WARNERROBBINS_Profile').
+odm_niin('4730005850468','A_WARNERROBBINS_Profile').
+odm_niin('4720005952025','A_WARNERROBBINS_Profile').
+odm_niin('5305006195562','A_WARNERROBBINS_Profile').
+odm_niin('5305006385655','A_WARNERROBBINS_Profile').
+odm_niin('5355006442054','A_WARNERROBBINS_Profile').
+odm_niin('4720007105207','A_WARNERROBBINS_Profile').
+odm_niin('5305007167982','A_WARNERROBBINS_Profile').
+odm_niin('5355007175110','A_WARNERROBBINS_Profile').
+odm_niin('1730007603370','A_WARNERROBBINS_Profile').
+odm_niin('4710007606205','A_WARNERROBBINS_Profile').
+odm_niin('4730007622120','A_WARNERROBBINS_Profile').
+odm_niin('5962008203927','A_WARNERROBBINS_Profile').
+odm_niin('5305008276880','A_WARNERROBBINS_Profile').
+odm_niin('4820008491220','A_WARNERROBBINS_Profile').
+odm_niin('5305008575519','A_WARNERROBBINS_Profile').
+odm_niin('4920009054706','A_WARNERROBBINS_Profile').
+odm_niin('5305009164814','A_WARNERROBBINS_Profile').
+odm_niin('5355009525544','A_WARNERROBBINS_Profile').
+odm_niin('5305009576645','A_WARNERROBBINS_Profile').
+odm_niin('5305009585267','A_WARNERROBBINS_Profile').
+odm_niin('5305009939191','A_WARNERROBBINS_Profile').
+odm_niin('4720010406855','A_WARNERROBBINS_Profile').
+odm_niin('4820010585445','A_WARNERROBBINS_Profile').
+odm_niin('5355010718195','A_WARNERROBBINS_Profile').
+odm_niin('5985010862038','A_WARNERROBBINS_Profile').
+odm_niin('5998010917866','A_WARNERROBBINS_Profile').
+odm_niin('1560010921179','A_WARNERROBBINS_Profile').
+odm_niin('4730011137768','A_WARNERROBBINS_Profile').
+odm_niin('4710011143248','A_WARNERROBBINS_Profile').
+odm_niin('5310011459461','A_WARNERROBBINS_Profile').
+odm_niin('5305011748211','A_WARNERROBBINS_Profile').
+odm_niin('4710012009183','A_WARNERROBBINS_Profile').
+odm_niin('4730012486755','A_WARNERROBBINS_Profile').
+odm_niin('5305012651172','A_WARNERROBBINS_Profile').
+odm_niin('5995012652794','A_WARNERROBBINS_Profile').
+odm_niin('4730012687886','A_WARNERROBBINS_Profile').
+odm_niin('5355012724653','A_WARNERROBBINS_Profile').
+odm_niin('1005012872518','A_WARNERROBBINS_Profile').
+odm_niin('5306013056769','A_WARNERROBBINS_Profile').
+odm_niin('5305013062534','A_WARNERROBBINS_Profile').
+odm_niin('5306013099909','A_WARNERROBBINS_Profile').
+odm_niin('5305013109507','A_WARNERROBBINS_Profile').
+odm_niin('4935013140435','A_WARNERROBBINS_Profile').
+odm_niin('5305013307570','A_WARNERROBBINS_Profile').
+odm_niin('4920013639041','A_WARNERROBBINS_Profile').
+odm_niin('4820013875453','A_WARNERROBBINS_Profile').
+odm_niin('4820013940542','A_WARNERROBBINS_Profile').
+odm_niin('5320013990069','A_WARNERROBBINS_Profile').
+odm_niin('1660013998265','A_WARNERROBBINS_Profile').
+odm_niin('5305014223895','A_WARNERROBBINS_Profile').
+odm_niin('4710014483069','A_WARNERROBBINS_Profile').
+odm_niin('5305014483318','A_WARNERROBBINS_Profile').
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%	provider/4 and provider_registration_node/2 give info about
+%	where providers register in ontology
+%
+%	format:  provider(CAGE,NAME,ALIAS,PROVIDER_TYPE)
+%			 provider_registration_node(CAGE,NODE_ID)
+%      CAGE is serviceprovider ID, Name is label
+%          alias doesn't go into ontology
+%          provider_type is goes as attribute
+%          provider_reg is memberof relation for providers
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+provider('0SDA4','CORPUS CHRISTI ARMY DEPOT','',service).
+provider('1X4F3','DEFENSE LOGISTICS AGENCY','',finished_goods).
+provider('25795','GRAINGER W W INC','',finished_goods).
+provider('5H302','NEWARK ELECTRONICS','',finished_goods).
+provider('0A9P5','SOUTH CAROLINA RESEARSH AUTHORITY','PARTS ALA CARTE',custom_mfr).
+provider('0S180','DRYTECH INC','',custom_mfr).
+provider('98752','WARNER ROBBINS AIR LOGISTICS CENTER','',custom_mfr).
+provider('0WUC6','DEPT OF THE NAVY U S NAVY PUBLIC WORKS TECHNICAL SERVICES DIV','PWC SAN DIAGO',custom_mfr).
+%%provider('77342','TYCO ELECTRONICS CORP','','').
+%%provider('91929','HONEYWELL SENSING AND CONTROL','MICRO SWITCH','').
+
+provider_registration_node('1X4F3','SupplyProvider','MilitaryServiceScheme').
+provider_registration_node('1X4F3','31','ntis-gov:naics:1997').
+provider_registration_node('1X4F3','32','ntis-gov:naics:1997').
+provider_registration_node('1X4F3','33','ntis-gov:naics:1997').
+provider_registration_node('1X4F3','42','ntis-gov:naics:1997').
+provider_registration_node('0SDA4','48819','ntis-gov:naics:1997').
+provider_registration_node('0SDA4','MaintenanceProvider','MilitaryServiceScheme').
+provider_registration_node('25795','42112','ntis-gov:naics:1997').
+provider_registration_node('25795','42122','ntis-gov:naics:1997').
+provider_registration_node('25795','42142','ntis-gov:naics:1997').
+provider_registration_node('25795','4216','ntis-gov:naics:1997').
+provider_registration_node('25795','4217','ntis-gov:naics:1997').
+provider_registration_node('25795','4218','ntis-gov:naics:1997').
+provider_registration_node('25795','4226','ntis-gov:naics:1997').
+provider_registration_node('5H302','4216','ntis-gov:naics:1997').
+provider_registration_node('5H302','42199','ntis-gov:naics:1997').
+provider_registration_node('5H302','42171','ntis-gov:naics:1997').
+provider_registration_node('5H302','4226','ntis-gov:naics:1997').
+provider_registration_node('0A9P5','3344','ntis-gov:naics:1997').
+provider_registration_node('0A9P5','3327','ntis-gov:naics:1997').
+provider_registration_node('0A9P5','3353','ntis-gov:naics:1997').
+provider_registration_node('0A9P5','3399','ntis-gov:naics:1997').
+provider_registration_node('0A9P5','3359','ntis-gov:naics:1997').
+provider_registration_node('0A9P5','3325','ntis-gov:naics:1997').
+provider_registration_node('0A9P5','3329','ntis-gov:naics:1997').
+provider_registration_node('0A9P5','3336','ntis-gov:naics:1997').
+provider_registration_node('0A9P5','3345','ntis-gov:naics:1997').
+provider_registration_node('0A9P5','3364','ntis-gov:naics:1997').
+provider_registration_node('0S180','3333','ntis-gov:naics:1997').
+provider_registration_node('0S180','3345','ntis-gov:naics:1997').
+provider_registration_node('98752','3364','ntis-gov:naics:1997').
+provider_registration_node('98752','3329','ntis-gov:naics:1997').
+provider_registration_node('98752','3325','ntis-gov:naics:1997').
+provider_registration_node('98752','3359','ntis-gov:naics:1997').
+provider_registration_node('98752','3345','ntis-gov:naics:1997').
+provider_registration_node('98752','3327','ntis-gov:naics:1997').
+provider_registration_node('98752','3353','ntis-gov:naics:1997').
+provider_registration_node('98752','3336','ntis-gov:naics:1997').
+provider_registration_node('98752','3344','ntis-gov:naics:1997').
+provider_registration_node('98752','3399','ntis-gov:naics:1997').
+provider_registration_node('98752','3339','ntis-gov:naics:1997').
+provider_registration_node('98752','3322','ntis-gov:naics:1997').
+provider_registration_node('98752','3363','ntis-gov:naics:1997').
+provider_registration_node('98752','SparePartsManufacturer','MilitaryServiceScheme').
+provider_registration_node('0WUC6','3336','ntis-gov:naics:1997').
+provider_registration_node('0WUC6','3262','ntis-gov:naics:1997').
+provider_registration_node('0WUC6','3329','ntis-gov:naics:1997').
+provider_registration_node('0WUC6','3363','ntis-gov:naics:1997').
+provider_registration_node('0WUC6','SparePartsManufacturer','MilitaryServiceScheme').
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%		distributed_by relates manufacturing NAICS nodes (31, 32, 33)
+%			to whosale trade NIACS nodes (42
+%
+%   maps NAICS manufactures to their distributors.
+%   add as attribute of NAICS manufacturers.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+naics_distrib('3262',distributed_by,'4226').
+naics_distrib('3322',distributed_by,'42171').
+naics_distrib('3325',distributed_by,'42171').
+naics_distrib('3327',distributed_by,'42184').
+naics_distrib('3329',distributed_by,'42199').
+naics_distrib('3333',distributed_by,'4218').
+naics_distrib('3336',distributed_by,'42183').
+naics_distrib('3339',distributed_by,'42183').
+naics_distrib('3344',distributed_by,'42169').
+naics_distrib('3345',distributed_by,'4216').
+naics_distrib('3353',distributed_by,'42161').
+naics_distrib('3359',distributed_by,'4216').
+naics_distrib('3363',distributed_by,'42112').
+naics_distrib('3364',distributed_by,'42189').
+naics_distrib('3399',distributed_by,'42199').
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%	ncp/3 is needed for DLA agent to relate NIIN to commercial PN
+%	format: ncp(NIIN,CAGE,PN).
+%
+%  not go into ontology (for DLA agent)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+ncp('002010273','77342','CSJ38-70010').
+ncp('002010273','98750','X9453113-1').
+ncp('002010273','98750','X9453113').
+ncp('002010273','94696','236ACPX-1').
+ncp('002010273','94696','EX-2389').
+ncp('002010273','99193','LTCT20316-52').
+ncp('011951836','72914','SW538').
+ncp('011951836','91929','1SM1').
+ncp('005656233','70210','137-267-9001').
+ncp('005656233','77896','137-267-9001').
+ncp('005656233','77896','RM4BW').
+ncp('005656233','77896','SM4-6D8').
+ncp('004145989','25795','2Z203').
+ncp('007262754','03511','5KSP21FG3103').
+ncp('007262754','03511','5KSP21FG314GAS').
+ncp('007262754','03511','5KSP21FG3146S').
+ncp('007262754','88422','KSP21F').
+ncp('007262754','88422','5KSP29DG3103T').
+ncp('007262754','25795','3M458').
+ncp('007606205','99193','LTCT20564-01').
+ncp('007603370','77272','114E5985-10').
+ncp('007603370','81205','114E5985-10').
+ncp('008432366','77272','114PS407-1').
+ncp('008432366','98505','1129').
+ncp('008432366','81205','114PS407-1').
+ncp('012017527','25795','1P775').
+ncp('012017527','52395','1P775').
+

@@ -1,0 +1,142 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<!DOCTYPE uridef[
+  <!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns">
+  <!ENTITY rdfs    "http://www.w3.org/2000/01/rdf-schema">
+  <!ENTITY daml "http://www.daml.org/2001/03/daml+oil">
+  <!ENTITY process "http://www.daml.org/services/daml-s/2001/10/Process.daml">
+  <!ENTITY service "http://www.daml.org/services/daml-s/2001/10/Service.daml">
+  <!ENTITY profile "http://www.daml.org/services/daml-s/2001/10/Profile.daml">
+  <!ENTITY grounding "http://www.daml.org/services/daml-s/0.7/Grounding.daml">
+  <!ENTITY xsd "http://www.w3.org/2000/10/XMLSchema.xsd">
+  <!ENTITY cougaar "file://C:/cougaar/servicediscovery/data/serviceprofiles/cougaar.daml">
+]>
+ 
+<!--
+This document uses entity types as a shorthand for URIs.
+Download the source for a version with unexpanded entities.
+  -->
+ 
+<rdf:RDF
+  xmlns:rdf=     "&rdf;#"
+  xmlns:rdfs =   "&rdfs;#"
+  xmlns:daml=    "&daml;#"
+  xmlns:service= "&service;#"
+  xmlns:process= "&process;#"
+  xmlns:profile= "&profile;#"
+  xmlns:grounding="&grounding;#"
+  xmlns:xsd=     "&xsd;#"
+  xmlns:cougaar= "&cougaar;#">
+
+ 
+  <daml:Ontology about="">
+    <daml:versionInfo>
+      $Id: GRAINGER.profile.daml,v 1.1 2003-01-20 19:32:23 mthome Exp $
+    </daml:versionInfo>
+    <rdfs:comment>
+      DAML-S service profile for Grainger
+ 
+    </rdfs:comment>
+    <daml:imports rdf:resource="&rdf;" />
+    <daml:imports rdf:resource="&daml;" />
+    <daml:imports rdf:resource="&service;" />
+    <daml:imports rdf:resource="&process;" />
+    <daml:imports rdf:resource="&profile;" />
+    <daml:imports rdf:resource="&cougaar;" />
+  </daml:Ontology>
+
+  <service:Service rdf:ID="A_GRAINGER">
+    <service:presents rdf:resource="#A_GRAINGER_Profile"/>
+    <service:supports rdf:resource="#A_GRAINGER_Grounding"/>
+  </service:Service>
+
+  <cougaar:ServiceProfile rdf:ID="A_GRAINGER_Profile">
+    <service:isPresentedBy rdf:resource="#A_GRAINGER"/>
+
+
+    <cougaar:serviceCategory>
+    <cougaar:ServiceCategory>
+      <cougaar:serviceCategoryName>Motor Vehicle Supplies and New Parts Wholesalers</cougaar:serviceCategoryName>
+      <cougaar:serviceCategoryCode>42112</cougaar:serviceCategoryCode>
+      <cougaar:serviceNamingScheme>ntis-gov:naics:1997</cougaar:serviceNamingScheme>
+    </cougaar:ServiceCategory>	
+    </cougaar:serviceCategory>
+    
+    <cougaar:serviceCategory>
+    <cougaar:ServiceCategory>
+      <cougaar:serviceCategoryName>Home Furnishing Wholesalers</cougaar:serviceCategoryName>
+      <cougaar:serviceCategoryCode>42122</cougaar:serviceCategoryCode>
+      <cougaar:serviceNamingScheme>ntis-gov:naics:1997</cougaar:serviceNamingScheme>
+    </cougaar:ServiceCategory>	
+    </cougaar:serviceCategory>
+    
+    <cougaar:serviceCategory>
+    <cougaar:ServiceCategory>
+      <cougaar:serviceCategoryName>Office Equipment Wholesalers</cougaar:serviceCategoryName>
+      <cougaar:serviceCategoryCode>42142</cougaar:serviceCategoryCode>
+      <cougaar:serviceNamingScheme>ntis-gov:naics:1997</cougaar:serviceNamingScheme>
+    </cougaar:ServiceCategory>	
+    </cougaar:serviceCategory>
+    
+    <cougaar:serviceCategory>
+    <cougaar:ServiceCategory>
+      <cougaar:serviceCategoryName>Hardware, and Plumbing and Heating Equipment and Supplies Wholesalers</cougaar:serviceCategoryName>
+      <cougaar:serviceCategoryCode>4217</cougaar:serviceCategoryCode>
+      <cougaar:serviceNamingScheme>ntis-gov:naics:1997</cougaar:serviceNamingScheme>
+    </cougaar:ServiceCategory>	
+    </cougaar:serviceCategory>
+    
+    <cougaar:serviceCategory>
+    <cougaar:ServiceCategory>
+      <cougaar:serviceCategoryName>Electrical Goods Wholesalers</cougaar:serviceCategoryName>
+      <cougaar:serviceCategoryCode>4216</cougaar:serviceCategoryCode>
+      <cougaar:serviceNamingScheme>ntis-gov:naics:1997</cougaar:serviceNamingScheme>
+    </cougaar:ServiceCategory>	
+    </cougaar:serviceCategory>
+    
+    <cougaar:serviceCategory>
+    <cougaar:ServiceCategory>
+      <cougaar:serviceCategoryName>Machinery, Equipment, and Supplies Wholesalers</cougaar:serviceCategoryName>
+      <cougaar:serviceCategoryCode>4218</cougaar:serviceCategoryCode>
+      <cougaar:serviceNamingScheme>ntis-gov:naics:1997</cougaar:serviceNamingScheme>
+    </cougaar:ServiceCategory>	
+    </cougaar:serviceCategory>
+    
+    <cougaar:serviceCategory>
+    <cougaar:ServiceCategory>
+      <cougaar:serviceCategoryName>Chemical and Allied Products Wholesalers</cougaar:serviceCategoryName>
+      <cougaar:serviceCategoryCode>4226</cougaar:serviceCategoryCode>
+      <cougaar:serviceNamingScheme>ntis-gov:naics:1997</cougaar:serviceNamingScheme>
+    </cougaar:ServiceCategory>	
+    </cougaar:serviceCategory>
+    
+    <cougaar:serviceCategory>
+    <cougaar:ServiceCategory>
+      <cougaar:serviceCategoryName>Commercial Off the Shelf</cougaar:serviceCategoryName>
+      <cougaar:serviceCategoryCode>COTS</cougaar:serviceCategoryCode>
+      <cougaar:serviceNamingScheme>SourcingCapabilityScheme</cougaar:serviceNamingScheme>
+    </cougaar:ServiceCategory>	
+    </cougaar:serviceCategory>
+    
+    <profile:textDescription>
+        Grainger W W Inc.
+    </profile:textDescription>
+
+
+    <profile:providedBy>
+      <cougaar:CommercialServiceProvider>
+        <profile:name>GRAINGER</profile:name>
+      </cougaar:CommercialServiceProvider>
+    </profile:providedBy>
+    
+  </cougaar:ServiceProfile>
+
+  <cougaar:WsdlGrounding rdf:ID="A_GRAINGER_Grounding">
+  <cougaar:wsdlDocument>
+    http://localhost/GraingerWebService.wsdl
+  </cougaar:wsdlDocument>
+  <cougaar:bindingType>SOAP</cougaar:bindingType>
+    <service:isSupportedBy rdf:resource="#A_GRAINGER" />
+  </cougaar:WsdlGrounding>
+
+</rdf:RDF>
+

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions
+  xmlns="http://schemas.xmlsoap.org/wsdl/"
+  name="A_DLA-AVIATION"
+  targetNamespace="http://stout.bbn.com/~aleung/A_DLA-AVIATION.wsdl"
+  xmlns:supply="http://stout.bbn.com/~aleung/SupplyProviderCougaarGrounding.wsdl"
+  xmlns:cougaar="http://stout.bbn.com/~aleung/cougaar.wsdl" >
+
+<service name="A_DLA-AVIATION">
+  <port binding="supply:SupplyProviderCougaarBinding" name="CougaarAgentCommunicationsPort">
+    <cougaar:address agentName="DLA-AVIATION"/>
+  </port>
+</service>
+
+</definitions>

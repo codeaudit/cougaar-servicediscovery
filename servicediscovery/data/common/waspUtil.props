@@ -1,0 +1,2 @@
+org.cougaar.servicediscovery.registry.hostname=localhost
+org.cougaar.servicediscovery.registry.server.port=8080

@@ -1,0 +1,62 @@
+# This file conatins basic logging settings for ULServices.
+
+
+# Set the root category priority to WARN and add a stdout and rolling appender.
+log4j.rootCategory=WARN, stdout, rolling
+# Use this line for lumbermill (Remember to comment out the line above)
+#log4j.rootCategory=DEBUG, LogServer
+
+
+# The Cougaar logging service simply uses Log4J, so
+# for complete instructions, see the Log4J documentation
+# http://jakarta.apache.org/log4j/docs/manual.html
+
+# For details on the Cougaar logging service, see
+#  doc/details/Logging.html
+
+# To specify a custom set of logging properties, supply to your Node
+# the property:
+#  -Dorg.cougaar.core.logging.config.filename=$CIP/servicediscovery/data/common/debug.props
+
+
+
+#  ------ Configure the STDOUT Appender
+log4j.appender.stdout=org.apache.log4j.ConsoleAppender
+log4j.appender.stdout.Target=System.out
+
+# Define the STDOUT pattern to:  date level [thread] - message
+log4j.appender.stdout.layout=org.apache.log4j.PatternLayout
+log4j.appender.stdout.layout.ConversionPattern=%d{ABSOLUTE} %-5p [%c{1}] - %m%n
+#  ------ End STDOUT Appender
+
+# ----- Configure the Rolling Log File
+#
+# Configure a Rolling Log File Appender
+log4j.appender.rolling=org.apache.log4j.RollingFileAppender
+log4j.appender.rolling.File=servicediscovery.log
+
+# Define the logfile size
+log4j.appender.rolling.MaxFileSize=1024KB
+# Keep a backup file
+log4j.appender.rolling.MaxBackupIndex=1
+
+# Define the Rolling pattern to:  date level [thread] - message
+log4j.appender.rolling.layout=org.apache.log4j.PatternLayout
+log4j.appender.rolling.layout.ConversionPattern=%d{ABSOLUTE} %-5p [%C{1}] - %m%n
+#
+# ---- End Rolling Log File
+
+# ---- Configure Appender for Lumbermill
+#
+log4j.appender.LogServer=org.apache.log4j.net.SocketAppender
+log4j.appender.LogServer.Port=4445
+log4j.appender.LogServer.RemoteHost=localhost
+
+
+# You can then add lines below this to log other components at a
+# different level
+# set the level to "info" for all "org.cougaar.core.*" subpackages:
+#log4j.category.org.cougaar.core=INFO
+
+# debug your "com.foo.MyPlugin":
+#log4j.category.com.foo.MyPlugin=DEBUG
