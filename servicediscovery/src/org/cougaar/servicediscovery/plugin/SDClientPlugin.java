@@ -29,6 +29,8 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.Map;
+import java.util.HashMap;
 
 import org.cougaar.core.blackboard.IncrementalSubscription;
 import org.cougaar.core.mts.MessageAddress;
@@ -98,6 +100,7 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
 
   private boolean myFindingProviders = false;
 
+  private Map myRoles = new HashMap();
   /**
    * RFE 3162: Set to true to force a persistence as soon as the agent
    * has finished finding providers. Send a CougaarEvent announcing completion.
@@ -202,9 +205,9 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
       if ((!myFindProvidersTaskSubscription.isEmpty()) &&
 	   (needToFindProviders())) {
 	myFindingProviders = true;
-	Collection params = getDelegate().getParameters();
+        Collection roleparams = parseRoleParams();
 
-	for (Iterator iterator = params.iterator();
+	for (Iterator iterator = roleparams.iterator();
 	     iterator.hasNext();) {
 	  Role role = Role.getRole((String) iterator.next());
 	  boolean foundContract = checkProviderCompletelyCoveredOrRequested(role);
@@ -426,15 +429,55 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
     return (!(myFindingProviders) && (isActive()));
   }
 
-  // For each role in parameters, generate a service request
+  // For each role in parameters, generate a MMQueryRequest
   protected void findProviders() {
     myFindingProviders = true;
+    Collection roleparams = parseRoleParams();
+    getNumberOfProvidersPerRole();
+
+    for (Iterator iterator = roleparams.iterator();
+	 iterator.hasNext();) {
+      Role role = Role.getRole((String)iterator.next());
+      queryServices(role);
+    }
+  }
+
+  protected Collection parseRoleParams() {
+    Collection params = getDelegate().getParameters();
+    ArrayList roleparams =  new ArrayList(1);
+
+    for (Iterator iterator = params.iterator();
+	 iterator.hasNext();) {
+      String fullParam = (String)iterator.next();
+      if (fullParam.indexOf(":") > 0) {
+        roleparams.add(fullParam.substring(0,fullParam.indexOf(":")));
+      }
+      else {
+        roleparams.add(fullParam);
+      }
+   }
+    return roleparams;
+  }
+
+  protected void getNumberOfProvidersPerRole() {
     Collection params = getDelegate().getParameters();
 
     for (Iterator iterator = params.iterator();
 	 iterator.hasNext();) {
-      Role role = Role.getRole((String) iterator.next());
-      queryServices(role);
+      String fullParam = (String)iterator.next();
+      int endRoleIndex;
+      if (fullParam.indexOf(":") > 0) {
+        endRoleIndex = fullParam.indexOf(":");
+        String desiredRole = fullParam.substring(0,endRoleIndex);
+        String numProviders = fullParam.substring(endRoleIndex+1, fullParam.length());
+        if (myLoggingService.isInfoEnabled()) {
+          myLoggingService.info("numProviders desired for role "+desiredRole +" is " +numProviders);
+        }
+        Integer i = new Integer(numProviders);
+        if (i != null) {
+          myRoles.put(desiredRole,i);
+        }
+      }
     }
   }
 
@@ -442,6 +485,7 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
    * For each answered request, pick an appropriate provider
    * and send them a service request.
    * Note that input is the changed service requests only.
+   * Also need HashMap of number of providers desired for each role.
    */
   protected void generateServiceRequests(Collection mmRequests) {
     for (Iterator iterator = mmRequests.iterator();
@@ -478,7 +522,8 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
         ArrayList servicesList = new ArrayList();
         servicesList.addAll(services);
         reorderAnyTiedServiceDescriptions(servicesList);
-
+        
+        int numDesiredProviders = 1;  //default is to look for only one provider
         //Look through the service descriptions to
         //just figure out the role & time intervals you need to ask for
         for (Iterator serviceIterator = servicesList.iterator();
@@ -491,7 +536,6 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
                                    serviceDescription.getProviderName() +
                                    " score: " + serviceDescription.getScore());
           }
-
           if (role == null) {
 	    // Find the role out of the service classifications in the desc
             role = getRole(serviceDescription);
@@ -500,8 +544,17 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
 	    // intervals to be null
             intervals = getCurrentlyUncoveredIntervalsWithoutOutstandingRequests(
                 DEFAULT_START_TIME, DEFAULT_END_TIME, role);
+            // Then use role again to find out how many providers we want for this role
+            Integer desiredProviders = ((Integer)myRoles.get(role.toString()));
+            if (desiredProviders !=null){
+              numDesiredProviders = desiredProviders.intValue();
+              if (myLoggingService.isDebugEnabled()) {
+                myLoggingService.debug(getAgentIdentifier() +
+                                       " wants " +numDesiredProviders +" providers for role: " + role);
+              }
+            } 
           }
-        } //end loop finding role & intervals needed
+        } //end loop finding role & intervals needed & num providers needed
 
         if (role == null || intervals == null) {
           //error state, log a message
@@ -535,33 +588,38 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
           Iterator serviceIterator = servicesList.iterator();
           boolean madeNewRequest = false;
 
-	  // Loop over providers who might cover the interval
-          while(serviceIterator.hasNext()) {
-            ScoredServiceDescription sd = (ScoredServiceDescription) serviceIterator.next();
-            //if you have already asked this provider, skip it
-            if(alreadyAskedForContractWithProvider(role, sd.getProviderName(), currentInterval)) {
-              if (myLoggingService.isDebugEnabled()) {
-                myLoggingService.debug(getAgentIdentifier() +
-                                       " skipping " + sd.getProviderName() + " for role: " + role);
-              }
-              continue;
-            } else {
-              //remember that you found a provider to request from
-              madeNewRequest = true;
-              //do the request
-              if (myLoggingService.isDebugEnabled()) {
-                myLoggingService.debug(getAgentIdentifier() +
-                                       " requesting contract with " + sd.getProviderName() + " for role " + role);
-              }
-              requestServiceContract(sd, currentInterval);
+          for (int i =0; i < numDesiredProviders; i++) {
+         
+            // Loop over providers who might cover the interval
+            if(serviceIterator.hasNext()) {
+            //while(serviceIterator.hasNext()) {
+              ScoredServiceDescription sd = (ScoredServiceDescription) serviceIterator.next();
+              //if you have already asked this provider, skip it
+              if(alreadyAskedForContractWithProvider(role, sd.getProviderName(), currentInterval)) {
+                if (myLoggingService.isDebugEnabled()) {
+                  myLoggingService.debug(getAgentIdentifier() +
+                                         " skipping " + sd.getProviderName() + " for role: " + role);
+                }
+                continue;
+              } else {
+                //remember that you found a provider to request from
+                madeNewRequest = true;
+                //do the request
+                if (myLoggingService.isDebugEnabled()) {
+                  myLoggingService.debug(getAgentIdentifier() +
+                                         " requesting contract with " + sd.getProviderName() + " for role " + role);
+                }
+                requestServiceContract(sd, currentInterval);
 
-              //stop looking for providers for this interval, since we found one
-              break;
+                //stop looking for providers for this interval, since we found one
+                //break;
+              }
             }
-          }
+          } // end of for loop for number of desired providers
 
-          //if you were not able to find a provider to request from
-          //for this interval, take appropriate action
+          
+            //if you were not able to find a provider to request from
+            //for this interval, take appropriate action
           if(!madeNewRequest) {
             handleRequestWithNoRemainingProviderOption(role, currentInterval);
           }
@@ -570,7 +628,7 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
       // Done with the query so clean up
       // publishRemove(mmRequest);
     }//end looping through changed mm requests
-  }
+}
 
   /**
    * Modify the order of scoredServiceDescriptions so that ties are in the order
@@ -700,8 +758,8 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
     }
     //which roles do we need?
     ret = ret.concat("\n     The roles needed are: ");
-    Collection params = getDelegate().getParameters();
-    for (Iterator iterator = params.iterator();
+    Collection roleparams = parseRoleParams();
+    for (Iterator iterator = roleparams.iterator();
          iterator.hasNext();) {
       Role role = Role.getRole((String) iterator.next());
       ret = ret.concat(role + " ");
@@ -760,14 +818,14 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
       // Look to see if we've got all our contracts for roles
       // specified as plugin parameters. If any one is missing,
       // then overall confidence stays 0
-      Collection params = getDelegate().getParameters();
+      Collection roleparams = parseRoleParams();
 
       if (myLoggingService.isInfoEnabled()) {
 	myLoggingService.info(getAgentIdentifier() +
 			      " SDClient.updateFindProvidersTaskDispositions: contracts found - ");
       }
 
-      for (Iterator iterator = params.iterator();
+      for (Iterator iterator = roleparams.iterator();
 	   iterator.hasNext();) {
 	Role role = Role.getRole((String) iterator.next());
 	boolean foundContract = checkProviderCompletelyCovered(role);
@@ -809,8 +867,9 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
 	Disposition disposition =
 	  theLDMF.createDisposition(task.getPlan(), task, estResult);
         if (myLoggingService.isInfoEnabled()) {
-          myLoggingService.info(getAgentIdentifier() + " updateFindProvidersTaskDispositions: Create disposition with conf " +
-                                conf);
+          myLoggingService.info(getAgentIdentifier() 
+                                + " updateFindProvidersTaskDispositions: Create disposition with conf " 
+                                + conf);
         }
 	publishAdd(disposition);
 
@@ -820,7 +879,8 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
 	if (persistEarly && doingInitialFindProviders && conf == 1.0) {
 	  justFoundProviders = true;
 	  if (myLoggingService.isInfoEnabled())
-	    myLoggingService.info(getAgentIdentifier() + " just added a conf 1.0 dispo to findProviders while doingInitialFindProviders - going to request persistence.");
+	    myLoggingService.info(getAgentIdentifier() 
+                                  + " just added a conf 1.0 dispo to findProviders while doingInitialFindProviders - going to request persistence.");
 	}
 
       } else {
@@ -842,7 +902,8 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
 	  if (persistEarly && doingInitialFindProviders && conf == 1.0) {
 	    justFoundProviders = true;
 	    if (myLoggingService.isInfoEnabled())
-	      myLoggingService.info(getAgentIdentifier() + " just changed findProviders dispo to 1.0 while doingInitialFindProviders - going to request persistence.");
+	      myLoggingService.info(getAgentIdentifier() 
+                                    + " just changed findProviders dispo to 1.0 while doingInitialFindProviders - going to request persistence.");
 	  }
 
 	}
@@ -924,10 +985,4 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
     return Collections.EMPTY_SET;
   }
 }
-
-
-
-
-
-
 
