@@ -22,16 +22,18 @@
 
 package org.cougaar.servicediscovery.description;
 
+public interface ServiceInfoScorer {
 
-
-/**
- * The ScoredServiceDescription associates a int score with a 
- * ServiceDescription.
- */
-
-public interface ScoredServiceDescription extends ServiceDescription, Comparable {
-
-  public int getScore();
-
+  /**
+   * Will be called by Matchmaker for each ServiceInfo. Returned score will
+   * be added to the ScoredServiceDescription associated with the Service.
+   * 
+   * @return int representing score. Client responsible for 
+   * understanding the precise value. Current usage assumes lowest value > 0
+   * is the best. Values less than 0 are not suitable.
+   * 
+   */
+  int scoreServiceInfo(ServiceInfo serviceInfo);
 }
+
 

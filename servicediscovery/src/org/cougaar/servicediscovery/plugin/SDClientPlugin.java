@@ -51,12 +51,19 @@ import org.cougaar.planning.ldm.plan.Task;
 import org.cougaar.planning.ldm.plan.TimeAspectValue;
 import org.cougaar.planning.plugin.legacy.SimplePlugin;
 import org.cougaar.planning.plugin.util.PluginHelper;
+
 import org.cougaar.servicediscovery.SDDomain;
 import org.cougaar.servicediscovery.SDFactory;
+import org.cougaar.servicediscovery.description.LineageEchelonScorer;
+import org.cougaar.servicediscovery.description.LineageList;
+import org.cougaar.servicediscovery.description.LineageListWrapper;
 import org.cougaar.servicediscovery.description.MMRoleQuery;
+import org.cougaar.servicediscovery.description.ProviderCapabilities;
+import org.cougaar.servicediscovery.description.ProviderCapability;
 import org.cougaar.servicediscovery.description.ScoredServiceDescription;
 import org.cougaar.servicediscovery.description.ServiceClassification;
 import org.cougaar.servicediscovery.description.ServiceDescription;
+import org.cougaar.servicediscovery.description.ServiceInfoScorer;
 import org.cougaar.servicediscovery.description.ServiceRequest;
 import org.cougaar.servicediscovery.description.TimeInterval;
 import org.cougaar.servicediscovery.transaction.MMQueryRequest;
@@ -79,6 +86,7 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
   private IncrementalSubscription myMMRequestSubscription;
   protected IncrementalSubscription myServiceContractRelaySubscription;
   private IncrementalSubscription myFindProvidersTaskSubscription;
+  private IncrementalSubscription myLineageListSubscription;
 
   /** for knowing when we get our self org asset **/
   private Organization mySelfOrg = null;
@@ -140,6 +148,20 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
     }
   };
 
+  private static UnaryPredicate myLineageListPred = new UnaryPredicate() {
+    public boolean execute(Object o) {
+      return ((o instanceof LineageListWrapper) &&
+	      (((LineageListWrapper) o).getType() == LineageList.COMMAND));
+    }
+  };
+
+  private UnaryPredicate myProviderCapabilitiesPred = 
+  new UnaryPredicate() {
+    public boolean execute(Object o) {
+      return (o instanceof ProviderCapabilities);
+    }
+  };
+
 
   private static Calendar myCalendar = Calendar.getInstance();
 
@@ -159,10 +181,10 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
 
 
   protected void setupSubscriptions() {
-    mySelfOrgSubscription = (IncrementalSubscription)subscribe(mySelfOrgPred);
-    myMMRequestSubscription = (IncrementalSubscription)subscribe(myMMRequestPred);
-    myServiceContractRelaySubscription = (IncrementalSubscription)subscribe(myServiceContractRelayPred);
-    myFindProvidersTaskSubscription = (IncrementalSubscription)subscribe(myFindProvidersTaskPred);
+    mySelfOrgSubscription = (IncrementalSubscription) subscribe(mySelfOrgPred);
+    myMMRequestSubscription = (IncrementalSubscription) subscribe(myMMRequestPred);
+    myServiceContractRelaySubscription = (IncrementalSubscription) subscribe(myServiceContractRelayPred);
+    myFindProvidersTaskSubscription = (IncrementalSubscription) subscribe(myFindProvidersTaskPred);
 
     myLoggingService =
       (LoggingService) getBindingSite().getServiceBroker().getService(this, LoggingService.class, null);
@@ -299,27 +321,77 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
     return mySelfOrg;
   }
 
-  /**
-   * create and publish a MMQueryRequest for this role
-   */
-  protected void queryServices(Role role) {
-    queryServices(role, null, null);
+  protected String getMinimumEchelon(Role role) {
+    Collection collection = 
+      getBlackboardService().query(myProviderCapabilitiesPred);
+    
+    ProviderCapabilities capabilities = null;
+    if (collection.size() > 0) {
+      Iterator iterator = collection.iterator();
+      capabilities = (ProviderCapabilities) iterator.next();
+      if (iterator.hasNext()) {
+	myLoggingService.warn(getAgentIdentifier() + 
+			      " getMinimumEchelon: multiple ProviderCapabilities found." +
+			      " Using - " + capabilities);
+      }
+    }
+
+    return LineageEchelonScorer.getMinimumEchelonOfSupport(capabilities, role);
+  }
+
+  protected LineageListWrapper getCommandLineageList() {
+    Collection collection = 
+      getBlackboardService().query(myLineageListPred);
+    
+    if (collection.size() > 0) {
+      Iterator iterator = collection.iterator();
+      LineageListWrapper commandListWrapper = 
+	(LineageListWrapper) iterator.next();
+
+      if (iterator.hasNext()) {
+	myLoggingService.warn(getAgentIdentifier() + 
+			      " getCommandLineageList: multiple COMMAND LineageLists found." +
+			      " Using - " + commandListWrapper);
+      }
+      
+      return commandListWrapper;
+    }
+
+    return null;
   }
 
   /**
    * create and publish a MMQueryRequest for this role
    */
-  protected void queryServices(Role role, String echelon, 
-			       UnaryPredicate clientPredicate) {
+  protected void queryServices(Role role) {
+    String minimumEchelon = getMinimumEchelon(role);
+
+    LineageListWrapper commandListWrapper = getCommandLineageList();
+
+    if (commandListWrapper != null) {
+      LineageEchelonScorer scorer = 
+	new LineageEchelonScorer(commandListWrapper,
+				 minimumEchelon,
+				 role);
+      queryServices(role, scorer);
+    } else {
+      myLoggingService.error(getAgentIdentifier() + 
+			     " queryServices: no COMMAND LineageList on blackboard." + 
+			     " Unable to generate MMRoleQuery for " + role);
+    }
+  }
+
+  /**
+   * create and publish a MMQueryRequest for this role
+   */
+  protected void queryServices(Role role, ServiceInfoScorer scorer) {
     if (myLoggingService.isDebugEnabled()) {
       myLoggingService.debug(getAgentIdentifier() +
 			     " asking MatchMaker for role : " + role +
-			     " - echelon: " + echelon + 
-			     " - clientPredicate: " + clientPredicate);
+			     " - serviceInfoScorer : " + scorer);
     }
     MMQueryRequest mmRequest =
-        mySDFactory.newMMQueryRequest(new MMRoleQuery(role, echelon, 
-						      clientPredicate));
+        mySDFactory.newMMQueryRequest(new MMRoleQuery(role, scorer));
     publishAdd(mmRequest);
   }
 

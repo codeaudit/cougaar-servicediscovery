@@ -22,32 +22,32 @@
 
 package org.cougaar.servicediscovery.description;
 import org.cougaar.planning.ldm.plan.Role;
-import org.cougaar.util.UnaryPredicate;
+
+import org.cougaar.util.log.Logger;
+import org.cougaar.util.log.Logging;
+import org.cougaar.util.TimeSpan;
 
 public class MMRoleQuery implements MMQuery, java.io.Serializable {
+  private static Logger logger = Logging.getLogger(MMRoleQuery.class);
   private Role myRole = null;
-  private String myEchelon = null;
-  private UnaryPredicate myPredicate = DEFAULT_PREDICATE;
+  private TimeSpan myTimeSpan = null;
+  private ServiceInfoScorer myServiceInfoScorer = null;
 
-  private static UnaryPredicate DEFAULT_PREDICATE = new UnaryPredicate() {
-    public boolean execute(Object o) {
-      return true;
+  private static ServiceInfoScorer DEFAULT_SCORER = new ServiceInfoScorer() {
+    public int scoreServiceInfo(ServiceInfo serviceInfo) {
+      return -1;
     }
   };
 
-  public MMRoleQuery(Role role) {
+  public MMRoleQuery(Role role, ServiceInfoScorer serviceInfoScorer) {
     myRole = role;
+    myServiceInfoScorer = serviceInfoScorer;
   }
 
-  public MMRoleQuery(Role role, String eos) {
-    myRole = role;
-    myEchelon = eos;
-  }
-
-  public MMRoleQuery(Role role, String eos, UnaryPredicate predicate) {
-    myRole = role;
-    myEchelon = eos;
-    setPredicate(predicate);
+  public MMRoleQuery(Role role, ServiceInfoScorer serviceInfoScorer,
+		     TimeSpan timeSpan) {
+    this(role, serviceInfoScorer);
+    myTimeSpan = timeSpan;
   }
 
   public MMRoleQuery() {
@@ -55,35 +55,51 @@ public class MMRoleQuery implements MMQuery, java.io.Serializable {
   }
 
   public void setRole(Role role) {
-    myRole = role;
+    if (role != null) {
+      logger.warn("setRole: ignoring attempt to change Role from " + 
+		  myRole + " to " + role);
+    } else {
+      myRole = role;
+    }
   }
 
   public Role getRole() {
     return myRole;
   }
 
-  public void setEchelon(String eos) {
-    myEchelon = eos;
-  }
-
-  public String getEchelon() {
-    return myEchelon;
-  }
-
-  public UnaryPredicate getPredicate() {
-    return myPredicate;
-  }
-
-  public void setPredicate(UnaryPredicate predicate) {
-    if (predicate == null) {
-      myPredicate = DEFAULT_PREDICATE;
+  public void setTimeSpan(TimeSpan timeSpan) {
+    if (timeSpan != null) {
+      logger.warn("setTimeSpan: ignoring attempt to change TimeSpan from " + 
+		  myTimeSpan + " to " + timeSpan);
     } else {
-      myPredicate = predicate;
+    myTimeSpan = timeSpan;
+    }
+  }
+
+  public TimeSpan getTimeSpan() {
+    return myTimeSpan;
+  }
+
+  public ServiceInfoScorer getServiceInfoScorer() {
+    if (myServiceInfoScorer == null) {
+      return DEFAULT_SCORER;
+    } else {
+      return myServiceInfoScorer;
+    }
+  }
+
+  public void setServiceInfoScorer(ServiceInfoScorer serviceInfoScorer) {
+    if (myServiceInfoScorer != null) {
+      logger.warn("setServiceInfoScorer: ignoring attempt to change ServiceInfoScorer from " + 
+		  myServiceInfoScorer + " to " + serviceInfoScorer);
+    } else {
+      myServiceInfoScorer = serviceInfoScorer;
     }
   }
 
   public String toString() {
-    return "Role: " + myRole + ", Echelon: " + myEchelon;
+    return "Role: " + myRole + " ServiceInfoScorer: " + myServiceInfoScorer +
+      " TimeSpan: " + myTimeSpan;
   }
 }
 

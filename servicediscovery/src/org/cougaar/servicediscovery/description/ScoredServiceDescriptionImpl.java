@@ -27,24 +27,24 @@ import org.cougaar.util.log.Logging;
 
 
 /**
- * The ScoredServiceDescription associates a float score with a 
+ * The ScoredServiceDescription associates an int score with a 
  * ServiceDescription.
- * Uses Float.MIN_VALUE to indicate an uninitialized score.
+ * Uses Integer.MIN_VALUE to indicate an uninitialized score.
  */
 
 public class ScoredServiceDescriptionImpl extends ServiceDescriptionImpl 
 implements ScoredServiceDescription {
-  private static float UNDEFINED = Float.MIN_VALUE;
+  private static int UNDEFINED = Integer.MIN_VALUE;
   private static Logger logger = 
     Logging.getLogger(ScoredServiceDescriptionImpl.class);  
 
-  private float myScore = Float.MIN_VALUE;
+  private int myScore = UNDEFINED;
 
   public ScoredServiceDescriptionImpl() {
     super();
   }
 
-  public ScoredServiceDescriptionImpl(float score, 
+  public ScoredServiceDescriptionImpl(int score, 
 				      ServiceInfo serviceInfo) {
     super(serviceInfo);
     
@@ -55,7 +55,7 @@ implements ScoredServiceDescription {
    * returns the score (presumably set by the MatchMaker) associated with
    * this ServiceDescription
    */
-  public float getScore() {
+  public int getScore() {
     return myScore;
   }
 
@@ -63,7 +63,7 @@ implements ScoredServiceDescription {
    * sets the score associated with this ServiceDescription.
    * Score can only be set once.
    */
-  public void setScore(float score) {
+  public void setScore(int score) {
     if (myScore > UNDEFINED) {
       logger.error("Attempt to reset score.");
     } else {

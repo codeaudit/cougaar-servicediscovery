@@ -469,7 +469,7 @@ public class MatchMakerQueryServlet
                     "</th></tr>\n" +
                     "<tr>" +
                     "<th>UID</th>" +
-                    "<th>Echelon</th>" +
+                    "<th>Minimum Echelon</th>" +
                     "<th>Class Code</th>" +
                     "<th>Class Scheme</th>" +
                     "<th>Has Result?</th>" +

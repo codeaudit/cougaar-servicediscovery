@@ -35,11 +35,7 @@ import org.cougaar.core.service.QuiescenceReportService;
 import org.cougaar.planning.ldm.plan.Role;
 import org.cougaar.planning.plugin.legacy.SimplePlugin;
 import org.cougaar.servicediscovery.Constants;
-import org.cougaar.servicediscovery.description.LineageList;
-import org.cougaar.servicediscovery.description.LineageListWrapper;
 import org.cougaar.servicediscovery.description.MMRoleQuery;
-import org.cougaar.servicediscovery.description.ProviderCapabilities;
-import org.cougaar.servicediscovery.description.ProviderCapability;
 import org.cougaar.servicediscovery.description.ScoredServiceDescriptionImpl;
 import org.cougaar.servicediscovery.description.ServiceClassification;
 import org.cougaar.servicediscovery.description.ServiceClassificationImpl;
@@ -71,7 +67,6 @@ public class MatchmakerStubPlugin extends SimplePlugin {
   private QuiescenceReportService qrs;
   private AgentIdentificationService ais;
   private IncrementalSubscription clientRequestSub;
-  private IncrementalSubscription lineageListSub;
 
   // outstanding RQ are those which have been issued but have not yet returned
   private ArrayList outstandingRQs = new ArrayList();
@@ -90,27 +85,6 @@ public class MatchmakerStubPlugin extends SimplePlugin {
         return false;
       }
     };
-
-  private UnaryPredicate lineageListPredicate = new UnaryPredicate() {
-    public boolean execute(Object o) {
-      return ((o instanceof LineageListWrapper) &&
-	      (((LineageListWrapper) o).getType() == LineageList.COMMAND));
-    }
-  };
-
-
-  private UnaryPredicate providerCapabilitiesPredicate = 
-  new UnaryPredicate() {
-    public boolean execute(Object o) {
-      if (o instanceof ProviderCapabilities) {
-	ProviderCapabilities providerCapabilities = (ProviderCapabilities) o;
-	return (providerCapabilities.getProviderName().equals(agentName));
-      } else {
-	return false;
-      }
-    }
-  };
-
 
   public void load() {
     super.load();
@@ -172,8 +146,6 @@ public class MatchmakerStubPlugin extends SimplePlugin {
     agentName = getBindingSite().getAgentIdentifier().toString();
 
     clientRequestSub = (IncrementalSubscription) subscribe(queryRequestPredicate);
-    lineageListSub = (IncrementalSubscription) subscribe(lineageListPredicate);
-
     Collection params = getDelegate().getParameters();
     if (params.size() > 0) {
       usingCommunities =
@@ -237,139 +209,6 @@ public class MatchmakerStubPlugin extends SimplePlugin {
     }
   }
 
-  protected float scoreServiceProvider(ServiceInfo serviceInfo,
-				       String requestedEchelonOfSupport) {
-    int echelonScore = getEchelonScore(serviceInfo, requestedEchelonOfSupport);
-
-    if (log.isDebugEnabled()) {
-      log.debug("scoreServiceProvider: echelon score " + echelonScore);
-    }
-    if (echelonScore < 0) {
-      return -1;
-    }
-
-    int lineageScore = getLineageScore(serviceInfo);
-    if (log.isDebugEnabled()) {
-      log.debug("scoreServiceProvider: lineage score " + lineageScore);
-    }
-    if (lineageScore < 0) {
-      return -1;
-    } else {
-      lineageScore = 100 * lineageScore;
-    }
-
-    return echelonScore + lineageScore;
-  }
-
-  protected int getEchelonScore(ServiceInfo serviceInfo,
-				String requestedEchelonOfSupport) {
-    int requestedEchelonOrder =
-      Constants.MilitaryEchelon.echelonOrder(requestedEchelonOfSupport);
-
-    if (requestedEchelonOrder == -1) {
-      if (log.isWarnEnabled())
-	log.warn(getAgentIdentifier() + " getEchelonScore() - invalid echelon " + requestedEchelonOfSupport);
-      return 0;
-    }
-
-    int serviceEchelonOrder = -1;
-
-    for (Iterator iterator = serviceInfo.getServiceClassifications().iterator();
-	 iterator.hasNext();) {
-      ServiceClassification classification =
-	(ServiceClassification) iterator.next();
-      if (classification.getClassificationSchemeName().equals(UDDIConstants.MILITARY_ECHELON_SCHEME)) {
-
-	String serviceEchelon = classification.getClassificationCode();
-	serviceEchelonOrder =
-	  Constants.MilitaryEchelon.echelonOrder(serviceEchelon);
-	break;
-      }
-    }
-
-    if (serviceEchelonOrder == -1) {
-      if (log.isInfoEnabled()) {
-	log.info(agentName + ": Ignoring service with a bad echelon of support: " +
-		  serviceEchelonOrder + " for provider: " + serviceInfo.getProviderName());
-      }
-      return -1;
-    } if (serviceEchelonOrder < requestedEchelonOrder) {
-      if (log.isInfoEnabled()) {
-	log.info(agentName + ": Ignoring service with a lower echelon of support: " +
-		  serviceEchelonOrder + " for provider: " + serviceInfo.getProviderName());
-      }
-      return -1;
-    } else {
-      return (serviceEchelonOrder - requestedEchelonOrder);
-    }
-  }
-
-  protected int getLineageScore(ServiceInfo serviceInfo) {
-    LineageListWrapper commandLineageWrapper = null;
-
-    for (Iterator iterator = lineageListSub.iterator();
-	 iterator.hasNext();) {
-      commandLineageWrapper = (LineageListWrapper) iterator.next();
-    }
-
-    if (commandLineageWrapper == null) {
-      if (log.isWarnEnabled()) {
-        log.warn(agentName + ": in getLineageScore, has no command lineage");
-      }
-      return -1;
-    }
-
-    //if there are multiple SCAs, return the minimum distance
-    //among them
-    int minHops = Integer.MAX_VALUE;
-
-    for (Iterator iterator = serviceInfo.getServiceClassifications().iterator();
-	 iterator.hasNext();) {
-      ServiceClassification classification =
-	(ServiceClassification) iterator.next();
-      if (classification.getClassificationSchemeName().equals(UDDIConstants.SUPPORT_COMMAND_ASSIGNMENT)) {
-	int hops = 
-	  commandLineageWrapper.countHops(agentName,
-					  classification.getClassificationName());
-	if (hops != -1) {
-	  minHops = Math.min(minHops, hops);
-	}
-      }
-    }
-
-    if(minHops == Integer.MAX_VALUE) {
-      if (log.isInfoEnabled()) {
-        log.info(agentName + ": in getLineageScore, does not intersect with provider's lineage "+
-                 " for provider " + serviceInfo.getProviderName());
-      }
-      return -1;
-    }
-    else
-      return minHops;
-  }
-
-  protected String getRequestedEchelonOfSupport(Role role) {
-    Collection pcCollection = query(providerCapabilitiesPredicate);
-    int providedEchelonIndex = -1;
-
-    for (Iterator iterator = pcCollection.iterator();
-	 iterator.hasNext();) {
-      ProviderCapabilities capabilities = 
-	(ProviderCapabilities) iterator.next();
-
-      ProviderCapability providerCapability = 
-	  capabilities.getCapability(role);
-      
-      if (providerCapability != null) {
-	providedEchelonIndex = 
-	  Constants.MilitaryEchelon.echelonOrder(providerCapability.getEchelon());
-	break;
-      }
-    }
-    
-    return Constants.MilitaryEchelon.ECHELON_ORDER[providedEchelonIndex + 1];
-  }
-
   protected void handleException(RQ r) {
     retryErrorLog(r, getAgentIdentifier() +
       " Exception querying registry for " +
@@ -420,6 +259,7 @@ public class MatchmakerStubPlugin extends SimplePlugin {
       log.debug(agentName + " registry query result size is : " + services.size() + " for query: " + query.getRole().toString());
     }
 
+    /*
     String echelon = query.getEchelon();
     if ((query.getEchelon() == null) ||
 	(query.getEchelon().equals(""))) {
@@ -430,27 +270,12 @@ public class MatchmakerStubPlugin extends SimplePlugin {
       log.debug(getAgentIdentifier() + " looking for " +
 		query.getRole() + " at " + echelon + " level");
     }
+    */
 
     ArrayList scoredServiceDescriptions = new ArrayList();
     for (Iterator iter = services.iterator(); iter.hasNext(); ) {
       ServiceInfo serviceInfo = (ServiceInfo) iter.next();
-      
-      if (!query.getPredicate().execute(serviceInfo)) {
-	if (log.isDebugEnabled()) {
-	  log.debug(agentName + ":execute: query predicate rejected " +
-		    " Provider name:" + serviceInfo.getProviderName() +
-		    " for Service name: " + serviceInfo.getServiceName());
-	}
-	continue;
-      } else {
-	if (log.isDebugEnabled()) {
-	  log.debug(agentName + ":execute: query predicate accepted " +
-		    " Provider name:" + serviceInfo.getProviderName() +
-		    " for Service name: " + serviceInfo.getServiceName());
-	}
-      }
-	
-      float score = scoreServiceProvider(serviceInfo, echelon);
+      int score = query.getServiceInfoScorer().scoreServiceInfo(serviceInfo);
 
       if (score >= 0) {
 	scoredServiceDescriptions.add(new ScoredServiceDescriptionImpl(score,

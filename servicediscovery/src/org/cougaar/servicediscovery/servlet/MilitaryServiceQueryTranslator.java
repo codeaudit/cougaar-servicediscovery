@@ -22,6 +22,7 @@
 
 package org.cougaar.servicediscovery.servlet;
 
+import org.cougaar.servicediscovery.description.LineageEchelonScorer;
 import org.cougaar.servicediscovery.description.MMRoleQuery;
 import org.cougaar.servicediscovery.transaction.MMQueryRequest;
 import org.cougaar.servicediscovery.util.UDDIConstants;
@@ -42,7 +43,7 @@ import org.cougaar.servicediscovery.util.UDDIConstants;
 public class MilitaryServiceQueryTranslator extends QueryToHTMLTranslator {
 
     private String clientName;
-    private String echelon;
+    private String minimumEchelon;
     private String classCode;
     private String classScheme;
     private float lineageRelaxationPenalty;
@@ -52,12 +53,12 @@ public class MilitaryServiceQueryTranslator extends QueryToHTMLTranslator {
 
 
     public MilitaryServiceQueryTranslator(String aClientName,
-                                          String anEchelon,
+                                          String anMinimumEchelon,
                                           String aClassCode,
                                           String aClassScheme,
                                           float relaxationPenalty) {
         clientName = aClientName;
-        echelon = anEchelon;
+        minimumEchelon = anMinimumEchelon;
         classCode = aClassCode;
         classScheme = aClassScheme;
         lineageRelaxationPenalty = relaxationPenalty;
@@ -68,8 +69,8 @@ public class MilitaryServiceQueryTranslator extends QueryToHTMLTranslator {
         return clientName;
     }
 
-    public String getEchelon() {
-        return echelon;
+    public String getMinimumEchelon() {
+        return minimumEchelon;
     }
 
     public String getClassCode() {
@@ -90,7 +91,7 @@ public class MilitaryServiceQueryTranslator extends QueryToHTMLTranslator {
 
     public String toString() {
         return ("MilitaryServiceQueryTranslator - clientName=" + clientName +
-                " echelon=" + echelon + " classCode=" + classCode +
+                " minimumEchelon=" + minimumEchelon + " classCode=" + classCode +
                 " classScheme=" + classScheme + " lineageRelaxationPenalty=" +
                 lineageRelaxationPenalty);
     }
@@ -116,7 +117,7 @@ public class MilitaryServiceQueryTranslator extends QueryToHTMLTranslator {
     }
 
     public String getHTMLQueryText() {
-        return ("Find " + getEchelon() + "-level of type " +
+        return ("Find " + getMinimumEchelon() + "-level or higher of type " +
                 getClassCode() + " (using " +
                 getClassScheme() + ")");
     }
@@ -171,7 +172,12 @@ public class MilitaryServiceQueryTranslator extends QueryToHTMLTranslator {
 
     public static MilitaryServiceQueryTranslator
                 createFromMMRoleQuery(MMRoleQuery rq){
-        return new MilitaryServiceQueryTranslator(null,rq.getEchelon(),
+	String minimumEchelon = "";
+	if (rq.getServiceInfoScorer() instanceof LineageEchelonScorer) {
+	  minimumEchelon = 
+	    ((LineageEchelonScorer) rq.getServiceInfoScorer()).getMinimumEchelon();
+	}
+        return new MilitaryServiceQueryTranslator(null, minimumEchelon,
                                                   rq.getRole().getName(),
                                                   UDDIConstants.MILITARY_SERVICE_SCHEME,
                                                   10);
