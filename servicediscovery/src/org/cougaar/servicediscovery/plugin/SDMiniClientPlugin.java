@@ -31,17 +31,30 @@ import org.cougaar.glm.ldm.Constants;
 import org.cougaar.planning.ldm.PlanningDomain;
 import org.cougaar.planning.ldm.PlanningFactory;
 import org.cougaar.planning.ldm.plan.NewTask;
-import org.cougaar.planning.ldm.plan.Task;
 import org.cougaar.planning.ldm.plan.Verb;
 
 /**
- * Publishes the FindProviders task. Intended for use only with the 
- * MiniNode configuration.
+ * Self publishes the FindProviders task. Uses a timer to defer publication so that
+ * yp queries occur after registration has completed.
+ * Intended for use only with the MiniNode configuration.
  */
 public class SDMiniClientPlugin extends SDClientPlugin {
   protected boolean publishedFindProviders = false;
+  
+  public void load() {
+    super.load();
+
+    setExecutionDelay(60000L, 120000L);
+  }
+
+  boolean woken = false;
 
   public void execute() {
+    if (!woken) {
+      wake();
+      woken = false;
+    }
+
     if (!publishedFindProviders) {
       DomainService domainService = (DomainService) getBindingSite().getServiceBroker().getService(this, DomainService.class, null);
 
