@@ -25,6 +25,7 @@ import org.cougaar.core.component.BindingSite;
 import org.cougaar.core.component.Component;
 import org.cougaar.core.component.ServiceBroker;
 import org.cougaar.core.component.ServiceProvider;
+import org.cougaar.core.service.AgentIdentificationService;
 import org.cougaar.core.service.LoggingService;
 import org.cougaar.core.service.UIDService;
 import org.cougaar.servicediscovery.description.*;
@@ -65,6 +66,7 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
   protected YPService ypService;
   private RegistryQueryServiceProviderImpl mySP;
   private UIDService uidService;
+  private AgentIdentificationService agentIdentificationService;
   private ServiceBroker sb;
 
   public void setBindingSite(BindingSite bs) {
@@ -93,9 +95,17 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
       throw new RuntimeException("Unable to obtain YPService");
     }
 
+    this.agentIdentificationService = 
+      (AgentIdentificationService) sb.getService(this, AgentIdentificationService.class, null);
+    if (agentIdentificationService == null) {
+      throw new RuntimeException("Unable to obtain AgentIdentificationService");
+    }
+
     // create and advertise the service
     this.mySP = new RegistryQueryServiceProviderImpl();
     sb.addService(RegistryQueryService.class, mySP);
+
+
   }
 
   public void unload() {
@@ -114,6 +124,17 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
       sb.releaseService(this, LoggingService.class, log);
       log = null;
     }
+
+    if (agentIdentificationService != null) {
+      sb.releaseService(this, AgentIdentificationService.class, agentIdentificationService);
+      agentIdentificationService = null;
+    }
+
+    if (ypService != null) {
+      sb.releaseService(this, YPService.class, ypService);
+      ypService = null;
+    }
+
     super.unload();
   }
 
@@ -157,6 +178,12 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
       // Define connection configuratio+n properties.
       String ypAgent = System.getProperty("org.cougaar.yp.ypAgent");
 
+      if ((ypAgent == null) || ypAgent.equals("")) {
+	proxy = null;
+	log.error(agentIdentificationService.getMessageAddress() + 
+		  ": ypAgent not identified.");
+	return false;
+      }
       proxy = ypService.getYP(ypAgent);
 
       return true;

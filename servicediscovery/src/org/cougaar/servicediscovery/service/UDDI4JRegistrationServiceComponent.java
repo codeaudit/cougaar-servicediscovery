@@ -264,7 +264,12 @@ public final class UDDI4JRegistrationServiceComponent
     private boolean makeProxy() {
       // Define configuration properties.
       String ypAgent = System.getProperty("org.cougaar.yp.ypAgent");
-
+      
+      if ((ypAgent == null) || ypAgent.equals("")) {
+	proxy = null;
+	log.error("ypAgent not identified.");
+	return false;
+      }
       proxy = ypService.getYP(ypAgent);
 
       initAuthToken(proxy);
