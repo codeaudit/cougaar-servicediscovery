@@ -32,10 +32,11 @@ import org.cougaar.util.log.Logging;
 public class MMQueryRequestImpl implements NewMMQueryRequest, java.io.Serializable {
   private static Logger myLogger = Logging.getLogger(MMQueryRequestImpl.class);
 
-  private MMQuery myQuery;
-  private UID myUID;
-  private Collection myResult;
-  private int myResultCode;
+  private MMQuery myQuery = null;
+  private UID myUID = null;
+  private Collection myResult = null;
+  private int myResultCode = 0;
+  private int myQueryCount = 0;
 
   public MMQueryRequestImpl(MMQuery mmQuery) {
     myQuery = mmQuery;
@@ -53,6 +54,14 @@ public class MMQueryRequestImpl implements NewMMQueryRequest, java.io.Serializab
 
   public  MMQuery getQuery() {
     return myQuery;
+  }
+
+  public void setQueryCount(int queryCount) {
+    myQueryCount = queryCount;
+  }
+
+  public int getQueryCount() {
+    return myQueryCount;
   }
 
   public void setResult(Collection result) {
@@ -86,4 +95,8 @@ public class MMQueryRequestImpl implements NewMMQueryRequest, java.io.Serializab
     return myUID;
   }
 }
+
+
+
+
 

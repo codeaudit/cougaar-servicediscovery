@@ -30,6 +30,8 @@ public interface NewMMQueryRequest extends MMQueryRequest {
 
   public void setQuery(MMQuery mmQuery);
 
+  public void setQueryCount(int queryCount);
+
   public void setResult(Collection result);
 
   public void setResultCode(int resultCode);

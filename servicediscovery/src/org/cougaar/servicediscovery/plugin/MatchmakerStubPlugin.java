@@ -485,19 +485,19 @@ public final class MatchmakerStubPlugin extends SimplePlugin {
 		      query.getRole() +
 		      ", publishing empty query result. " +
 		      "Will try query again later.");
-	((MMQueryRequestImpl) queryRequest).setResult(scoredServiceDescriptions);
-	getBlackboardService().publishChange(queryRequest);
-	if(log.isDebugEnabled()) {
-	  log.debug(agentName + ": publishChanged query");
-	}
+
       }
     } else {
       Collections.sort(scoredServiceDescriptions);
-      ((MMQueryRequestImpl) queryRequest).setResult(scoredServiceDescriptions);
-      getBlackboardService().publishChange(queryRequest);
-      if(log.isDebugEnabled()) {
-	log.debug(agentName + ": publishChanged query");
-      }
+    }
+
+
+    ((MMQueryRequestImpl) queryRequest).setResult(scoredServiceDescriptions);
+    ((MMQueryRequestImpl) queryRequest).setQueryCount(queryRequest.getQueryCount() + 1);
+    getBlackboardService().publishChange(queryRequest);
+
+    if(log.isDebugEnabled()) {
+      log.debug(agentName + ": publishChanged query");
     }
   }
 

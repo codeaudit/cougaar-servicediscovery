@@ -31,6 +31,8 @@ public interface MMQueryRequest extends java.io.Serializable, UniqueObject {
 
   public MMQuery getQuery();
 
+  public int getQueryCount();
+
   public Collection getResult();
 
   public int getResultCode();
