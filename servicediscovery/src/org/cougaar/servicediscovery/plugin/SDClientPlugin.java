@@ -440,20 +440,36 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
     String minimumEchelon = getMinimumEchelon(role);
 
     Collection opconLineages = getOPCONSchedule().intersectingSet(timeSpan);
-    if (myLoggingService.isDebugEnabled()) {
-      myLoggingService.debug(getAgentIdentifier() +
-			     ": queryServices() OPCON schedule = " + getOPCONSchedule() +
-			     " OPCON schedule intersectingSet = " + opconLineages);
-    }
     
     
     if (opconLineages.size() == 0) {
-      myLoggingService.error(getAgentIdentifier() + 
+      myLoggingService.debug(getAgentIdentifier() + 
 			     ": queryServices: no OPCON Lineage on blackboard" +
 			     "for requested time span - " + 
 			     timeSpan.getStartTime() + " to " +
 			     timeSpan.getEndTime() +
-			     ". Unable to generate MMRoleQuery for " + role);
+			     ". Making single element OPCON lineage.");
+
+      // Build a 1 node opcon list
+      ArrayList list = new ArrayList();
+      list.add(getAgentIdentifier().toString());
+      MutableTimeSpan defaultTimeSpan = new MutableTimeSpan();
+      defaultTimeSpan.setTimeSpan(SDFactory.DEFAULT_START_TIME,
+				  SDFactory.DEFAULT_END_TIME);
+
+      LineageTimeSpan lineageTimeSpan = 
+	new LineageTimeSpan(mySDFactory.newLineage(Lineage.OPCON,
+						   list,
+						   defaultTimeSpan),
+			    defaultTimeSpan);
+      opconLineages = new ArrayList();
+      opconLineages.add(lineageTimeSpan);
+    }
+
+    if (myLoggingService.isDebugEnabled()) {
+      myLoggingService.debug(getAgentIdentifier() +
+			     ": queryServices() OPCON schedule = " + getOPCONSchedule() +
+			     " OPCON schedule intersectingSet = " + opconLineages);
     }
     
     for (Iterator iterator = opconLineages.iterator();

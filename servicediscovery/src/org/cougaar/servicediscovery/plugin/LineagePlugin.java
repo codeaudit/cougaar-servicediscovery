@@ -133,6 +133,7 @@ public class LineagePlugin extends SimplePlugin
     myExecuteAdds = new ArrayList();
     myExecuteRemoves = new ArrayList();
     myExecuteChanges = new ArrayList();
+
   }
 
   public void execute() {
@@ -202,7 +203,7 @@ public class LineagePlugin extends SimplePlugin
     if (myLineageSubscription.hasChanged()) {
       if (myLoggingService.isDebugEnabled()) {
 	myLoggingService.debug(myAgentName +
-			       " lineage list subscription has changed.");
+			       ":execute lineage list subscription has changed.");
       }
       updateSubordinates();
     }
@@ -597,14 +598,17 @@ public class LineagePlugin extends SimplePlugin
       if (localLineage.getType() == Lineage.OPCON) {
 	opconFound = true;
       }
-
     }
 
     if (!adconFound) {
+      myLoggingService.warn(myAgentName + 
+                            ":updateSubordinate local ADCON Lineage not found");
       lineages.add(addLineageSeed(Lineage.ADCON));
     }
 
     if (!opconFound) {
+      myLoggingService.warn(myAgentName + 
+                            ":updateSubordinate local OPCON Lineage not found");
       lineages.add(addLineageSeed(Lineage.OPCON));
     }
 
