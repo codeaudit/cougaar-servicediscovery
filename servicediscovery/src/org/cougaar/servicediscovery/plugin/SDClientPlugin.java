@@ -63,6 +63,7 @@ import org.cougaar.servicediscovery.description.ProviderCapabilities;
 import org.cougaar.servicediscovery.description.ProviderCapability;
 import org.cougaar.servicediscovery.description.ScoredServiceDescription;
 import org.cougaar.servicediscovery.description.ServiceClassification;
+import org.cougaar.servicediscovery.description.ServiceContract;
 import org.cougaar.servicediscovery.description.ServiceDescription;
 import org.cougaar.servicediscovery.description.ServiceInfoScorer;
 import org.cougaar.servicediscovery.description.ServiceRequest;
@@ -1010,10 +1011,10 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
    * @return boolean true iff the service contract is a subset of the
    * service request.
    */
-  public boolean isContractCompatibleWithRequest(ServiceContract serviceContract) {
-    boolean compatible = getServiceRequest().getServiceRole().equals(serviceContract.getServiceRole());
+  public boolean isContractCompatibleWithRequest(ServiceContractRelay relay, ServiceContract serviceContract) {
+    boolean compatible = relay.getServiceRequest().getServiceRole().equals(serviceContract.getServiceRole());
     if (compatible) {
-      Collection requestPreferences = getServiceRequest().getServicePreferences();
+      Collection requestPreferences = relay.getServiceRequest().getServicePreferences();
       Collection contractPreferences = serviceContract.getServicePreferences();
       double requestEnd = SDFactory.getPreference(requestPreferences, Preference.END_TIME);
       double contractEnd = SDFactory.getPreference(contractPreferences, Preference.END_TIME);
