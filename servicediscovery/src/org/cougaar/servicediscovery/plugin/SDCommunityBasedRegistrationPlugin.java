@@ -107,8 +107,10 @@ public class SDCommunityBasedRegistrationPlugin extends SDRegistrationPluginBase
 	SCAInfo scaInfo = (SCAInfo) entry.getValue();
 	
 	if (scaInfo.readyToRegister()) {
-	  log.debug("Registering: " + getAgentIdentifier() + " with " +
-		    scaInfo.getCommunity());
+          if (log.isDebugEnabled()) {
+	    log.debug("Registering: " + getAgentIdentifier() + " with " +
+		      scaInfo.getCommunity());
+          }
 	  initialRegister(scaInfo);
 	}
       }
