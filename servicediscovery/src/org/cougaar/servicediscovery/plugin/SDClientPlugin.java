@@ -44,7 +44,7 @@ import org.cougaar.core.service.EventService;
 import org.cougaar.core.service.LoggingService;
 import org.cougaar.glm.ldm.Constants;
 import org.cougaar.glm.ldm.asset.Organization;
-import org.cougaar.mlm.plugin.organization.GLSConstants;
+import org.cougaar.mlm.plugin.organization.GLSConstants; // for FOR_OPLAN_STAGES
 import org.cougaar.planning.ldm.plan.AllocationResult;
 import org.cougaar.planning.ldm.plan.Disposition;
 import org.cougaar.planning.ldm.plan.PlanElement;
