@@ -334,9 +334,6 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
 			     final RegistryQuery query, 
 			     final CallbackWithContext callback) {
       
-      /* Should work for agents which are not YPServers. Unfortunately
-       * CommunityService has stubbed out the necessary support
-       *
       // Explicit call for a specific service
       ypService.getYPServerContext(agentName, 
 				   new YPService.NextContextCallback() {
@@ -360,11 +357,7 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
 	    callback.invoke(Collections.EMPTY_LIST);
 	  }
 	}
-      }); */ 
-
-      YPProxy proxy = makeProxy(agentName);
-
-      findAllServices(query, callback, proxy);
+      });
     }
 
 
@@ -447,9 +440,6 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
     public void findServiceAndBinding(final String agentName, 
 				      final RegistryQuery query,
 				      final CallbackWithContext callback) {
-      /* Should work for agents which are not YPServers. Unfortunately
-       * CommunityService has stubbed out the necessary support
-       *
       // Explicit call for a specific service
       ypService.getYPServerContext(agentName, 
 				   new YPService.NextContextCallback() {
@@ -473,11 +463,7 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
 	    callback.invoke(Collections.EMPTY_LIST);
 	  }
 	}
-      }); */
-
-      YPProxy proxy = makeProxy(agentName);
-
-      findServiceAndBinding(query, callback, proxy);
+      });
     }
 
     private void findAllServices(final RegistryQuery rq, 
