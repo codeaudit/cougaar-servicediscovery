@@ -1,4 +1,4 @@
-<!-- $Revision: 1.1 $ of $Date: 2003-01-20 19:32:21 $. -->
+<!-- $Revision: 1.2 $ of $Date: 2003-01-22 17:30:38 $. -->
 
 <rdf:RDF
   xmlns:rdf ="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -8,7 +8,7 @@
 >
 
 <rdf:Description rdf:about="">
-  <versionInfo>$Id: damlOil.daml,v 1.1 2003-01-20 19:32:21 mthome Exp $</versionInfo>
+  <versionInfo>$Id: damlOil.daml,v 1.2 2003-01-22 17:30:38 mthome Exp $</versionInfo>
   <imports rdf:resource="http://www.w3.org/2000/01/rdf-schema"/>
 </rdf:Description>
 

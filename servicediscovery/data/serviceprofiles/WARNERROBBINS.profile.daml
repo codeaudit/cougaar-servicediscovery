@@ -30,7 +30,7 @@ Download the source for a version with unexpanded entities.
 
   <daml:Ontology about="">
     <daml:versionInfo>
-      $Id: WARNERROBBINS.profile.daml,v 1.1 2003-01-20 19:32:23 mthome Exp $
+      $Id: WARNERROBBINS.profile.daml,v 1.2 2003-01-22 17:30:39 mthome Exp $
     </daml:versionInfo>
     <rdfs:comment>
       DAML-S service profile for WarnerRobbins

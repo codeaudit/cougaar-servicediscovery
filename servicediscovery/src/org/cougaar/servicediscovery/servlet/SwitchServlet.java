@@ -46,7 +46,7 @@ import org.cougaar.util.UnaryPredicate;
  * /$Agent/switchServlet
  *
  *@author    HSingh
- *@version   $Id: SwitchServlet.java,v 1.1 2003-01-20 19:32:25 mthome Exp $
+ *@version   $Id: SwitchServlet.java,v 1.2 2003-01-22 17:30:44 mthome Exp $
  */
 public class SwitchServlet extends BaseServletComponent implements BlackboardClient {
 

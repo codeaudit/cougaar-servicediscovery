@@ -20,7 +20,7 @@
 
 <daml:Ontology rdf:about="">
   <daml:versionInfo>
-    $Id: cougaar.daml,v 1.1 2003-01-20 19:32:23 mthome Exp $
+    $Id: cougaar.daml,v 1.2 2003-01-22 17:30:39 mthome Exp $
   </daml:versionInfo>
   <rdfs:comment>
 	cougaar name space

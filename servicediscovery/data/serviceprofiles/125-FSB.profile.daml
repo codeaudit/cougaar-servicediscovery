@@ -23,7 +23,7 @@
 
   <daml:Ontology about="">
     <daml:versionInfo>
-      $Id: 125-FSB.profile.daml,v 1.1 2003-01-20 19:32:23 mthome Exp $
+      $Id: 125-FSB.profile.daml,v 1.2 2003-01-22 17:30:39 mthome Exp $
     </daml:versionInfo>
     <rdfs:comment>
       DAML-S service profile for 125-FSB

@@ -48,7 +48,7 @@ import org.cougaar.util.UnaryPredicate;
  * associated with the agent. http://&lt;hostname&gt;:&lt;port&gt;/$Agent/switchServlet
  *
  *@author    HSingh
- *@version   $Id: ODMPlugin.java,v 1.1 2003-01-20 19:32:24 mthome Exp $
+ *@version   $Id: ODMPlugin.java,v 1.2 2003-01-22 17:30:43 mthome Exp $
  */
 public class ODMPlugin extends SimplePlugin {
 	private IncrementalSubscription mySupplyTaskSubscription;

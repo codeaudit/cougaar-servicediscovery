@@ -35,7 +35,7 @@ import java.util.Vector;
  *   <li> hasSoapBinding : false by default, true if soap:address is specified.</li>
  *
  *@author    HSingh
- *@version   $Id: WSDLObject.java,v 1.1 2003-01-20 19:32:25 mthome Exp $
+ *@version   $Id: WSDLObject.java,v 1.2 2003-01-22 17:30:45 mthome Exp $
  */
 
 public class WSDLObject {

@@ -20,7 +20,7 @@
 
   <daml:Ontology rdf:about="">
     <daml:versionInfo>
-      $Id: Service.daml,v 1.1 2003-01-20 19:32:22 mthome Exp $
+      $Id: Service.daml,v 1.2 2003-01-22 17:30:38 mthome Exp $
     </daml:versionInfo>
     <rdfs:comment>
       SRI's upper-level DAML ontology for services; first cut; incomplete.
