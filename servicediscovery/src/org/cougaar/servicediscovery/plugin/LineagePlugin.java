@@ -606,14 +606,19 @@ public class LineagePlugin extends SimplePlugin
     }
 
     if (!adconFound) {
-      myLoggingService.warn(myAgentName + 
-                            ": updateSubordinate local ADCON Lineage not found");
+      if (myLoggingService.isDebugEnabled()) {
+	myLoggingService.debug(myAgentName + 
+			       ": updateSubordinate local ADCON Lineage not found");
+      }
       lineages.add(addLineageSeed(Lineage.ADCON));
     }
 
     if (!opconFound) {
-      myLoggingService.warn(myAgentName + 
-                            ": updateSubordinate local OPCON Lineage not found");
+      if (myLoggingService.isDebugEnabled()) {
+	myLoggingService.debug(myAgentName + 
+			       ": updateSubordinate local OPCON Lineage not found");	
+      }
+
       lineages.add(addLineageSeed(Lineage.OPCON));
     }
 
