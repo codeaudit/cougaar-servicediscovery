@@ -78,9 +78,6 @@ public class ProviderCapabilityImpl implements ProviderCapability {
     return myRole;
   }
 
-  /**
-   * @param Role
-   **/
   public void setRole(Role role) {
     if (myRole != null) {
       logger.error("setRole: attempt to change role from " +  myRole + 
