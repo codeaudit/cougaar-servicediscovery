@@ -276,7 +276,7 @@ public class SDFactory implements Factory {
       Object next = iterator.next();
 
       if (next instanceof Preference) {
-	Preference testPreference = (Preference) iterator.next();
+	Preference testPreference = (Preference) next;
 	if (testPreference.getAspectType() == aspectType) {
 	  preference = testPreference;
 	  break;
