@@ -1,9 +1,0 @@
-CFW_ID,DESCRIPTION,BLANK
-"1AD-CFW","1AD-Base (No TRANSCOM)",
-"TRANSCOM-STUB-CFW","TRANSCOM-STUB org only",
-"TRANSCOM-CFW","7-Cluster TRANSCOM Community",
-"1AD-CBT-DMD-CFW","1AD Combat Demand in GLS",
-"1AD-IOC-AMMO-CFW","Turn on Ammo Packing at IOC",
-"1AD-IOC-UNIV-CFW","Use Universal Allocator at IOC",
-"1AD-CBT-CL9-CFW","1AD Combat Demand with Class 9",
-"DLA-SUPPLIERS-CFW","DLA Suppliers for Service Discover",
