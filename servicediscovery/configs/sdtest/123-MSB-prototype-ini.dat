@@ -2,7 +2,7 @@
 
 [Relationship]
 StrategicTransportationProvider "UIC/3ID" "UTC/RTOrg" "3ID" "" ""
-CorpsSupportSubordinate "UIC/3ID" "UTC/RTOrg" "3ID" "" ""
+SupportSubordinate "UIC/3ID" "UTC/RTOrg" "3ID" "" ""
 
 [ItemIdentificationPG]
 ItemIdentification String "123-MSB"

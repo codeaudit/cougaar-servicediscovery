@@ -2,7 +2,7 @@
 
 [Relationship]
 StrategicTransportationProvider "UIC/3ID" "UTC/RTOrg" "3ID" "" ""
-BrigadeSupportSubordinate "UIC/3ID" "UTC/RTOrg" "3ID" "" ""
+SupportSubordinate "UIC/3ID" "UTC/RTOrg" "3ID" "" ""
 
 [ItemIdentificationPG]
 ItemIdentification String "125-FSB"
