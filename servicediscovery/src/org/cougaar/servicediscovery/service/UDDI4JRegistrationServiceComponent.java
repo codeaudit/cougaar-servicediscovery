@@ -89,7 +89,7 @@ public final class UDDI4JRegistrationServiceComponent
   /**  Cougaar service used for logging **/
   private LoggingService log;
   public void setLoggingService(LoggingService ls) {
-    log = (log==null)?LoggingService.NULL:log; 
+    log = ((ls==null)?LoggingService.NULL:ls); 
   }
 
   private YPService ypService;
