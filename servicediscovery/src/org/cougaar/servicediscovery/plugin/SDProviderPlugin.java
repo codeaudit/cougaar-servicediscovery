@@ -173,7 +173,7 @@ public class SDProviderPlugin extends SimplePlugin
       contractPreferences.remove(END_TIME_KEY);
     } else {
       contractTimeSpan = 
-	checkProviderCapability(serviceRequest.getServiceRole(),
+	checkProviderCapability(getProviderCapability(serviceRequest.getServiceRole()),
 				requestedTimeSpan);
       
       if (contractTimeSpan == null) {
@@ -239,8 +239,7 @@ public class SDProviderPlugin extends SimplePlugin
 	  
 	  if (currentContractTimeSpan != null) {
 	    TimeSpan contractTimeSpan = 
-	      checkProviderCapability(contract.getServiceRole(),
-				      currentContractTimeSpan);
+	      checkProviderCapability(capability, currentContractTimeSpan);
 	    if (contractTimeSpan == null) {
 	      if (myLoggingService.isInfoEnabled()) {
 		myLoggingService.info(getAgentIdentifier() + 
@@ -319,56 +318,63 @@ public class SDProviderPlugin extends SimplePlugin
     }
   }
 
-  protected TimeSpan checkProviderCapability(Role requestedRole, 
+  protected ProviderCapability getProviderCapability(Role role) { 
+    for (Iterator iterator = myProviderCapabilitiesSubscription.iterator();
+	 iterator.hasNext();) {
+      ProviderCapabilities capabilities = (ProviderCapabilities) iterator.next();
+      ProviderCapability capability = 
+	capabilities.getCapability(role);
+
+      myLoggingService.info(getAgentIdentifier() +
+			    " getCapability returned " + capability + 
+			    " for "  + role);
+      
+      if (capability != null) {
+	return capability;
+      }
+      
+    }
+    
+    return null;
+  }
+  
+  protected TimeSpan checkProviderCapability(ProviderCapability capability, 
 					     TimeSpan requestedTimeSpan) {
     // Deliberately set to invalid values so can catch case where provider
     // doesn't handle thee specified role
     long earliest = TimeSpan.MAX_VALUE;
     long latest = TimeSpan.MIN_VALUE;
-
-    for (Iterator iterator = myProviderCapabilitiesSubscription.iterator();
-	 iterator.hasNext();) {
-      ProviderCapabilities capabilities = (ProviderCapabilities) iterator.next();
-      ProviderCapability capability = 
-	capabilities.getCapability(requestedRole);
+    
+    if (capability != null) {
+      Schedule currentAvailability = 
+	capability.getAvailableSchedule();
       
-      myLoggingService.info(getAgentIdentifier() +
-			    " getCapability returned " + capability + 
-			    " for "  + requestedRole);
-
-      if (capability != null) {
-	Schedule currentAvailability = 
-	  capability.getAvailableSchedule();
-
-	Collection overlaps = 
-	  currentAvailability.getOverlappingScheduleElements(requestedTimeSpan.getStartTime(),
-							     requestedTimeSpan.getEndTime());
-
-	if (overlaps.size() != 0) {
-	  for (Iterator overlap = overlaps.iterator();
-	       overlap.hasNext();) {
-	    // Take info from first overlan. We don't yet have the ability to
-	    // include a schedule of timespans.
-	    ScheduleElement scheduleElement = (ScheduleElement) overlap.next();
-	    earliest = 
-	      Math.max(scheduleElement.getStartTime(),
-		       requestedTimeSpan.getStartTime());
-	    latest = 
-	      Math.min(scheduleElement.getEndTime(),
-		       requestedTimeSpan.getEndTime());
-	    break;
-	  }
-	} else {
-	  myLoggingService.info(getAgentIdentifier() + 
-				" no overlaps, requestedTimeSpan = " +
-				requestedTimeSpan +
-				" available schedule " + currentAvailability);
+      Collection overlaps = 
+	currentAvailability.getOverlappingScheduleElements(requestedTimeSpan.getStartTime(),
+							   requestedTimeSpan.getEndTime());
+      
+      if (overlaps.size() != 0) {
+	for (Iterator overlap = overlaps.iterator();
+	     overlap.hasNext();) {
+	  // Take info from first overlan. We don't yet have the ability to
+	  // include a schedule of timespans.
+	  ScheduleElement scheduleElement = (ScheduleElement) overlap.next();
+	  earliest = 
+	    Math.max(scheduleElement.getStartTime(),
+		     requestedTimeSpan.getStartTime());
+	  latest = 
+	    Math.min(scheduleElement.getEndTime(),
+		     requestedTimeSpan.getEndTime());
+	  break;
 	}
-
-	break;
+      } else {
+	myLoggingService.info(getAgentIdentifier() + 
+			      " no overlaps, requestedTimeSpan = " +
+			      requestedTimeSpan +
+			      " available schedule " + currentAvailability);
       }
     }
-    
+  
     if ((earliest == TimeSpan.MAX_VALUE) || 
 	(latest == TimeSpan.MIN_VALUE)) {
       return null;
