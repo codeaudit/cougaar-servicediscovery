@@ -304,7 +304,7 @@ public class SimpleSDRegistrationPlugin extends ComponentPlugin {
       
       ProviderDescription pd = new ProviderDescriptionImpl();
       try {
-	URL serviceProfileURL = getServiceProfileURL(); 
+	URL serviceProfileURL = Configuration.urlify(getServiceProfileURL().toString()); 
 	boolean ok = pd.parseOWL(serviceProfileURL, 
 				 getAgentIdentifier() + OWL_IDENTIFIER);
 	
@@ -329,6 +329,8 @@ public class SimpleSDRegistrationPlugin extends ComponentPlugin {
 	  log.debug(": getPD() ConcurrentModificationException - " +
 		    cme);
 	}
+      } catch (java.net.MalformedURLException mue) {
+	log.error("getPD() couldn't find directory for service profiles, starting from " + getServiceProfileURL(), mue);
       }
     }
     return provD;
