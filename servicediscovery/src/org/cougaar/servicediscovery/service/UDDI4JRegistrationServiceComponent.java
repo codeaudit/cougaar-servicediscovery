@@ -39,6 +39,8 @@ import org.cougaar.util.UnaryPredicate;
 import org.cougaar.util.log.Logger;
 import org.cougaar.util.log.Logging;
 
+import org.cougaar.yp.YPService;
+
 import org.uddi4j.client.UDDIProxy;
 import org.uddi4j.response.*;
 import org.uddi4j.UDDIException;
@@ -80,6 +82,7 @@ public final class UDDI4JRegistrationServiceComponent
 
  /**  Cougaar service used for logging **/
   protected LoggingService log;
+  protected YPService ypService;
   private RegistrationServiceProviderImpl mySP;
 
   /** Local storage of ProviderDescriptions **/
@@ -101,6 +104,13 @@ public final class UDDI4JRegistrationServiceComponent
     if (log == null) {
       log = LoggingService.NULL;
     }
+
+    this.ypService = 
+      (YPService) getServiceBroker().getService(this, YPService.class, null);
+    if (ypService == null) {
+      throw new RuntimeException("Unable to obtain YPService");
+    }
+
     // create and advertise our service
     this.mySP = new RegistrationServiceProviderImpl();
     getServiceBroker().addService(RegistrationService.class, mySP);
@@ -178,17 +188,19 @@ public final class UDDI4JRegistrationServiceComponent
   private static AuthToken authorization = null;
 
   //The following 4 uddi registry parameters are set via System properties.
-  private static String username = null;
-  private static String password = null;
+  private static String username = "cougaar";
+  private static String password = "cougaarPass";
   private static String queryURL = null;
   private static String publishURL = null;
 
   static {
     // FIXME: CHECK VALUES EXIST!!!!
+    /*
     username = System.getProperty("org.cougaar.servicediscovery.registry.username");
     password = System.getProperty("org.cougaar.servicediscovery.registry.password");
     queryURL = System.getProperty("org.cougaar.servicediscovery.registry.queryURL");
     publishURL = System.getProperty("org.cougaar.servicediscovery.registry.publishURL");
+    */
 
   }
 
@@ -197,6 +209,7 @@ public final class UDDI4JRegistrationServiceComponent
       try {
         authorization = proxy.get_authToken(username, password);
       } catch (UDDIException e) {
+	e.printStackTrace();
         DispositionReport dr = e.getDispositionReport();
         Logger logger = Logging.getLogger(UDDI4JRegistrationServiceComponent.class);
         logger.error("UDDIException faultCode:" + e.getFaultCode() +
@@ -226,9 +239,7 @@ public final class UDDI4JRegistrationServiceComponent
 
 
     public RegistrationServiceImpl() {
-      if (!makeProxy()) {
-        log.error("Error initializing proxy ");
-      }
+
     }
 
     /**
@@ -254,20 +265,21 @@ public final class UDDI4JRegistrationServiceComponent
      */
     private boolean makeProxy() {
       // Define configuration properties.
+      String ypAgent = System.getProperty("org.cougaar.yp.ypAgent");
 
-      proxy = new UDDIProxy();
+      proxy = ypService.getYP(ypAgent);
 
-      try {
-        proxy.setInquiryURL(queryURL);
-        proxy.setPublishURL(publishURL);
-        initAuthToken(proxy);
-        return true;
-      } catch (java.net.MalformedURLException e) {
-        if (log.isErrorEnabled()) {
-          log.error("query or publish URL is wrong", e);
-        }
-        return false;
+      initAuthToken(proxy);
+      return true;
+      
+    }
+
+    private UDDIProxy currentProxy() {
+      if (proxy == null) {
+	makeProxy();
       }
+
+      return proxy;
     }
 
     /**
@@ -340,11 +352,11 @@ public final class UDDI4JRegistrationServiceComponent
       boolean saveBusiness = false;
       while (!saveBusiness) {
         AuthToken token = authorization;
+	UDDIProxy currentProxy = currentProxy();
         try {
           be.setBusinessServices (businessServices);
           entities.add(be);
-
-          proxy.save_business(token.getAuthInfoString(), entities);
+          currentProxy.save_business(token.getAuthInfoString(), entities);
           saveBusiness = true;
         } catch (UDDIException e) {
           DispositionReport dr = e.getDispositionReport();
@@ -352,7 +364,7 @@ public final class UDDI4JRegistrationServiceComponent
             if (log.isDebugEnabled()) {
               log.debug("Auth Token expired, getting a new one " + getAgentIdentifier());
             }
-            handleExpiration(token, proxy);
+            handleExpiration(token, currentProxy);
           } else {
             log.error("UDDIException faultCode:" + e.getFaultCode() +
                       "\n operator:" + dr.getOperator() +
@@ -406,7 +418,10 @@ public final class UDDI4JRegistrationServiceComponent
       if(!schemeKeys.containsKey(tModelName)) {
         TModelList tlist = null;
         try {
-          tlist = proxy.find_tModel(tModelName, null, null, null, 1);
+	  if (log.isDebugEnabled()) {
+	    log.debug("findTModelKey: " + tModelName);
+	  }
+          tlist = currentProxy().find_tModel(tModelName, null, null, null, 1);
         } catch (Exception e) {
           if (log.isErrorEnabled()) {
             log.error("Caught an Exception finding tModel.", e);
@@ -464,8 +479,8 @@ public final class UDDI4JRegistrationServiceComponent
     public ProviderDescription getProviderDescription(Object key){
       MyBlackboardObject mbb = (MyBlackboardObject)storedData.get(key);
       if (mbb == null) {
-          if(log.isWarnEnabled()) {
-            log.warn("MyBlackboardObject is null for key: " + key.toString());
+          if(log.isDebugEnabled()) {
+            log.debug("MyBlackboardObject is null for key: " + key.toString());
           }
         return null;
       }
@@ -498,7 +513,7 @@ public final class UDDI4JRegistrationServiceComponent
       BusinessList businessList;
 
       try {
-        businessList = proxy.find_business(namePatterns, null, null, null, null, findQualifiers, 5);
+        businessList = currentProxy().find_business(namePatterns, null, null, null, null, findQualifiers, 5);
         Vector businessInfoVector  = businessList.getBusinessInfos().getBusinessInfoVector();
         BusinessInfo businessInfo = null;
         for (int i = 0; i < businessInfoVector.size(); i++) {
@@ -509,8 +524,8 @@ public final class UDDI4JRegistrationServiceComponent
           break;
         }
         if(businessInfo == null) {
-          if (log.isWarnEnabled()) {
-            log.warn("updateServiceDescription, cannot find registration for: " + providerName);
+          if (log.isDebugEnabled()) {
+            log.debug("updateServiceDescription, cannot find registration for: " + providerName);
           }
 
           freeLock(token);
@@ -530,7 +545,7 @@ public final class UDDI4JRegistrationServiceComponent
                                                                     serviceClass.getClassificationName(),
                                                                     serviceClass.getClassificationCode()));
         }
-        ServiceDetail sd = proxy.get_serviceDetail(serviceKeys);
+        ServiceDetail sd = currentProxy().get_serviceDetail(serviceKeys);
         Enumeration e = sd.getBusinessServiceVector().elements();
         while (e.hasMoreElements()) {
           BusinessService bs  = (BusinessService)e.nextElement();
@@ -563,8 +578,9 @@ public final class UDDI4JRegistrationServiceComponent
       boolean saveService = false;
       while (!saveService) {
         AuthToken currentToken = authorization;
+	UDDIProxy currentProxy = currentProxy();
         try {
-          proxy.save_service(currentToken.getAuthInfoString(), services);
+          currentProxy.save_service(currentToken.getAuthInfoString(), services);
           saveService = true;
         } catch (UDDIException e) {
           DispositionReport dr = e.getDispositionReport();
@@ -572,7 +588,7 @@ public final class UDDI4JRegistrationServiceComponent
             if (log.isDebugEnabled()) {
               log.debug("Auth token expired, getting a new one " + getAgentIdentifier());
             }
-            handleExpiration(currentToken, proxy);
+            handleExpiration(currentToken, currentProxy);
           } else {
             log.error("UDDIException faultCode:" + e.getFaultCode() +
                       "\n operator:" + dr.getOperator() +
@@ -619,7 +635,7 @@ public final class UDDI4JRegistrationServiceComponent
       BusinessList businessList = null;
 
       try {
-        businessList = proxy.find_business(namePatterns, null, null, bag, null, findQualifiers, 1);
+        businessList = currentProxy().find_business(namePatterns, null, null, bag, null, findQualifiers, 1);
       } catch (UDDIException ex) {
         DispositionReport d = ex.getDispositionReport();
         if (log.isErrorEnabled()) {
@@ -654,8 +670,8 @@ public final class UDDI4JRegistrationServiceComponent
       }
 
       if(businessInfo == null) {
-        if (log.isWarnEnabled()) {
-          log.warn("deleteServiceDescription, cannot find registration for: " + providerName);
+        if (log.isDebugEnabled()) {
+          log.debug("deleteServiceDescription, cannot find registration for: " + providerName);
         }
 
         freeLock(token);
@@ -672,8 +688,9 @@ public final class UDDI4JRegistrationServiceComponent
       boolean deleteService = false;
       while (!deleteService) {
         AuthToken currentToken = authorization;
+	UDDIProxy currentProxy = currentProxy();
         try {
-          proxy.delete_service(currentToken.getAuthInfoString(), serviceKeys);
+          currentProxy.delete_service(currentToken.getAuthInfoString(), serviceKeys);
           deleteService = true;
         } catch (UDDIException ex) {
           DispositionReport dr = ex.getDispositionReport();
@@ -681,7 +698,7 @@ public final class UDDI4JRegistrationServiceComponent
             if (log.isDebugEnabled()) {
               log.debug("Auth token expired, gettting a new token " + getAgentIdentifier());
             }
-            handleExpiration(currentToken, proxy);
+            handleExpiration(currentToken, currentProxy);
           } else {
             DispositionReport d = ex.getDispositionReport();
             if (log.isErrorEnabled()) {
@@ -803,14 +820,24 @@ public final class UDDI4JRegistrationServiceComponent
   }
 
   private Object getLock() {
-    //    System.out.println(getAgentIdentifier()+ ": waiting on lock");
+    if (log.isDebugEnabled()) {
+      log.debug(getAgentIdentifier()+ ": waiting on lock");
+    }
+
     Object lockToken = LockPool.getCurrentPool().getLock();
-    //    System.out.println(getAgentIdentifier() + ": got lock");
+
+    if (log.isDebugEnabled()) {
+      log.debug(getAgentIdentifier() + ": got lock");
+    }
+
     return lockToken;
   }
 
   private void freeLock(Object lockToken) {
-    //    System.out.println(getAgentIdentifier() + ": freeing lock");
+    if (log.isDebugEnabled()) {
+      log.debug(getAgentIdentifier() + ": freeing lock");
+    }
+
     LockPool.getCurrentPool().freeLock(lockToken);
   }
 }

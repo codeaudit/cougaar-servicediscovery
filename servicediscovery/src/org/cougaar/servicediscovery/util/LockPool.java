@@ -24,6 +24,7 @@ package org.cougaar.servicediscovery.util;
 import java.util.HashSet;
 import java.util.Iterator;
 import org.cougaar.util.LockFlag;
+import org.cougaar.util.log.*;
 
 /*
  * @property org.cougaar.servicediscovery.util.LockPool.maxLocks number
@@ -32,6 +33,8 @@ import org.cougaar.util.LockFlag;
 
 public class LockPool implements org.cougaar.core.persist.NotPersistable {
   private static LockPool CURRENT_POOL = null;
+  private static final Logger logger = Logging.getLogger(LockPool.class);
+  
 
   /*
    * A hash set holding LockTokens
@@ -67,7 +70,7 @@ public class LockPool implements org.cougaar.core.persist.NotPersistable {
 
   public synchronized Object getLock() {
     while(true) {
-      // int lockCount = 0;
+      int lockCount = 0;
       for (Iterator iterator = LOCK_TOKENS.iterator();
            iterator.hasNext();) {
         LockToken token = (LockToken) iterator.next();
@@ -75,12 +78,17 @@ public class LockPool implements org.cougaar.core.persist.NotPersistable {
 
         if (lockFlag.getBusyCount() == 0) {
           lockFlag.getBusyFlag();
-          // System.out.println("LockPool: found " + lockCount + " locks.");
+	  if (logger.isDebugEnabled()) {
+	    logger.debug("LockPool: found " + lockCount + " locks.");
+	  }
           return token;
         }
-        // lockCount++;
+        lockCount++;
       }
-      // System.out.println("LockPool: all " + lockCount + " locks taken.");
+
+      if (logger.isDebugEnabled()) {
+	logger.debug("LockPool: all " + LOCK_TOKENS.size() + " locks taken.");
+      }
       try {
         // No free locks
         wait();

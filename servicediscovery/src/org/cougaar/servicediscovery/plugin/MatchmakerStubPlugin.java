@@ -32,6 +32,7 @@ import org.cougaar.servicediscovery.transaction.MMQueryRequest;
 import org.cougaar.servicediscovery.transaction.MMQueryRequestImpl;
 import org.cougaar.servicediscovery.transaction.RegistryQuery;
 import org.cougaar.servicediscovery.transaction.RegistryQueryImpl;
+import org.cougaar.servicediscovery.util.LockPool;
 import org.cougaar.servicediscovery.util.UDDIConstants;
 
 import org.cougaar.util.UnaryPredicate;
@@ -129,7 +130,9 @@ public final class MatchmakerStubPlugin extends SimplePlugin {
                                                                  UDDIConstants.MILITARY_SERVICE_SCHEME);
         rq.addServiceClassification(sc);
 
+	Object lockToken = LockPool.getCurrentPool().getLock();
         Collection services = registryQueryService.findServiceAndBinding(rq);
+	LockPool.getCurrentPool().freeLock(lockToken);
         if (log.isDebugEnabled()) {
           log.debug("Registry query result size is : " + services.size() + " for query: " + query.getRole().toString());
         }

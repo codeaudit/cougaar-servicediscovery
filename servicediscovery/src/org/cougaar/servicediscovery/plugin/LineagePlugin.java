@@ -189,9 +189,11 @@ public class LineagePlugin extends SimplePlugin
 				 "  Replacing previous lineage - " +
 				 localSupportLineage);
 	} else {
-	  myLoggingService.warn(myAgentName +
-				"Replacing previous support lineage - " +
-				localSupportLineage);
+	  if (myLoggingService.isDebugEnabled()) {
+	    myLoggingService.debug(myAgentName +
+				   "Replacing previous support lineage - " +
+				   localSupportLineage);
+	  }
 	}
 
 	publishRemove(localSupportLineage);
@@ -310,10 +312,5 @@ public class LineagePlugin extends SimplePlugin
     }
   }
 }
-
-
-
-
-
 
 

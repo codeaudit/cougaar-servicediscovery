@@ -31,6 +31,8 @@ import org.cougaar.servicediscovery.description.*;
 import org.cougaar.servicediscovery.description.ServiceInfo;
 import org.cougaar.servicediscovery.transaction.RegistryQuery;
 import org.cougaar.util.GenericStateModelAdapter;
+import org.cougaar.yp.YPService;
+
 import org.uddi4j.client.UDDIProxy;
 import org.uddi4j.UDDIException;
 import org.uddi4j.util.CategoryBag;
@@ -61,6 +63,7 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
   implements Component {
 
   private LoggingService log;
+  protected YPService ypService;
   private RegistryQueryServiceProviderImpl mySP;
   private UIDService uidService;
   private ServiceBroker sb;
@@ -83,6 +86,12 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
       sb.getService(this, UIDService.class, null);
     if (uidService == null) {
       throw new RuntimeException("Unable to obtain UID service");
+    }
+
+    this.ypService = 
+      (YPService) sb.getService(this, YPService.class, null);
+    if (ypService == null) {
+      throw new RuntimeException("Unable to obtain YPService");
     }
 
     // create and advertise the service
@@ -146,16 +155,11 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
      * Establishes a connection to a registry.
      */
     private boolean makeConnection() {
-      // Define connection configuration properties.
-      proxy = new UDDIProxy();
-      try {
-        proxy.setInquiryURL(queryURL);
-      } catch (java.net.MalformedURLException e) {
-        if (log.isErrorEnabled()) {
-          log.error("query or publish URL is wrong", e);
-        }
-        return false;
-      }
+      // Define connection configuratio+n properties.
+      String ypAgent = System.getProperty("org.cougaar.yp.ypAgent");
+
+      proxy = ypService.getYP(ypAgent);
+
       return true;
     }
 
@@ -399,6 +403,7 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
       try {
         ServiceList serviceList = proxy.find_service(null, serviceNames,
                                                      bag, null, fq, maxRows);
+
         Enumeration serviceInfos = serviceList.getServiceInfos().getServiceInfoVector().elements();
         Vector serviceKeys = new Vector();
         while (serviceInfos.hasMoreElements()) {
@@ -548,16 +553,26 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
       Collection serviceInfos = new ArrayList();
 
       try {
+	log.debug("[createSimpleServiceInfo]calling get_serviceDetail()");
         ServiceDetail sd = proxy.get_serviceDetail(serviceKeys);
-        Enumeration serviceEnum = sd.getBusinessServiceVector().elements();
-        while(serviceEnum.hasMoreElements()) {
+	Vector serviceVector = sd.getBusinessServiceVector();
+	log.debug("[createSimpleServiceInfo]returned from get_serviceDetail() "+ 
+		 " size = " + serviceVector.size());
+
+	for (Enumeration serviceEnum = serviceVector.elements();
+	     serviceEnum.hasMoreElements();) {
           BusinessService bs = (BusinessService) serviceEnum.nextElement();
           ServiceInfo serviceInfo = new ServiceInfo();
           serviceInfo.setServiceId(bs.getServiceKey());
           serviceInfo.setServiceName(bs.getDefaultNameString());
-          serviceInfo.setServiceClassifications(getServiceClassifications(bs.getCategoryBag()));
-          serviceInfo.setServiceBindings(getServiceBindings(bs.getBindingTemplates()));
+          //serviceInfo.setServiceClassifications(getServiceClassifications(bs.getCategoryBag()));
+          //serviceInfo.setServiceBindings(getServiceBindings(bs.getBindingTemplates()));
           serviceInfos.add(serviceInfo);
+
+          if (log.isDebugEnabled()) {
+            log.debug("[createSimpleServiceInfo]serviceInfo : " + serviceInfo);
+          }
+
         }
       } catch (UDDIException e) {
         if (log.isErrorEnabled()) {
@@ -602,6 +617,13 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
         bag.getKeyedReferenceVector().add(getKeyedReference(rc.getClassificationSchemeName(),
                                                             rc.getClassificationName(),
                                                             rc.getClassificationCode()));
+	
+	if (log.isDebugEnabled()) {
+	  log.debug("createCategoryBag: schemeName: " + 
+		    rc.getClassificationSchemeName() +
+		    " name: " + rc.getClassificationName() +
+		    " code: " + rc.getClassificationCode());
+	}
       }
       return bag;
     }
@@ -633,8 +655,8 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
           // cache the key - name pair as well
           tModelNameCache.put(((TModelInfo) tms.elementAt(0)).getTModelKey(), tModelName);
         } else {
-          if (log.isWarnEnabled()) {
-            log.warn("Requested TModel was not found in registry " + tModelName);
+          if (log.isDebugEnabled()) {
+            log.debug("Requested TModel was not found in registry " + tModelName);
             return null;
           }
         }
@@ -660,8 +682,8 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
           // cache the key - name pair as well
           tModelKeysCache.put(tm.getNameString(), tModelKey);
         } else {
-          if (log.isWarnEnabled()) {
-            log.warn("Requested TModel was not found in registry " + tModelKey);
+          if (log.isDebugEnabled()) {
+            log.debug("Requested TModel was not found in registry " + tModelKey);
             return null;
           }
         }
