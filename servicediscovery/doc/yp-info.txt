@@ -79,7 +79,7 @@ used as a template.
 	(b) Add the following recipes in the following order:
 		YPSupport
 		ServiceDiscoveryRegistration
-		SDBootstrap
+		ServiceDiscoveryBootstraping
 	IMPORTANT: If recipes are not loaded in the above order, experiment
 	will not run.
 	
