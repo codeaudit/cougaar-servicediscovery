@@ -51,8 +51,6 @@ public class SDRegistrationPlugin extends SDRegistrationPluginBase {
 
   private boolean isRegistered = false;
 
-  /** true iff we need to set up a retry **/
-  private boolean failed = false;
   /** true iff we have submitted a registration request which hasn't yet been observed to complete **/
   private boolean inProgress = false;
   /** true iff we've got the callback successfully, but need to notify everyone else **/
@@ -238,8 +236,7 @@ public class SDRegistrationPlugin extends SDRegistrationPluginBase {
 	// Success or not, we've completed
 	// handling this transaction.
 	outstandingSCAUpdates--;
-	log.error("UpdateServiceDescription", e);
-	getBlackboardService().signalClientActivity();
+	retryErrorLog("updateRegistration", e);
       }
     });
     
@@ -247,66 +244,59 @@ public class SDRegistrationPlugin extends SDRegistrationPluginBase {
 
   private void initialRegister() {
     if (isPending) return;      // skip if we're just waiting to notify - of course, then we shouldn't be here
+
     if (isProvider()) {
-      try {
-        final ProviderDescription pd = getPD();
-
-        if (failed) {
-          // last try failed - set up another try.
-          failed = false;
-	  retryErrorLog("Problem adding ProviderDescription now, try again later.");
-        } else {
-          if (inProgress) {
-            if (log.isInfoEnabled()) {
-              log.info(getAgentIdentifier() + "Still waiting for register");
-            }
-          } else {
-            inProgress = true;      // don't allow another one to start
-	    outstandingSCAUpdates = 0;    // will pick up all known SCAs
-
-            // callback will be executed by another thread
-            RegistrationService.Callback cb =
-              new RegistrationService.Callback() {
-                public void invoke(Object o) {
-                  boolean success = ((Boolean) o).booleanValue();
-                  if (log.isInfoEnabled()) {
-                    log.info(pd.getProviderName()+" initialRegister success = "+success);
-                  }
-
-                  isPending = true; // let the plugin set isRegistered
-                  retryAlarm = null;   // probably not safe
-                  inProgress = false; // ok to update
-                  getBlackboardService().signalClientActivity();
-                }
-                public void handle(Exception e) {
-                  log.error("initialRegister", e);
-                  failed = true;
-                  inProgress = false; // ok to update
-                  getBlackboardService().signalClientActivity();
-                }
-              };
-
-            // actually submit the request.
+      final ProviderDescription pd = getPD();
+      
+      if (pd == null) {
+	// Unable to get provider description
+	retryErrorLog("Problem getting ProviderDescription now, try again later.");
+	return;
+      } 
+      
+      if (inProgress) {
+	if (log.isInfoEnabled()) {
+	  log.info(getAgentIdentifier() + "Still waiting for register");
+	}
+      } else {
+	inProgress = true;      // don't allow another one to start
+	outstandingSCAUpdates = 0;    // will pick up all known SCAs
+	
+	// callback will be executed by another thread
+	RegistrationService.Callback cb =
+	  new RegistrationService.Callback() {
+	  public void invoke(Object o) {
+	    boolean success = ((Boolean) o).booleanValue();
 	    if (log.isInfoEnabled()) {
-	      log.info(getAgentIdentifier() + " initial registration with SCAs " +
-		       supportLineageSubscription);
+	      log.info(pd.getProviderName()+ " initialRegister success = "+success);
 	    }
-            registrationService.addProviderDescription(ypAgent,
-						       pd,
-						       scaServiceClassifications(supportLineageSubscription),
-                                                       cb);
-          }
-        }
-      } catch (RuntimeException e) {
-	//if the parsing failed, it may be because one of the url's was down, so try again later
-	retryErrorLog("ProviderDescription registration failed.  Will Try again.", e);
+	    
+	    isPending = true; // let the plugin set isRegistered
+	    retryAlarm = null;   // probably not safe
+	    inProgress = false; // ok to update
+	    getBlackboardService().signalClientActivity();
+	  }
+	  public void handle(Exception e) {
+	    inProgress = false; // ok to update
+	    retryErrorLog("initialRegister", e);
+	  }
+	};
+	
+	// actually submit the request.
+	if (log.isInfoEnabled()) {
+	  log.info(getAgentIdentifier() + " initial registration with SCAs " +
+		   supportLineageSubscription);
+	}
+	registrationService.addProviderDescription(ypAgent,
+						   pd,
+						   scaServiceClassifications(supportLineageSubscription),
+						   cb);
       }
     } else {
       if (log.isDebugEnabled()) {
 	log.debug("Agent " + getAgentIdentifier() + " Not Registering, no daml file.");
       }
     }
-
   }
 
   protected boolean registrationComplete() {
@@ -333,11 +323,10 @@ public class SDRegistrationPlugin extends SDRegistrationPluginBase {
         getBlackboardService().signalClientActivity();
       }
       public void handle(Exception e) {
-	log.error("handleAvailabilityChange", e);
 	synchronized(availabilityChange) {
 	  availabilityChange.setStatus(AvailabilityChangeMessage.ERROR);
 	}
-	getBlackboardService().signalClientActivity();
+	retryErrorLog("removeRegisteredRole", e);
       }
     };
     registrationService.deleteServiceDescription(ypAgent,
@@ -364,11 +353,10 @@ public class SDRegistrationPlugin extends SDRegistrationPluginBase {
 	getBlackboardService().signalClientActivity();
       }
       public void handle(Exception e) {
-	log.error("handleAvailabilityChange", e);
 	synchronized(availabilityChange) {
 	  availabilityChange.setStatus(AvailabilityChangeMessage.ERROR);
 	}
-	getBlackboardService().signalClientActivity();
+	retryErrorLog("addRegisteredRole", e);
       }
     };
     registrationService.updateServiceDescription(ypAgent,

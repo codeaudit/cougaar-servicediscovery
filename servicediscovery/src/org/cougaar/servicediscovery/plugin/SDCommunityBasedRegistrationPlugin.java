@@ -153,6 +153,18 @@ public class SDCommunityBasedRegistrationPlugin extends SDRegistrationPluginBase
       try {
         final ProviderDescription pd = getPD();
 
+	if (pd == null) {
+	  scaInfo.setIsRegistered(false);	
+          scaInfo.setPendingRegistration(false); // okay to try again
+	  
+	  retryErrorLog("Problem getting ProviderDescription." + 
+			" Unable to add registration to " +
+			scaInfo.getCommunity().getName() + 
+			", try again later.");
+
+	  return;
+	}
+
 	scaInfo.setPendingRegistration(true);
 
 	RegistrationService.Callback cb =
@@ -334,11 +346,10 @@ public class SDCommunityBasedRegistrationPlugin extends SDRegistrationPluginBase
 	  }
 
 	  public void handle(Exception e) {
-	    log.error(getAgentIdentifier() + ":addRegisteredRole()", e);
 	    synchronized(availabilityChange) {
 	      availabilityChange.setStatus(AvailabilityChangeMessage.ERROR);
 	    }
-	    getBlackboardService().signalClientActivity();
+	    retryErrorLog("addRegisteredRole()", e);
 	  }
 	};
 	registrationService.updateServiceDescription(scaInfo.getCommunity(),
@@ -388,11 +399,10 @@ public class SDCommunityBasedRegistrationPlugin extends SDRegistrationPluginBase
 	  }
 
 	  public void handle(Exception e) {
-	    log.error(getAgentIdentifier() + ":removeRegisteredRole()", e);
 	    synchronized(availabilityChange) {
 	      availabilityChange.setStatus(AvailabilityChangeMessage.ERROR);
 	    }
-	    getBlackboardService().signalClientActivity();
+	    retryErrorLog("removeRegisteredRole", e);
 	  }
 	};
 

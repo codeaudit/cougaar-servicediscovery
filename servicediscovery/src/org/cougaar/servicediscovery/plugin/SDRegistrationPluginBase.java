@@ -243,66 +243,66 @@ public abstract class SDRegistrationPluginBase extends ComponentPlugin {
     if (isProvider()) {
 
       if (publishProviderCapabilities) {
-	getBlackboardService().publishAdd(createProviderCapabilities());
-	publishProviderCapabilities = false;
-      }
+	ProviderCapabilities providerCapabilities = 
+	  createProviderCapabilities();
 
+	if (providerCapabilities != null) {
+	  getBlackboardService().publishAdd(providerCapabilities);
+	  publishProviderCapabilities = false;
+	} else {
+	  retryErrorLog("Problem getting ProviderDescription, try again later.");
+	}
+      }
+      
       if (availabilityChangeSubscription.hasChanged()) {
 	Collection adds = availabilityChangeSubscription.getAddedCollection();
 	handleAvailabilityChange(adds);
       }
     }
   }
-
+  
+  /* Returns null if unable to parse the provider description */
   protected  ProviderDescription getPD() {
     if (provD == null) {
       ProviderDescription pd = new ProviderDescriptionImpl(log);
       try {
 	boolean ok = pd.parseDAML(getAgentIdentifier() + DAML_IDENTIFIER);
-	if (!ok) {
-	  throw new RuntimeException("parseDAML failed " + getAgentIdentifier());
+
+	if (ok && (pd.getProviderName() != null)) {
+	  provD = pd;
 	}
       } catch (java.util.ConcurrentModificationException cme) {
 	// Jena can do a concurrent mod exception. See bug 3052
- 	// catch this above.
- 	throw new RuntimeException("getPD() failed in " + 
-				   getAgentIdentifier() + 
-				   ". ConcurrentModException in Jena. See bug 3052.");
+ 	// Leave provD uninitialized
       }
-      if (pd.getProviderName() == null) {
-	throw new RuntimeException("getPD() failed to parse a provider name " + 
-				   getAgentIdentifier());
-      }
-      provD = pd;
     }
     return provD;
   }
-
-
+  
   protected long getWarningCutOffTime() {
     if (warningCutoffTime == 0) {
       WARNING_SUPPRESSION_INTERVAL = Integer.getInteger(REGISTRATION_GRACE_PERIOD_PROPERTY,
 							WARNING_SUPPRESSION_INTERVAL).intValue();
-            warningCutoffTime = System.currentTimeMillis() + WARNING_SUPPRESSION_INTERVAL*60000;
+      warningCutoffTime = System.currentTimeMillis() + WARNING_SUPPRESSION_INTERVAL*60000;
     }
-
+    
     return warningCutoffTime;
   }
-
+  
   protected void retryErrorLog(String message) {
     retryErrorLog(message, null);
   }
-
+  
   // When an error occurs, but we'll be retrying later, treat it as a DEBUG
   // at first. After a while it becomes an error.
   protected void retryErrorLog(String message, Throwable e) {
-
+    
     long absTime = getAlarmService().currentTimeMillis()+ 
       (int)(Math.random()*10000) + 1000;
-
+    
     retryAlarm = new RetryAlarm(absTime);
     getAlarmService().addAlarm(retryAlarm);
-
+    
     if(System.currentTimeMillis() > getWarningCutOffTime()) {
       if (e == null)
 	log.error(getAgentIdentifier() + message);
@@ -315,7 +315,7 @@ public abstract class SDRegistrationPluginBase extends ComponentPlugin {
 	log.debug(getAgentIdentifier() + message, e);
     }
   }
-
+  
   protected Collection scaServiceClassifications(Collection supportLineageCollection) {
     Collection serviceClassifications =
       new ArrayList(supportLineageCollection.size());
@@ -330,11 +330,19 @@ public abstract class SDRegistrationPluginBase extends ComponentPlugin {
     }
     return serviceClassifications;
   }
-
+  
   protected abstract  boolean registrationComplete();
 
-  protected ProviderCapabilities createProviderCapabilities() {
+  /* Returns initial version of ProviderCapabilities created from the 
+   * provider DAML file.
+   */
+  protected ProviderCapabilities createProviderCapabilities(){
     ProviderDescription pd = getPD();
+
+    if (pd == null) {
+      return null;
+    }
+
     Collection serviceProfiles = pd.getServiceProfiles();
 
     PlanningFactory planningFactory = 
