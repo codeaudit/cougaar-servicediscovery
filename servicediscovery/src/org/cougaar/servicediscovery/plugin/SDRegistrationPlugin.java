@@ -126,11 +126,6 @@ public class SDRegistrationPlugin extends SimplePlugin implements PrivilegedClai
                 serviceCategories = new ArrayList();
                 for (Iterator i = supportLineageSubscription.getCollection().iterator(); i.hasNext();) {
                   SupportLineageList supportList = (SupportLineageList) i.next();
-                  ServiceClassification eos = new ServiceClassificationImpl(supportList.getEchelonOfSupport(),
-                                                                            supportList.getEchelonOfSupport(),
-                                                                            UDDIConstants.MILITARY_ECHELON_SCHEME);
-                  serviceCategories.add(eos);
-
                   ServiceClassification sca = new ServiceClassificationImpl(supportList.getRoot(), supportList.getRoot(),
                                                                             UDDIConstants.SUPPORT_COMMAND_ASSIGNMENT);
                   serviceCategories.add(sca);
@@ -153,10 +148,6 @@ public class SDRegistrationPlugin extends SimplePlugin implements PrivilegedClai
         if (! supportLineageSubscription.getAddedCollection().isEmpty()) {
           for (Iterator i = supportLineageSubscription.getAddedCollection().iterator(); i.hasNext();) {
             SupportLineageList supportList = (SupportLineageList) i.next();
-            ServiceClassification eos = new ServiceClassificationImpl(supportList.getEchelonOfSupport(),
-                                                                      supportList.getEchelonOfSupport(),
-                                                                      UDDIConstants.MILITARY_ECHELON_SCHEME);
-            serviceCategories.add(eos);
 
             ServiceClassification sca = new ServiceClassificationImpl(supportList.getRoot(), supportList.getRoot(),
                                                                       UDDIConstants.SUPPORT_COMMAND_ASSIGNMENT);
@@ -169,10 +160,6 @@ public class SDRegistrationPlugin extends SimplePlugin implements PrivilegedClai
       if (! supportLineageSubscription.getChangedCollection().isEmpty()) {
         for (Iterator i = supportLineageSubscription.getChangedCollection().iterator(); i.hasNext();) {
           SupportLineageList supportList = (SupportLineageList) i.next();
-          ServiceClassification eos = new ServiceClassificationImpl(supportList.getEchelonOfSupport(),
-                                                                    supportList.getEchelonOfSupport(),
-                                                                    UDDIConstants.MILITARY_ECHELON_SCHEME);
-          serviceCategories.add(eos);
 
           ServiceClassification sca = new ServiceClassificationImpl(supportList.getRoot(), supportList.getRoot(),
                                                                     UDDIConstants.SUPPORT_COMMAND_ASSIGNMENT);

@@ -186,7 +186,7 @@ public final class MatchmakerStubPlugin extends SimplePlugin {
   }
     
   protected int getEchelonScore(ServiceInfo serviceInfo, 
-				  String requestedEchelonOfSupport) {
+				String requestedEchelonOfSupport) {
     int requestedEchelonOrder = 
       Constants.MilitaryEchelon.echelonOrder(requestedEchelonOfSupport);
 
@@ -201,10 +201,8 @@ public final class MatchmakerStubPlugin extends SimplePlugin {
       ServiceClassification classification = 
 	(ServiceClassification) iterator.next();
       if (classification.getClassificationSchemeName().equals(UDDIConstants.MILITARY_ECHELON_SCHEME)) {
-  // this should be getClassificationValue and not name.
-  // It works now since they are the same string in the registry.
-	String serviceEchelon = classification.getClassificationName();
-	
+
+	String serviceEchelon = classification.getClassificationCode();
 	serviceEchelonOrder = 
 	  Constants.MilitaryEchelon.echelonOrder(serviceEchelon);
 	break;
