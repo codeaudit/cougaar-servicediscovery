@@ -3,11 +3,11 @@
  *  Copyright 2002-2003 BBNT Solutions, LLC
  *  under sponsorship of the Defense Advanced Research Projects Agency (DARPA)
  *  and the Defense Logistics Agency (DLA).
- * 
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the Cougaar Open Source License as published by
  *  DARPA on the Cougaar Open Source Website (www.cougaar.org).
- * 
+ *
  *  THE COUGAAR SOFTWARE AND ANY DERIVATIVE SUPPLIED BY LICENSOR IS
  *  PROVIDED 'AS IS' WITHOUT WARRANTIES OF ANY KIND, WHETHER EXPRESS OR
  *  IMPLIED, INCLUDING (BUT NOT LIMITED TO) ALL IMPLIED WARRANTIES OF
@@ -57,6 +57,8 @@ public class Profile {
   public static Property OUTPUT;
   static String nPRESENTEDBY = "isPresentedBy";
   public static Property PRESENTEDBY;
+  static String nECHELONOFSUPPORT = "echelonOfSupport";
+  public static Property ECHELONOFSUPPORT;
 
   //ServiceProvider related properties
   static String nPROVIDEDBY = "providedBy";
@@ -100,7 +102,7 @@ public class Profile {
       s = s.replaceFirst(":","");
       s = s.replace('\\', '/');
       cougaar_uri = "file://" + s + "#";
-      // cougaar_uri = "http://localhost:8800/$DAML/cougaar.daml#";
+//      cougaar_uri = "http://localhost:8800/$DAML/cougaar.daml#";
 
       //ServiceProfile level properties
       SERVICEPROFILE = new ResourceImpl(cougaar_uri, nSERVICEPROFILE);
@@ -110,7 +112,7 @@ public class Profile {
       OUTPUT = new PropertyImpl(profile_uri, nOUTPUT);
       INPUT = new PropertyImpl(profile_uri, nINPUT);
       PRESENTEDBY = new PropertyImpl(service_uri, nPRESENTEDBY);
-
+      ECHELONOFSUPPORT = new PropertyImpl(cougaar_uri, nECHELONOFSUPPORT);
 
       //ServiceProvider related properties
       PROVIDEDBY = new PropertyImpl(profile_uri, nPROVIDEDBY);
