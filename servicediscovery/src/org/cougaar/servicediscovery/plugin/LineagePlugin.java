@@ -192,8 +192,6 @@ public class LineagePlugin extends SimplePlugin
       // Not handling adds/removes at this point
       // I believe both add/removes should only be initiated by this
       // plugin.
-
-      updateSubordinates();
     }
 
     if (myLineageListWrapperSubscription.hasChanged()) {
@@ -277,15 +275,19 @@ public class LineagePlugin extends SimplePlugin
 
 
       if (localLineageWrapper != null) {
-	localLineageWrapper.setLineageList(localLineage);
-
-	if (myLoggingService.isDebugEnabled()) {
-	  myLoggingService.debug(getAgentIdentifier() + 
-				 " updateLineage: publishChange of " +
-				 localLineageWrapper);
+	// Compare lists before publish changing. Required because restart
+	// processing for Relays resends all relays.
+	if (!localLineage.equals(localLineageWrapper.getLineageList())) {
+	  localLineageWrapper.setLineageList(localLineage);
+	  
+	  if (myLoggingService.isDebugEnabled()) {
+	    myLoggingService.debug(getAgentIdentifier() + 
+				   " updateLineage: publishChange of " +
+				   localLineageWrapper);
+	  }
+	  
+	  publishChange(localLineageWrapper);
 	}
-
-	publishChange(localLineageWrapper);
       } else {
 	localLineageWrapper = mySDFactory.newLineageListWrapper(localLineage);
 
