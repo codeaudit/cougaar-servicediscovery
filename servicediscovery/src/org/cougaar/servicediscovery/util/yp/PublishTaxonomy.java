@@ -80,6 +80,11 @@ public class PublishTaxonomy extends ComponentSupport {
       (YPService) sb.getService(this, YPService.class, null);
     String ypAgent = System.getProperty("org.cougaar.yp.ypAgent");
       
+    if ((ypAgent == null) || ypAgent.equals("")) {
+      myLogger.error("ypAgent not identified.");
+      return;
+    }
+
     myYPProxy = myYPService.getYP(ypAgent);
 
     initTaxonomy();
