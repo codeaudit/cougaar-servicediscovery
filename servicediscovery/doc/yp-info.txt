@@ -97,3 +97,7 @@ used as a template.
 		Click on Global Command Line Arguments
 		Click the Read From File button, then select 
 		CIP/servicediscovery/bin/ypServer.props. 
+
+        IMPORTANT: When configuring the experiment, you must place NCA agent on
+        its own node to ensure that the YP Server is initialized before any other
+        agent tries to register.
