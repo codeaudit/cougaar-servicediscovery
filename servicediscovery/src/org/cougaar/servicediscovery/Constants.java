@@ -22,13 +22,12 @@
 
 package org.cougaar.servicediscovery;
 
-import org.cougaar.glm.ldm.Constants.RelationshipType;
-import org.cougaar.util.Configuration; 
-import org.cougaar.util.log.Logger; 
-import org.cougaar.util.log.Logging;
-
-
 import java.net.URL;
+
+import org.cougaar.glm.ldm.Constants.RelationshipType;
+import org.cougaar.util.Configuration;
+import org.cougaar.util.log.Logger;
+import org.cougaar.util.log.Logging;
 
 public class Constants implements org.cougaar.planning.Constants {
   private static Logger logger = Logging.getLogger(Constants.class);

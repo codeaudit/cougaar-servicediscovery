@@ -24,7 +24,6 @@ package org.cougaar.servicediscovery.description;
 
 import org.cougaar.core.util.UID;
 import org.cougaar.planning.ldm.plan.Relationship;
-
 import org.cougaar.servicediscovery.transaction.ServiceContractRelay;
 
 /**

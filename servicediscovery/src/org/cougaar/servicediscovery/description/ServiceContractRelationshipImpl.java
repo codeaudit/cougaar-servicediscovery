@@ -22,16 +22,10 @@
 
 package org.cougaar.servicediscovery.description;
 
-import java.util.Collection;
-import java.util.Iterator;
-
 import org.cougaar.core.util.UID;
-import org.cougaar.util.TimeSpan;
-
 import org.cougaar.planning.ldm.plan.HasRelationships;
 import org.cougaar.planning.ldm.plan.RelationshipImpl;
 import org.cougaar.planning.ldm.plan.Role;
-
 import org.cougaar.servicediscovery.transaction.ServiceContractRelay;
 
 /**

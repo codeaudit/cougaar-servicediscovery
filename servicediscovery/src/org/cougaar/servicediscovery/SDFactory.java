@@ -22,14 +22,17 @@
 
 package org.cougaar.servicediscovery;
 
-import org.cougaar.core.mts.MessageAddress;
+import java.util.Collection;
+import java.util.Iterator;
+
 import org.cougaar.core.domain.Factory;
+import org.cougaar.core.mts.MessageAddress;
+import org.cougaar.planning.ldm.LDMServesPlugin;
 import org.cougaar.planning.ldm.asset.Asset;
 import org.cougaar.planning.ldm.plan.AspectType;
 import org.cougaar.planning.ldm.plan.HasRelationships;
 import org.cougaar.planning.ldm.plan.Preference;
 import org.cougaar.planning.ldm.plan.Role;
-import org.cougaar.planning.ldm.LDMServesPlugin;
 import org.cougaar.servicediscovery.description.LineageList;
 import org.cougaar.servicediscovery.description.LineageListImpl;
 import org.cougaar.servicediscovery.description.LineageListWrapper;
@@ -44,18 +47,13 @@ import org.cougaar.servicediscovery.description.ServiceRequest;
 import org.cougaar.servicediscovery.description.ServiceRequestImpl;
 import org.cougaar.servicediscovery.description.SupportLineageList;
 import org.cougaar.servicediscovery.description.SupportLineageListImpl;
+import org.cougaar.servicediscovery.transaction.DAMLReadyRelay;
 import org.cougaar.servicediscovery.transaction.LineageListRelay;
 import org.cougaar.servicediscovery.transaction.MMQueryRequest;
 import org.cougaar.servicediscovery.transaction.MMQueryRequestImpl;
 import org.cougaar.servicediscovery.transaction.ServiceContractRelay;
-import org.cougaar.servicediscovery.transaction.DAMLReadyRelay;
 import org.cougaar.util.log.Logger;
 import org.cougaar.util.log.Logging;
-import org.cougaar.util.TimeSpan;
-
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.ArrayList;
 
 /**
  * Service discovery factory Domain package definition.

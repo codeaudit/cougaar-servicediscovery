@@ -22,10 +22,10 @@
 
 package org.cougaar.servicediscovery.transaction;
 
+import java.util.Collection;
+
 import org.cougaar.core.util.UniqueObject;
 import org.cougaar.servicediscovery.description.MMQuery;
-
-import java.util.Collection;
 
 public interface MMQueryRequest extends java.io.Serializable, UniqueObject {
 

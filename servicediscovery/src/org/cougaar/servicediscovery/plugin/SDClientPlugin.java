@@ -22,12 +22,22 @@
 
 package org.cougaar.servicediscovery.plugin;
 
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.Iterator;
+import java.util.Set;
+
 import org.cougaar.core.blackboard.IncrementalSubscription;
-import org.cougaar.core.service.EventService;
-import org.cougaar.core.service.LoggingService;
 import org.cougaar.core.mts.MessageAddress;
 import org.cougaar.core.persist.PersistenceNotEnabledException;
-
+import org.cougaar.core.service.EventService;
+import org.cougaar.core.service.LoggingService;
+import org.cougaar.glm.ldm.Constants;
+import org.cougaar.glm.ldm.asset.Organization;
+import org.cougaar.mlm.plugin.organization.GLSConstants;
 import org.cougaar.planning.ldm.plan.AllocationResult;
 import org.cougaar.planning.ldm.plan.AspectType;
 import org.cougaar.planning.ldm.plan.AspectValue;
@@ -39,36 +49,21 @@ import org.cougaar.planning.ldm.plan.Role;
 import org.cougaar.planning.ldm.plan.ScoringFunction;
 import org.cougaar.planning.ldm.plan.Task;
 import org.cougaar.planning.ldm.plan.TimeAspectValue;
-import org.cougaar.planning.ldm.plan.Verb;
 import org.cougaar.planning.plugin.legacy.SimplePlugin;
 import org.cougaar.planning.plugin.util.PluginHelper;
-import org.cougaar.util.PropertyParser;
-import org.cougaar.util.UnaryPredicate;
-
-import org.cougaar.glm.ldm.Constants;
-import org.cougaar.glm.ldm.oplan.Oplan;
-import org.cougaar.glm.ldm.asset.Organization;
-import org.cougaar.mlm.plugin.organization.GLSConstants;
-
 import org.cougaar.servicediscovery.SDDomain;
 import org.cougaar.servicediscovery.SDFactory;
 import org.cougaar.servicediscovery.description.MMRoleQuery;
-import org.cougaar.servicediscovery.description.TimeInterval;
 import org.cougaar.servicediscovery.description.ScoredServiceDescription;
 import org.cougaar.servicediscovery.description.ServiceClassification;
 import org.cougaar.servicediscovery.description.ServiceDescription;
 import org.cougaar.servicediscovery.description.ServiceRequest;
+import org.cougaar.servicediscovery.description.TimeInterval;
 import org.cougaar.servicediscovery.transaction.MMQueryRequest;
 import org.cougaar.servicediscovery.transaction.ServiceContractRelay;
 import org.cougaar.servicediscovery.util.UDDIConstants;
-
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.Iterator;
-import java.util.Set;
+import org.cougaar.util.PropertyParser;
+import org.cougaar.util.UnaryPredicate;
 
 /**
  * Look up in YP agents providing roles given as parameters,

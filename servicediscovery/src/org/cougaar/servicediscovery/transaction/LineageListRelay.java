@@ -22,13 +22,13 @@
 
 package org.cougaar.servicediscovery.transaction;
 
+import java.util.Collection;
+import java.util.Collections;
+
 import org.cougaar.core.mts.MessageAddress;
 import org.cougaar.core.relay.Relay;
 import org.cougaar.util.log.Logger;
 import org.cougaar.util.log.Logging;
-
-import java.util.Collection;
-import java.util.Collections;
 
 /**
  * Relay used to request command chain lineage

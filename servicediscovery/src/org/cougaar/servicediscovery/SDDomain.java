@@ -22,21 +22,21 @@
 
 package org.cougaar.servicediscovery;
 
+import java.util.ArrayList;
+import java.util.Collection;
+
+import org.cougaar.core.component.ServiceBroker;
 import org.cougaar.core.domain.DomainAdapter;
 import org.cougaar.core.domain.RootPlan;
+import org.cougaar.core.mts.MessageAddress;
 import org.cougaar.core.service.AgentIdentificationService;
 import org.cougaar.core.service.DomainService;
-import org.cougaar.core.mts.MessageAddress;
-import org.cougaar.core.component.ServiceBroker;
-import org.cougaar.planning.service.LDMService;
 import org.cougaar.planning.ldm.LDMServesPlugin;
 import org.cougaar.planning.ldm.LogPlan;
 import org.cougaar.planning.ldm.LogPlanImpl;
 import org.cougaar.planning.ldm.PlanningFactory;
-import org.cougaar.servicediscovery.lp.*;
-
-import java.util.ArrayList;
-import java.util.Collection;
+import org.cougaar.planning.service.LDMService;
+import org.cougaar.servicediscovery.lp.ServiceContractLP;
 
 
 /**

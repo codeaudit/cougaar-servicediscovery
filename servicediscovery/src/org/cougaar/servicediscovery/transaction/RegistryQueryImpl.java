@@ -22,11 +22,11 @@
 
 package org.cougaar.servicediscovery.transaction;
 
-import org.cougaar.servicediscovery.description.BusinessClassification;
-import org.cougaar.servicediscovery.description.ServiceClassification;
-
 import java.util.ArrayList;
 import java.util.Collection;
+
+import org.cougaar.servicediscovery.description.BusinessClassification;
+import org.cougaar.servicediscovery.description.ServiceClassification;
 
 /**
  * Sets the provider and service attributes for this RegistryQuery.

@@ -22,11 +22,10 @@
 
 package org.cougaar.servicediscovery.description;
 
-import org.cougaar.servicediscovery.Constants;
+import java.util.Collection;
+
 import org.cougaar.util.log.Logger;
 import org.cougaar.util.log.Logging;
-
-import java.util.Collection;
 
 /**
  * A Collection which maintains an ordered list of agent names - reflecting

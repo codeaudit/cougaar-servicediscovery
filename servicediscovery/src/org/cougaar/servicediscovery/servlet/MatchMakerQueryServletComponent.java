@@ -22,13 +22,13 @@
  
 package org.cougaar.servicediscovery.servlet;
 
-import org.cougaar.core.service.LoggingService;
-import org.cougaar.core.service.DomainService;
-import org.cougaar.core.servlet.SimpleServletSupport;
-import org.cougaar.core.servlet.SimpleServletComponent;
-import org.cougaar.planning.ldm.PlanningFactory;
-
 import javax.servlet.Servlet;
+
+import org.cougaar.core.service.DomainService;
+import org.cougaar.core.service.LoggingService;
+import org.cougaar.core.servlet.SimpleServletComponent;
+import org.cougaar.core.servlet.SimpleServletSupport;
+import org.cougaar.planning.ldm.PlanningFactory;
 
 /** 
  * <pre>

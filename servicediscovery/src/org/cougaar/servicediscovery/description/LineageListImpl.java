@@ -21,13 +21,13 @@
  */
 package org.cougaar.servicediscovery.description;
 
-import org.cougaar.util.ArrayListFoundation;
-import org.cougaar.util.log.Logger;
-import org.cougaar.util.log.Logging;
-
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+
+import org.cougaar.util.ArrayListFoundation;
+import org.cougaar.util.log.Logger;
+import org.cougaar.util.log.Logging;
 
 
 /**

@@ -22,6 +22,17 @@
 
 package org.cougaar.servicediscovery.description;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+
+import org.cougaar.core.service.LoggingService;
+import org.cougaar.servicediscovery.Constants;
+
 import com.hp.hpl.jena.daml.DAMLClass;
 import com.hp.hpl.jena.daml.DAMLInstance;
 import com.hp.hpl.jena.daml.DAMLModel;
@@ -29,18 +40,6 @@ import com.hp.hpl.jena.daml.common.DAMLModelImpl;
 import com.hp.hpl.mesa.rdf.jena.model.RDFException;
 import com.hp.hpl.mesa.rdf.jena.model.Resource;
 import com.hp.hpl.mesa.rdf.jena.model.Statement;
-
-import org.cougaar.core.service.LoggingService;
-import org.cougaar.servicediscovery.Constants;
-
-import java.io.IOException;
-import java.io.FileInputStream;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
 
 /**
  * Implements ProviderDescription

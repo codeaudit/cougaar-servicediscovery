@@ -22,37 +22,33 @@
 
 package org.cougaar.servicediscovery.plugin;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+
 import org.cougaar.core.agent.service.alarm.Alarm;
 import org.cougaar.core.blackboard.IncrementalSubscription;
 import org.cougaar.core.plugin.ComponentPlugin;
-import org.cougaar.core.service.AlarmService;
 import org.cougaar.core.service.DomainService;
 import org.cougaar.core.service.LoggingService;
-
-/** Left in so that we can decide at a future point to include quiescence
- * reporting
- */
-//import org.cougaar.core.service.AgentIdentificationService;
-//import org.cougaar.core.service.QuiescenceReportService;
-
 import org.cougaar.planning.ldm.PlanningFactory;
 import org.cougaar.planning.ldm.plan.AllocationResult;
 import org.cougaar.planning.ldm.plan.Disposition;
-import org.cougaar.planning.ldm.plan.Role;
 import org.cougaar.planning.ldm.plan.PlanElement;
+import org.cougaar.planning.ldm.plan.Role;
 import org.cougaar.planning.ldm.plan.Schedule;
 import org.cougaar.planning.ldm.plan.ScheduleElement;
 import org.cougaar.planning.ldm.plan.ScheduleElementImpl;
 import org.cougaar.planning.ldm.plan.Task;
-import org.cougaar.planning.plugin.legacy.SimplePlugin;
 import org.cougaar.planning.plugin.util.PluginHelper;
-
-import org.cougaar.servicediscovery.Constants;
+import org.cougaar.servicediscovery.SDDomain;
+import org.cougaar.servicediscovery.SDFactory;
 import org.cougaar.servicediscovery.description.AvailabilityChangeMessage;
 import org.cougaar.servicediscovery.description.LineageList;
 import org.cougaar.servicediscovery.description.LineageListWrapper;
-import org.cougaar.servicediscovery.description.ProviderCapability;
 import org.cougaar.servicediscovery.description.ProviderCapabilities;
+import org.cougaar.servicediscovery.description.ProviderCapability;
 import org.cougaar.servicediscovery.description.ProviderDescription;
 import org.cougaar.servicediscovery.description.ProviderDescriptionImpl;
 import org.cougaar.servicediscovery.description.ServiceCategory;
@@ -61,21 +57,8 @@ import org.cougaar.servicediscovery.description.ServiceClassificationImpl;
 import org.cougaar.servicediscovery.description.ServiceProfile;
 import org.cougaar.servicediscovery.service.RegistrationService;
 import org.cougaar.servicediscovery.util.UDDIConstants;
-import org.cougaar.servicediscovery.SDFactory;
-import org.cougaar.servicediscovery.SDDomain;
-
 import org.cougaar.util.TimeSpan;
 import org.cougaar.util.UnaryPredicate;
-
-
-
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
 
 /**
  * Read local agent DAML profile file. Use the listed roles and register this agent with those

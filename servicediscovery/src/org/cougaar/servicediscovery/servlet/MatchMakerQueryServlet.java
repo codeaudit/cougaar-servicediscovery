@@ -23,9 +23,22 @@
 
 package org.cougaar.servicediscovery.servlet;
 
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Vector;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.cougaar.core.service.LoggingService;
 import org.cougaar.core.servlet.SimpleServletSupport;
-import org.cougaar.planning.servlet.data.xml.XMLWriter;
 import org.cougaar.planning.ldm.PlanningFactory;
 import org.cougaar.servicediscovery.description.MMQuery;
 import org.cougaar.servicediscovery.description.ScoredServiceDescription;
@@ -33,13 +46,6 @@ import org.cougaar.servicediscovery.description.ServiceClassification;
 import org.cougaar.servicediscovery.transaction.MMQueryRequest;
 import org.cougaar.servicediscovery.transaction.NewMMQueryRequest;
 import org.cougaar.util.UnaryPredicate;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.*;
-import java.util.*;
 
 /**
  * A <code>Servlet</code>, loaded by the

@@ -22,18 +22,18 @@
 
 package org.cougaar.servicediscovery.util;
 
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
+
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
-
-import javax.xml.parsers.SAXParser;
-import javax.xml.parsers.SAXParserFactory;
 
 /**
  *  Parses wsdl documents with soap bindings.
  *
  *@author     HSingh
- *@version    $Id: WSDLParser.java,v 1.3 2003-01-23 20:01:18 mthome Exp $
+ *@version    $Id: WSDLParser.java,v 1.4 2003-12-09 18:02:26 rtomlinson Exp $
  */
 
 public class WSDLParser extends DefaultHandler {

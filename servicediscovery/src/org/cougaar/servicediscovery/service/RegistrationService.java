@@ -22,12 +22,11 @@
 
 package org.cougaar.servicediscovery.service;
 
-import org.cougaar.core.component.Service;
-
-import org.cougaar.servicediscovery.description.ProviderDescription;
-import org.cougaar.servicediscovery.description.ServiceProfile;
-
 import java.util.Collection;
+
+import org.cougaar.core.component.Service;
+import org.cougaar.servicediscovery.description.ProviderDescription;
+import org.cougaar.servicediscovery.service.YPServiceAdapter.Callback;
 
 /** A RegistrationService is an API which may be supplied by a
  * ServiceProvider registered in a ServiceBroker that provides

@@ -22,23 +22,17 @@
 
 package org.cougaar.servicediscovery.transaction;
 
+import java.util.Collection;
+
 import org.cougaar.core.mts.MessageAddress;
 import org.cougaar.core.relay.Relay;
-
 import org.cougaar.planning.ldm.asset.Asset;
-
+import org.cougaar.planning.ldm.plan.Preference;
+import org.cougaar.servicediscovery.SDFactory;
 import org.cougaar.servicediscovery.description.ServiceContract;
 import org.cougaar.servicediscovery.description.ServiceRequest;
 import org.cougaar.util.log.Logger;
 import org.cougaar.util.log.Logging;
-
-import org.cougaar.planning.ldm.plan.AspectType;
-import org.cougaar.planning.ldm.plan.AspectValue;
-import java.util.Collection;
-import org.cougaar.planning.ldm.plan.Preference;
-import org.cougaar.servicediscovery.SDFactory;
-import org.cougaar.planning.ldm.plan.TimeAspectValue;
-import org.cougaar.planning.ldm.plan.ScoringFunction;
 
 /**
  * Relay used to request command chain lineage

@@ -22,19 +22,20 @@
 
 package org.cougaar.servicediscovery.servlet;
 
-import org.cougaar.core.service.LoggingService;
-import org.cougaar.core.servlet.BaseServletComponent;
-import org.cougaar.util.ConfigFinder;
-
-import javax.servlet.Servlet;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+
+import javax.servlet.Servlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.cougaar.core.service.LoggingService;
+import org.cougaar.core.servlet.BaseServletComponent;
+import org.cougaar.util.ConfigFinder;
 
 public class CougaarDAMLServlet extends BaseServletComponent {
 

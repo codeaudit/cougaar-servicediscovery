@@ -22,14 +22,14 @@
 
 package org.cougaar.servicediscovery.description;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+
 import org.cougaar.planning.ldm.asset.Asset;
 import org.cougaar.planning.ldm.plan.Role;
 import org.cougaar.util.log.Logger;
 import org.cougaar.util.log.Logging;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 
 
 /**

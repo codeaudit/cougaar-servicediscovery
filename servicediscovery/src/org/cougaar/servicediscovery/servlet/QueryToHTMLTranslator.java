@@ -22,9 +22,7 @@
 
 package org.cougaar.servicediscovery.servlet;
 
-import org.cougaar.core.domain.Factory;
 import org.cougaar.planning.ldm.PlanningFactory;
-
 import org.cougaar.servicediscovery.description.MMQuery;
 import org.cougaar.servicediscovery.description.MMRoleQuery;
 import org.cougaar.servicediscovery.transaction.MMQueryRequest;

@@ -22,14 +22,12 @@
 
 package org.cougaar.servicediscovery.transaction;
 
+import java.util.Collection;
+
 import org.cougaar.core.util.UID;
 import org.cougaar.servicediscovery.description.MMQuery;
 import org.cougaar.util.log.Logger;
 import org.cougaar.util.log.Logging;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-
-import java.util.Collection;
 
 public class MMQueryRequestImpl implements NewMMQueryRequest, java.io.Serializable {
   private static Logger myLogger = Logging.getLogger(MMQueryRequestImpl.class);

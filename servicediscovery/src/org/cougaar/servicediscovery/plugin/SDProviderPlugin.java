@@ -22,8 +22,13 @@
 
 package org.cougaar.servicediscovery.plugin;
 
-import org.cougaar.core.service.LoggingService;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+
 import org.cougaar.core.blackboard.IncrementalSubscription;
+import org.cougaar.core.service.LoggingService;
 import org.cougaar.glm.ldm.asset.Organization;
 import org.cougaar.planning.ldm.plan.AspectType;
 import org.cougaar.planning.ldm.plan.AspectValue;
@@ -34,24 +39,16 @@ import org.cougaar.planning.ldm.plan.ScheduleElement;
 import org.cougaar.planning.ldm.plan.ScoringFunction;
 import org.cougaar.planning.ldm.plan.TimeAspectValue;
 import org.cougaar.planning.plugin.legacy.SimplePlugin;
-
 import org.cougaar.servicediscovery.SDDomain;
 import org.cougaar.servicediscovery.SDFactory;
-import org.cougaar.servicediscovery.description.ProviderCapability;
 import org.cougaar.servicediscovery.description.ProviderCapabilities;
+import org.cougaar.servicediscovery.description.ProviderCapability;
 import org.cougaar.servicediscovery.description.ServiceContract;
 import org.cougaar.servicediscovery.description.ServiceRequest;
-import org.cougaar.servicediscovery.description.StatusChangeMessage;
 import org.cougaar.servicediscovery.transaction.ServiceContractRelay;
-
 import org.cougaar.util.MutableTimeSpan;
 import org.cougaar.util.TimeSpan;
 import org.cougaar.util.UnaryPredicate;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
 
 /**
  * SDProviderPlugin generates the LineageLists for the Agent.

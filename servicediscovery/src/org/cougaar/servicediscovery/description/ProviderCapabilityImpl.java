@@ -21,13 +21,11 @@
  */
 package org.cougaar.servicediscovery.description;
 
-import org.cougaar.core.util.UID;
 import org.cougaar.planning.ldm.plan.Role;
 import org.cougaar.planning.ldm.plan.Schedule;
+import org.cougaar.servicediscovery.Constants;
 import org.cougaar.util.log.Logger;
 import org.cougaar.util.log.Logging;
-
-import org.cougaar.servicediscovery.Constants;
 
 /**
  * Maintains a Role and echelon

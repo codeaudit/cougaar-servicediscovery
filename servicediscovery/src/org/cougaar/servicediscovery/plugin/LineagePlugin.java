@@ -22,6 +22,10 @@
 
 package org.cougaar.servicediscovery.plugin;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+
 import org.cougaar.core.blackboard.IncrementalSubscription;
 import org.cougaar.core.service.LoggingService;
 import org.cougaar.planning.ldm.asset.Asset;
@@ -34,14 +38,8 @@ import org.cougaar.servicediscovery.SDDomain;
 import org.cougaar.servicediscovery.SDFactory;
 import org.cougaar.servicediscovery.description.LineageList;
 import org.cougaar.servicediscovery.description.LineageListWrapper;
-import org.cougaar.servicediscovery.description.SupportLineageList;
 import org.cougaar.servicediscovery.transaction.LineageListRelay;
 import org.cougaar.util.UnaryPredicate;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Vector;
 
 /**
  * LineagePlugin generates the LineageLists for the Agent.

@@ -23,37 +23,31 @@
 
 package org.cougaar.servicediscovery.servlet;
 
-import java.io.*;
-import java.net.*;
-import java.util.*;
-import java.text.DecimalFormat;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Iterator;
 
-import javax.servlet.*;
-import javax.servlet.http.*;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
-import org.cougaar.core.blackboard.Subscription;
-import org.cougaar.core.servlet.SimpleServletSupport;
 import org.cougaar.core.service.LoggingService;
-import org.cougaar.core.util.UID;
-import org.cougaar.planning.ldm.asset.*;
-import org.cougaar.planning.ldm.plan.*;
-
-import org.cougaar.util.UnaryPredicate;
-
-import org.cougaar.planning.servlet.data.Failure;
-import org.cougaar.planning.servlet.data.xml.*;
-import org.cougaar.planning.servlet.data.completion.*;
-
-//These should be changed to logistics type in due time.
-import org.cougaar.glm.ldm.Constants; //might have to be glm, not logistics version
+import org.cougaar.core.servlet.SimpleServletSupport;
+import org.cougaar.glm.ldm.Constants;
 import org.cougaar.glm.ldm.asset.SupplyClassPG;
 import org.cougaar.glm.plugins.AssetUtils;
 import org.cougaar.glm.plugins.TaskUtils;
-import org.cougaar.servicediscovery.transaction.MMQueryRequest;
-import org.cougaar.servicediscovery.transaction.NewMMQueryRequest;
-import org.cougaar.servicediscovery.description.ScoredServiceDescription;
-import org.cougaar.servicediscovery.description.ServiceClassification;
-import org.cougaar.servicediscovery.description.ServiceBinding;
+import org.cougaar.planning.ldm.asset.AggregateAsset;
+import org.cougaar.planning.ldm.asset.Asset;
+import org.cougaar.planning.ldm.asset.TypeIdentificationPG;
+import org.cougaar.planning.ldm.plan.AllocationResult;
+import org.cougaar.planning.ldm.plan.PlanElement;
+import org.cougaar.planning.ldm.plan.Task;
+import org.cougaar.util.UnaryPredicate;
 
 /**
  * A <code>Servlet</code>, loaded by the

@@ -22,44 +22,27 @@
 
 package org.cougaar.servicediscovery.plugin;
 
-import org.cougaar.core.blackboard.IncrementalSubscription;
-import org.cougaar.core.blackboard.PrivilegedClaimant;
-import org.cougaar.core.mts.MessageAddress;
-import org.cougaar.core.service.AlarmService;
-import org.cougaar.core.service.community.Community;
-import org.cougaar.core.service.community.CommunityChangeEvent;
-import org.cougaar.core.service.community.CommunityChangeListener;
-import org.cougaar.core.service.community.CommunityResponse;
-import org.cougaar.core.service.community.CommunityResponseListener;
-import org.cougaar.core.service.community.CommunityService;
-
-import org.cougaar.planning.ldm.plan.Task;
-
-import org.cougaar.servicediscovery.Constants;
-import org.cougaar.servicediscovery.description.AvailabilityChangeMessage;
-import org.cougaar.servicediscovery.description.LineageList;
-import org.cougaar.servicediscovery.description.LineageListWrapper;
-import org.cougaar.servicediscovery.description.ProviderDescription;
-import org.cougaar.servicediscovery.description.ServiceCategory;
-import org.cougaar.servicediscovery.description.ServiceClassification;
-import org.cougaar.servicediscovery.description.ServiceClassificationImpl;
-import org.cougaar.servicediscovery.description.SupportLineageList;
-import org.cougaar.servicediscovery.service.RegistrationService;
-import org.cougaar.servicediscovery.util.UDDIConstants;
-import org.cougaar.servicediscovery.SDFactory;
-import org.cougaar.servicediscovery.SDDomain;
-
-import org.cougaar.util.TimeSpan;
-import org.cougaar.util.UnaryPredicate;
-
-
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+
+import org.cougaar.core.service.community.Community;
+import org.cougaar.core.service.community.CommunityChangeEvent;
+import org.cougaar.core.service.community.CommunityChangeListener;
+import org.cougaar.core.service.community.CommunityResponse;
+import org.cougaar.core.service.community.CommunityResponseListener;
+import org.cougaar.core.service.community.CommunityService;
+import org.cougaar.servicediscovery.description.AvailabilityChangeMessage;
+import org.cougaar.servicediscovery.description.LineageListWrapper;
+import org.cougaar.servicediscovery.description.ProviderDescription;
+import org.cougaar.servicediscovery.description.ServiceClassification;
+import org.cougaar.servicediscovery.description.ServiceClassificationImpl;
+import org.cougaar.servicediscovery.description.SupportLineageList;
+import org.cougaar.servicediscovery.service.RegistrationService;
+import org.cougaar.servicediscovery.util.UDDIConstants;
 
 /**
  * Read local agent DAML profile file. Use the listed roles and register this agent with those

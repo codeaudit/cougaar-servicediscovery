@@ -21,10 +21,10 @@
  */
 package org.cougaar.servicediscovery.description;
 
+import java.io.Serializable;
+
 import org.cougaar.planning.ldm.plan.Role;
 import org.cougaar.util.TimeSpan;
-
-import java.io.Serializable;
 
 /**
  * Indicates a change in the availability or unavailability of a provider

@@ -1,9 +1,10 @@
 package org.cougaar.servicediscovery.description;
 
-import org.cougaar.util.TimeSpan;
-import java.util.Collection;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
+
+import org.cougaar.util.TimeSpan;
 
 /**
  * <p>Title: </p>

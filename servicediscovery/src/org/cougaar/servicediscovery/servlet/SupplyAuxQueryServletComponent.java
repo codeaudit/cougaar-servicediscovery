@@ -22,11 +22,11 @@
  
 package org.cougaar.servicediscovery.servlet;
 
-import org.cougaar.core.service.LoggingService;
-import org.cougaar.core.servlet.SimpleServletSupport;
-import org.cougaar.core.servlet.SimpleServletComponent;
-
 import javax.servlet.Servlet;
+
+import org.cougaar.core.service.LoggingService;
+import org.cougaar.core.servlet.SimpleServletComponent;
+import org.cougaar.core.servlet.SimpleServletSupport;
 
 /** 
  * <pre>

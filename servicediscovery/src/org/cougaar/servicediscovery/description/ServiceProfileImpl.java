@@ -22,16 +22,16 @@
 
 package org.cougaar.servicediscovery.description;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+
 import com.hp.hpl.jena.daml.DAMLInstance;
 import com.hp.hpl.mesa.rdf.jena.model.RDFException;
 import com.hp.hpl.mesa.rdf.jena.model.RDFNode;
 import com.hp.hpl.mesa.rdf.jena.model.Resource;
 import com.hp.hpl.mesa.rdf.jena.model.Statement;
 import com.hp.hpl.mesa.rdf.jena.model.StmtIterator;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
 
 /**
  * Implements ServiceProfile

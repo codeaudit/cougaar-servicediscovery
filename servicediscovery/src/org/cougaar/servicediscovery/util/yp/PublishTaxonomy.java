@@ -22,39 +22,27 @@
 
 package org.cougaar.servicediscovery.util.yp;
 
-import javax.xml.parsers.*;
-import org.w3c.dom.*;
-import org.xml.sax.*;
-import org.apache.xerces.parsers.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.util.Vector;
 
+import org.apache.xerces.parsers.DOMParser;
 import org.cougaar.core.agent.service.alarm.Alarm;
-import org.cougaar.core.component.*;
+import org.cougaar.core.component.ComponentSupport;
 import org.cougaar.core.service.AgentIdentificationService;
 import org.cougaar.core.service.AlarmService;
 import org.cougaar.core.service.LoggingService;
 import org.cougaar.core.service.ThreadService;
-import org.cougaar.core.thread.*;
-import org.cougaar.util.log.*;
-import org.cougaar.util.StateMachine;
-import org.cougaar.yp.*;
 import org.cougaar.servicediscovery.util.UDDIConstants;
-
-import org.uddi4j.UDDIException;
-import org.uddi4j.client.UDDIProxy;
-
-import org.uddi4j.datatype.tmodel.*;
+import org.cougaar.yp.YPProxy;
+import org.cougaar.yp.YPService;
+import org.cougaar.yp.YPStateMachine;
+import org.uddi4j.datatype.tmodel.TModel;
 import org.uddi4j.response.AuthToken;
-import org.uddi4j.response.DispositionReport;
 import org.uddi4j.response.TModelDetail;
-import org.uddi4j.util.*;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.Properties;
-import java.util.Stack;
-import java.util.Vector;
+import org.uddi4j.util.CategoryBag;
+import org.uddi4j.util.KeyedReference;
+import org.xml.sax.InputSource;
 
 
 /**

@@ -42,20 +42,21 @@
 
 package org.cougaar.servicediscovery.servlet;
 
-import org.cougaar.core.blackboard.BlackboardClient;
-import org.cougaar.core.service.BlackboardService;
-import org.cougaar.core.servlet.BaseServletComponent;
-import org.cougaar.servicediscovery.util.Switch;
-import org.cougaar.util.UnaryPredicate;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.Collection;
+import java.util.Date;
 
 import javax.servlet.Servlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.Collection;
-import java.util.Date;
+
+import org.cougaar.core.blackboard.BlackboardClient;
+import org.cougaar.core.service.BlackboardService;
+import org.cougaar.core.servlet.BaseServletComponent;
+import org.cougaar.servicediscovery.util.Switch;
+import org.cougaar.util.UnaryPredicate;
 
 
 /**

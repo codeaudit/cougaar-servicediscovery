@@ -22,31 +22,35 @@
 
 package org.cougaar.servicediscovery.plugin;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+
 import org.cougaar.core.agent.service.alarm.Alarm;
 import org.cougaar.core.blackboard.IncrementalSubscription;
-import org.cougaar.core.service.AlarmService;
-import org.cougaar.core.service.LoggingService;
 import org.cougaar.core.service.AgentIdentificationService;
+import org.cougaar.core.service.LoggingService;
 import org.cougaar.core.service.QuiescenceReportService;
-
 import org.cougaar.planning.ldm.plan.Role;
 import org.cougaar.planning.plugin.legacy.SimplePlugin;
-
 import org.cougaar.servicediscovery.Constants;
-import org.cougaar.servicediscovery.description.*;
+import org.cougaar.servicediscovery.description.LineageList;
+import org.cougaar.servicediscovery.description.LineageListWrapper;
+import org.cougaar.servicediscovery.description.MMRoleQuery;
+import org.cougaar.servicediscovery.description.ProviderCapabilities;
+import org.cougaar.servicediscovery.description.ProviderCapability;
+import org.cougaar.servicediscovery.description.ScoredServiceDescriptionImpl;
+import org.cougaar.servicediscovery.description.ServiceClassification;
+import org.cougaar.servicediscovery.description.ServiceClassificationImpl;
+import org.cougaar.servicediscovery.description.ServiceInfo;
 import org.cougaar.servicediscovery.service.RegistryQueryService;
 import org.cougaar.servicediscovery.transaction.MMQueryRequest;
 import org.cougaar.servicediscovery.transaction.MMQueryRequestImpl;
 import org.cougaar.servicediscovery.transaction.RegistryQuery;
 import org.cougaar.servicediscovery.transaction.RegistryQueryImpl;
 import org.cougaar.servicediscovery.util.UDDIConstants;
-
 import org.cougaar.util.UnaryPredicate;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
 
 /**
  *

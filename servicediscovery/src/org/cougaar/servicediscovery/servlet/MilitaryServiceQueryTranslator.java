@@ -22,9 +22,9 @@
 
 package org.cougaar.servicediscovery.servlet;
 
-import org.cougaar.servicediscovery.util.UDDIConstants;
-import org.cougaar.servicediscovery.transaction.MMQueryRequest;
 import org.cougaar.servicediscovery.description.MMRoleQuery;
+import org.cougaar.servicediscovery.transaction.MMQueryRequest;
+import org.cougaar.servicediscovery.util.UDDIConstants;
 
 
 /**

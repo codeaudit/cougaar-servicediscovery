@@ -23,39 +23,40 @@ package org.cougaar.servicediscovery.servlet;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Vector;
 
 import javax.servlet.Servlet;
-
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.cougaar.core.blackboard.BlackboardClient;
-
-
+import org.cougaar.core.mts.MessageAddress;
 import org.cougaar.core.service.BlackboardService;
 import org.cougaar.core.service.DomainService;
-
 import org.cougaar.core.servlet.BaseServletComponent;
-import org.cougaar.core.mts.MessageAddress;
-
 import org.cougaar.glm.ldm.asset.ClassIXRepairPart;
 import org.cougaar.glm.ldm.asset.Organization;
-
+import org.cougaar.planning.ldm.PlanningFactory;
 import org.cougaar.planning.ldm.asset.Asset;
 import org.cougaar.planning.ldm.asset.CommunityPGImpl;
 import org.cougaar.planning.ldm.asset.NewClusterPG;
 import org.cougaar.planning.ldm.asset.NewItemIdentificationPG;
 import org.cougaar.planning.ldm.asset.NewTypeIdentificationPG;
 import org.cougaar.planning.ldm.asset.PropertyGroupSchedule;
-
-import org.cougaar.planning.ldm.plan.*;
-import org.cougaar.planning.ldm.PlanningFactory;
+import org.cougaar.planning.ldm.plan.Allocation;
+import org.cougaar.planning.ldm.plan.AllocationResult;
+import org.cougaar.planning.ldm.plan.AspectType;
+import org.cougaar.planning.ldm.plan.AspectValue;
+import org.cougaar.planning.ldm.plan.NewTask;
+import org.cougaar.planning.ldm.plan.Plan;
+import org.cougaar.planning.ldm.plan.Preference;
+import org.cougaar.planning.ldm.plan.Role;
+import org.cougaar.planning.ldm.plan.ScoringFunction;
+import org.cougaar.planning.ldm.plan.TimeAspectValue;
 import org.cougaar.planning.plugin.util.PluginHelper;
 
 
@@ -64,7 +65,7 @@ import org.cougaar.planning.plugin.util.PluginHelper;
  * http://&lt;hostname&gt;:&lt;port&gt;/$Agent/taskServlet
  *
  *@author    HSingh
- *@version   $Id: MyTaskServlet.java,v 1.4 2003-01-23 20:01:15 mthome Exp $
+ *@version   $Id: MyTaskServlet.java,v 1.5 2003-12-09 18:02:26 rtomlinson Exp $
  */
 public class MyTaskServlet extends BaseServletComponent implements BlackboardClient {
 

@@ -22,7 +22,6 @@
 
 package org.cougaar.servicediscovery.description;
 
-import org.cougaar.servicediscovery.util.UDDIConstants;
 
 /**
  * <p>Title: </p>

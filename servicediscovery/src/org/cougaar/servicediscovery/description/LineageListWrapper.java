@@ -21,8 +21,6 @@
  */
 package org.cougaar.servicediscovery.description;
 
-import java.util.Collections;
-
 import org.cougaar.core.util.UID;
 import org.cougaar.core.util.UniqueObject;
 import org.cougaar.util.log.Logger;

@@ -22,10 +22,10 @@
 
 package org.cougaar.servicediscovery.description;
 
+import java.util.Collection;
+
 import org.cougaar.planning.ldm.asset.Asset;
 import org.cougaar.planning.ldm.plan.Role;
-
-import java.util.Collection;
 
 /**
  * The ServiceContract describes a particular service that

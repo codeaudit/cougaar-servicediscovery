@@ -21,40 +21,52 @@
  */
 
 package org.cougaar.servicediscovery.service;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Vector;
+
 import org.cougaar.core.component.BindingSite;
 import org.cougaar.core.component.Component;
 import org.cougaar.core.component.ServiceBroker;
 import org.cougaar.core.component.ServiceProvider;
 import org.cougaar.core.mts.MessageAddress;
 import org.cougaar.core.service.AgentIdentificationService;
-import org.cougaar.core.service.community.Community;
 import org.cougaar.core.service.LoggingService;
 import org.cougaar.core.service.ThreadService;
 import org.cougaar.core.service.UIDService;
-import org.cougaar.servicediscovery.description.*;
+import org.cougaar.core.service.community.Community;
+import org.cougaar.servicediscovery.description.BusinessClassificationImpl;
+import org.cougaar.servicediscovery.description.Classification;
+import org.cougaar.servicediscovery.description.ProviderInfo;
+import org.cougaar.servicediscovery.description.ServiceBinding;
+import org.cougaar.servicediscovery.description.ServiceClassificationImpl;
 import org.cougaar.servicediscovery.description.ServiceInfo;
+import org.cougaar.servicediscovery.service.YPServiceAdapter.Callback;
+import org.cougaar.servicediscovery.service.YPServiceAdapter.CallbackWithContext;
 import org.cougaar.servicediscovery.transaction.RegistryQuery;
 import org.cougaar.util.GenericStateModelAdapter;
-import org.cougaar.yp.*;
-
-import org.uddi4j.UDDIException;
-import org.uddi4j.util.CategoryBag;
-import org.uddi4j.util.KeyedReference;
-import org.uddi4j.util.FindQualifiers;
-import org.uddi4j.util.FindQualifier;
+import org.cougaar.yp.YPProxy;
+import org.cougaar.yp.YPService;
 import org.uddi4j.datatype.Name;
-import org.uddi4j.datatype.binding.BindingTemplates;
 import org.uddi4j.datatype.binding.BindingTemplate;
-import org.uddi4j.datatype.binding.TModelInstanceInfo;
+import org.uddi4j.datatype.binding.BindingTemplates;
 import org.uddi4j.datatype.binding.InstanceParms;
-import org.uddi4j.datatype.tmodel.TModel;
+import org.uddi4j.datatype.binding.TModelInstanceInfo;
+import org.uddi4j.datatype.business.BusinessEntity;
 import org.uddi4j.datatype.service.BusinessService;
 import org.uddi4j.datatype.service.BusinessServices;
-import org.uddi4j.datatype.business.BusinessEntity;
-import org.uddi4j.transport.TransportException;
-import org.uddi4j.response.*;
-
-import java.util.*;
+import org.uddi4j.response.BusinessDetail;
+import org.uddi4j.response.BusinessList;
+import org.uddi4j.response.ServiceDetail;
+import org.uddi4j.response.ServiceList;
+import org.uddi4j.util.CategoryBag;
+import org.uddi4j.util.FindQualifier;
+import org.uddi4j.util.FindQualifiers;
+import org.uddi4j.util.KeyedReference;
 
 
 /**

@@ -21,15 +21,15 @@
  */
 package org.cougaar.servicediscovery.description;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+
 import org.cougaar.core.util.UID;
 import org.cougaar.planning.ldm.plan.Role;
 import org.cougaar.planning.ldm.plan.Schedule;
 import org.cougaar.util.log.Logger;
 import org.cougaar.util.log.Logging;
-
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
 /**
  * Maintains the set of provider capabilities
  */

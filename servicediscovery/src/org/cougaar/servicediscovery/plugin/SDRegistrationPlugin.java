@@ -22,26 +22,16 @@
 
 package org.cougaar.servicediscovery.plugin;
 
+import java.util.ArrayList;
+import java.util.Collection;
+
 import org.cougaar.core.service.LoggingService;
-
-/** Left in so that we can decide at a future point to include quiescence
- * reporting
- */
-//import org.cougaar.core.service.AgentIdentificationService;
-//import org.cougaar.core.service.QuiescenceReportService;
-
-import org.cougaar.planning.ldm.plan.Task;
-
 import org.cougaar.servicediscovery.description.AvailabilityChangeMessage;
 import org.cougaar.servicediscovery.description.ProviderDescription;
 import org.cougaar.servicediscovery.description.ServiceClassification;
 import org.cougaar.servicediscovery.description.ServiceClassificationImpl;
 import org.cougaar.servicediscovery.service.RegistrationService;
 import org.cougaar.servicediscovery.util.UDDIConstants;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
 
 /**
  * Read local agent DAML profile file. Use the listed roles and register this agent with those

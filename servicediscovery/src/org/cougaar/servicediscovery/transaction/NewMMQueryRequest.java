@@ -22,9 +22,9 @@
 
 package org.cougaar.servicediscovery.transaction;
 
-import org.cougaar.servicediscovery.description.MMQuery;
-
 import java.util.Collection;
+
+import org.cougaar.servicediscovery.description.MMQuery;
 
 public interface NewMMQueryRequest extends MMQueryRequest {
 

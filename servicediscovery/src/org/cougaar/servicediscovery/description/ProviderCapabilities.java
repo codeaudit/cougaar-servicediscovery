@@ -21,11 +21,11 @@
  */
 package org.cougaar.servicediscovery.description;
 
+import java.util.Collection;
+
 import org.cougaar.core.util.UniqueObject;
 import org.cougaar.planning.ldm.plan.Role;
 import org.cougaar.planning.ldm.plan.Schedule;
-
-import java.util.Collection;
 
 /**
  * A Collection which maintains an ordered list of provider capabilities

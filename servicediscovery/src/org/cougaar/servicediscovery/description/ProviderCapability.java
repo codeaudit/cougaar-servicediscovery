@@ -24,8 +24,6 @@ package org.cougaar.servicediscovery.description;
 import org.cougaar.planning.ldm.plan.Role;
 import org.cougaar.planning.ldm.plan.Schedule;
 
-import java.util.Collection;
-
 /**
  * Describes a provider capability for a specific role - including support 
  * role, echelon of support, and availability.

@@ -29,17 +29,17 @@
  */
 package org.cougaar.servicediscovery.util;
 
-import org.uddi4j.client.UDDIProxy;
-import org.uddi4j.response.AuthToken;
-import org.uddi4j.response.TModelDetail;
-import org.uddi4j.response.DispositionReport;
-import org.uddi4j.util.KeyedReference;
-import org.uddi4j.util.CategoryBag;
-import org.uddi4j.datatype.tmodel.TModel;
-import org.uddi4j.UDDIException;
-
 import java.util.Properties;
 import java.util.Vector;
+
+import org.uddi4j.UDDIException;
+import org.uddi4j.client.UDDIProxy;
+import org.uddi4j.datatype.tmodel.TModel;
+import org.uddi4j.response.AuthToken;
+import org.uddi4j.response.DispositionReport;
+import org.uddi4j.response.TModelDetail;
+import org.uddi4j.util.CategoryBag;
+import org.uddi4j.util.KeyedReference;
 
 public class SaveTModel {
 
