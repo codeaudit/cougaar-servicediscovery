@@ -24,5 +24,5 @@ ROLE,DESCRIPTION,BLANK
 "DivisionSupportSubordinate","Division echelon of support",
 "CorpsSupportSubordinate","Corps echelon of support",
 "TheaterSupportSubordinate","Theater echelon of support",
-"ArmySupportSubordinate","Army echelon of support",
+"USArmySupportSubordinate","Army echelon of support",
 "ConusSupportSubordinate","Conus echelon of support",
