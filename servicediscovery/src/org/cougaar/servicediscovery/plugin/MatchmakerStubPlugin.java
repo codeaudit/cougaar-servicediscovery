@@ -186,35 +186,35 @@ public class MatchmakerStubPlugin extends SimplePlugin {
     } else {
       myDistributedYPServers = false;
     }
-  }
 
+    if (didRehydrate()) {
+      // Requeue any unanswered MMQueries
+      for (Iterator iterator = myClientRequestSubscription.iterator();
+	   iterator.hasNext();) {
+	MMQueryRequest queryRequest =  (MMQueryRequest) iterator.next();
+        MMRoleQuery query = (MMRoleQuery) queryRequest.getQuery();
+	Collection result = queryRequest.getResult();
+	
+	if ((!query.getObsolete()) &&
+	    ((result == null) ||
+	     (result.isEmpty()))) {
+	  if (myLoggingService.isDebugEnabled()) {
+	    myLoggingService.debug("setupSubscription: putting " + 
+				   queryRequest + 
+				   " back on queue after rehydration.");
+	    addRQ(queryRequest);
+	  }
+	}
+      }
+    }
+  }
  
   protected void execute() {
     if (myClientRequestSubscription.hasChanged()) {
 
       for (Iterator i = myClientRequestSubscription.getAddedCollection().iterator();
 	   i.hasNext();) {
-        MMQueryRequest queryRequest =  (MMQueryRequest) i.next();
-        MMRoleQuery query = (MMRoleQuery) queryRequest.getQuery();
-
-	
-	RegistryQuery rq = new RegistryQueryImpl();
-	RQ r;
-	  
-	// Find all service providers for specifed Role
-	ServiceClassification roleSC =
-	  new ServiceClassificationImpl(query.getRole().toString(),
-					query.getRole().toString(),
-					UDDIConstants.MILITARY_SERVICE_SCHEME);
-	rq.addServiceClassification(roleSC);
-	
-	if (myDistributedYPServers) {
-	  r = new RQ(queryRequest, query, rq);
-	} else {
-	  r = new RQ(queryRequest, query, rq);
-	}
-	  
-	postRQ(r);
+	addRQ((MMQueryRequest) i.next());
       }
     }
 
@@ -281,6 +281,29 @@ public class MatchmakerStubPlugin extends SimplePlugin {
 	myLoggingService.debug(getAgentIdentifier() + message, e);
     }
   }
+
+  protected void addRQ(MMQueryRequest queryRequest) {
+    MMRoleQuery query = (MMRoleQuery) queryRequest.getQuery();
+    
+    RegistryQuery rq = new RegistryQueryImpl();
+    RQ r;
+    
+    // Find all service providers for specifed Role
+    ServiceClassification roleSC =
+      new ServiceClassificationImpl(query.getRole().toString(),
+				    query.getRole().toString(),
+				    UDDIConstants.MILITARY_SERVICE_SCHEME);
+    rq.addServiceClassification(roleSC);
+    
+    if (myDistributedYPServers) {
+      r = new RQ(queryRequest, query, rq);
+    } else {
+      r = new RQ(queryRequest, query, rq);
+    }
+    
+    postRQ(r);
+  }
+
 
   protected void handleResponse(RQ r) {
     MMQueryRequest queryRequest = r.queryRequest;
