@@ -23,7 +23,6 @@
 package org.cougaar.servicediscovery;
 
 import org.cougaar.core.domain.DomainAdapter;
-import org.cougaar.core.domain.DomainBindingSite;
 import org.cougaar.core.domain.RootPlan;
 import org.cougaar.core.service.AgentIdentificationService;
 import org.cougaar.core.service.DomainService;
@@ -112,13 +111,7 @@ public class SDDomain extends DomainAdapter {
   }
 
   protected void loadLPs() {
-    DomainBindingSite bindingSite = (DomainBindingSite) getBindingSite();
-
-    if (bindingSite == null) {
-      throw new RuntimeException("Binding site for the domain has not be set.\n" +
-                                 "Unable to initialize domain LPs without a binding site.");
-    }
-    RootPlan rootplan = (RootPlan) bindingSite.getXPlanForDomain("root");
+    RootPlan rootplan = (RootPlan) getXPlanForDomain("root");
     if (rootplan == null) {
       throw new RuntimeException("Missing \"root\" plan!");
     }
