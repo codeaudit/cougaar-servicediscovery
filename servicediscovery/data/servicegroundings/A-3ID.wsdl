@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions
+  xmlns="http://schemas.xmlsoap.org/wsdl/"
+  name="A_3ID-Service"
+  targetNamespace="file://../../../servicediscovery/data/servicegroundings/A-3ID.wsdl"
+  xmlns:provider="file://<COUGAAR_INSTALL_PATH>/servicediscovery/data/servicegroundings/TransportProviderCougaarGrounding.wsdl"
+  xmlns:cougaar="file://<COUGAAR_INSTALL_PATH>/servicediscovery/data/servicegroundings/cougaar.wsdl" >
+
+<service name="A_3ID">
+  <port binding="provider:TransportProviderCougaarBinding" name="CougaarAgentCommunicationsPort">
+    <cougaar:address agentName="3ID"/>
+  </port>
+</service>
+
+</definitions>
