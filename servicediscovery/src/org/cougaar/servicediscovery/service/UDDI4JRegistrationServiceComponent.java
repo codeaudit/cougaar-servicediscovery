@@ -198,7 +198,10 @@ public final class UDDI4JRegistrationServiceComponent
       protected final Callback callback;
 
       public SMBase(Object ypContext, Callback callback) {
-        super(ypService, makeProxy(ypContext), threads);
+        super(
+          ypService,
+          makeProxy(ypContext),
+          UDDI4JRegistrationServiceComponent.this.threads);
 	this.ypContext = ypContext;
         this.callback = callback;
       }
@@ -345,23 +348,26 @@ public final class UDDI4JRegistrationServiceComponent
 
         add(new SState("initBag.Loop") { public void invoke() {
           final BusinessCategory bc = (BusinessCategory) getArgument();
+          Callback cb = new Callback() {
+            public void invoke(Object o) {
+              KeyedReference kr = (KeyedReference) o;
+              bzBag.getKeyedReferenceVector().add(kr);
+              callReturn(null);
+              kick();
+            }
+            public void handle(Exception e) {
+              UDDI4JRegistrationServiceComponent.this.log.error(
+                "initBag.Loop.getKeyedReference(" + bc + ")",
+                e);
+              //transit("ERROR");
+              callback.handle(e);
+            }
+          };
           getKeyedReference(getYPProxy(),
 			    bc.getCategorySchemeName(),
                             bc.getCategoryName(), 
                             bc.getCategoryCode(),
-                            new Callback() {
-                              public void invoke(Object o) {
-                                KeyedReference kr = (KeyedReference) o;
-                                bzBag.getKeyedReferenceVector().add(kr);
-                                callReturn(null);
-                                kick();
-                              }
-                              public void handle(Exception e) {
-                                log.error("initBag.Loop.getKeyedReference("+bc+")", e);
-                                //transit("ERROR");
-                                callback.handle(e);
-                              }
-                            });
+                            cb);
         }});
         add(new SState("initBagDone") {
             public void invoke() {
@@ -392,22 +398,26 @@ public final class UDDI4JRegistrationServiceComponent
           final ServiceCategory sc = (ServiceCategory) getArgument();
           setVar("sc", sc);
           final CategoryBag categoryBag = (CategoryBag) getVar("categoryBag");
+          Callback cb = new Callback() {
+            public void invoke(Object o) {
+              KeyedReference kr = (KeyedReference) o;
+              categoryBag.getKeyedReferenceVector().add(kr);
+              transit("ibsl_sub1a");
+              kick();
+            }
+            public void handle(Exception e) {
+              UDDI4JRegistrationServiceComponent.this.log.error(
+                "ibsl_sub1.getKeyedReference(" + sc + ")",
+                e);
+              //transit("ERROR");
+              callback.handle(e);
+            }
+          };
           getKeyedReference(getYPProxy(),
 			    sc.getCategorySchemeName(), 
                             sc.getCategoryName(),
                             sc.getCategoryCode(),
-                            new Callback() {
-                              public void invoke(Object o) {
-                                KeyedReference kr = (KeyedReference) o;
-                                categoryBag.getKeyedReferenceVector().add(kr);
-                                transit("ibsl_sub1a");
-                                kick();
-                              }
-                              public void handle(Exception e) {
-                                log.error("ibsl_sub1.getKeyedReference("+sc+")", e);
-                                //transit("ERROR");
-                                callback.handle(e);
-                              }});
+                            cb);
         }});
         // foreach Service category, loop over the additional qualifications
         add(new SState("ibsl_sub1a") { public void invoke() {
@@ -420,11 +430,7 @@ public final class UDDI4JRegistrationServiceComponent
           AdditionalQualificationRecord aqr = (AdditionalQualificationRecord) getArgument();
           final ServiceCategory sc = (ServiceCategory) getVar("sc");
           final CategoryBag categoryBag = (CategoryBag) getVar("categoryBag");
-          getKeyedReference(getYPProxy(),
-			    sc.getCategorySchemeName(),
-                            aqr.getQualificationName(),
-                            aqr.getQualificationValue(),
-                            new Callback() {
+          Callback cb = new Callback() {
                               public void invoke(Object o) {
                                 KeyedReference kr = (KeyedReference) o;
                                 categoryBag.getKeyedReferenceVector().add(kr);
@@ -432,10 +438,15 @@ public final class UDDI4JRegistrationServiceComponent
                                 kick();
                               }
                               public void handle(Exception e) {
-                                log.error("ibsl_sub2.getKeyedReference("+sc+")", e);
+                                UDDI4JRegistrationServiceComponent.this.log.error("ibsl_sub2.getKeyedReference("+sc+")", e);
                                 //transit("ERROR");
                                 callback.handle(e);
-                              }});
+                              }};
+          getKeyedReference(getYPProxy(),
+			    sc.getCategorySchemeName(),
+                            aqr.getQualificationName(),
+                            aqr.getQualificationValue(),
+                            cb);
         }});
 
         // endpoint of loop started in ibsl_sub1a, returns up to loop started in ibsl which may 
@@ -453,22 +464,26 @@ public final class UDDI4JRegistrationServiceComponent
         add(new SState("ibsl_sub3") { public void invoke() {
           final ServiceClassification sc = (ServiceClassification) getArgument();
           final CategoryBag categoryBag = (CategoryBag) getVar("categoryBag");
+          Callback cb = new Callback() {
+            public void invoke(Object o) {
+              KeyedReference kr = (KeyedReference) o;
+              categoryBag.getKeyedReferenceVector().add(kr);
+              callReturn(null);
+              kick();
+            }
+            public void handle(Exception e) {
+              UDDI4JRegistrationServiceComponent.this.log.error(
+                "ibsl_sub3.getKeyedReference(" + sc + ")",
+                e);
+              //transit("ERROR");
+              callback.handle(e);
+            }
+          };
           getKeyedReference(getYPProxy(),
 			    sc.getClassificationSchemeName(),
                             sc.getClassificationName(),
                             sc.getClassificationCode(),
-                            new Callback() {
-                              public void invoke(Object o) {
-                                KeyedReference kr = (KeyedReference) o;
-                                categoryBag.getKeyedReferenceVector().add(kr);
-                                callReturn(null);
-                                kick();
-                              }
-                              public void handle(Exception e) {
-                                log.error("ibsl_sub3.getKeyedReference("+sc+")", e);
-                                //transit("ERROR");
-                                callback.handle(e);
-                              }});
+                            cb);
         }});
 
         // ibsl_1c, collect results
@@ -482,25 +497,31 @@ public final class UDDI4JRegistrationServiceComponent
           if(sd.getTextDescription().trim().length() != 0) {
             bSvc.setDefaultDescriptionString(sd.getTextDescription());
           }
-          
+          Callback cb = new Callback() {
+            public void invoke(Object o) {
+              TModelInstanceDetails tModelInstanceDetails =
+                (TModelInstanceDetails) o;
+              BindingTemplates bindings =
+                createBindingTemplates(
+                  sd.getServiceGroundingURI(),
+                  tModelInstanceDetails);
+              bSvc.setBindingTemplates(bindings);
+              services.add(bSvc);
+              callReturn(null); // return back to initBS
+              kick();
+            }
+            public void handle(Exception e) {
+              UDDI4JRegistrationServiceComponent.this.log.error(
+                "ibsl_1c.createTModelInstance",
+                e);
+              //transit("ERROR");
+              callback.handle(e);
+            }
+          };
           createTModelInstance(getYPProxy(),
 			       sd.getServiceGroundingBindingType(),
                                pd.getProviderName(),
-                               new Callback() {
-                                 public void invoke(Object o) {
-                                   TModelInstanceDetails tModelInstanceDetails = (TModelInstanceDetails) o;
-                                   BindingTemplates bindings = createBindingTemplates(sd.getServiceGroundingURI(),
-                                                                                      tModelInstanceDetails);
-                                   bSvc.setBindingTemplates(bindings);
-                                   services.add(bSvc);
-                                   callReturn(null); // return back to initBS
-                                   kick();
-                                 }
-                                 public void handle(Exception e) {
-                                   log.error("ibsl_1c.createTModelInstance", e);
-                                   //transit("ERROR");
-                                   callback.handle(e);
-                                 }});
+                               cb);
         }});
 
 
@@ -521,7 +542,7 @@ public final class UDDI4JRegistrationServiceComponent
               // ignore the result.
             }
             public void handle(Frame f, Exception e) {
-              log.error("saveBusiness exception", e);
+              UDDI4JRegistrationServiceComponent.this.log.error("saveBusiness exception", e);
               callback.handle(e);
             }
           });
@@ -590,7 +611,7 @@ public final class UDDI4JRegistrationServiceComponent
               businessList = (BusinessList) r;
             }
             public void handle(Frame f, Exception e) {
-              log.error("updateServiceDescription.findBusiness", e);
+              UDDI4JRegistrationServiceComponent.this.log.error("updateServiceDescription.findBusiness", e);
               callback.handle(e);
               transit("ERROR");
             }
@@ -600,8 +621,8 @@ public final class UDDI4JRegistrationServiceComponent
             public void invoke() {
               Iterator it = businessList.getBusinessInfos().getBusinessInfoVector().iterator();
               if (!it.hasNext()) {
-                if (log.isDebugEnabled()) {
-                  log.debug("updateServiceDescription, cannot find registration for: " + providerName);
+                if (UDDI4JRegistrationServiceComponent.this.log.isDebugEnabled()) {
+                  UDDI4JRegistrationServiceComponent.this.log.debug("updateServiceDescription, cannot find registration for: " + providerName);
                 }
                 callback.invoke(Boolean.TRUE);
                 transit("DONE");
@@ -627,23 +648,26 @@ public final class UDDI4JRegistrationServiceComponent
             public void invoke() {
               if (iter.hasNext()) {
                 final ServiceClassification sc = (ServiceClassification) iter.next();
+                Callback cb = new Callback() {
+                  public void invoke(Object o) {
+                    KeyedReference kr = (KeyedReference) o;
+                    updateBag.getKeyedReferenceVector().add(kr);
+                    transit("initBagLoop");
+                    kick();
+                  }
+                  public void handle(Exception e) {
+                    UDDI4JRegistrationServiceComponent.this.log.error(
+                      "initBagLoop.getKeyedReference(" + sc + ")",
+                      e);
+                    //transit("ERROR");
+                    callback.handle(e);
+                  }
+                };
                 getKeyedReference(getYPProxy(),
 				  sc.getClassificationSchemeName(),
                                   sc.getClassificationName(),
                                   sc.getClassificationCode(),
-                                  new Callback() {
-                                    public void invoke(Object o) {
-                                      KeyedReference kr = (KeyedReference) o;
-                                      updateBag.getKeyedReferenceVector().add(kr);
-                                      transit("initBagLoop");
-                                      kick();
-                                    }
-                                    public void handle(Exception e) {
-                                      log.error("initBagLoop.getKeyedReference("+sc+")", e);
-                                      //transit("ERROR");
-                                      callback.handle(e);
-                                    }
-                                  });
+                                  cb);
               } else {
                 transit("initBagDone");
               }
@@ -665,7 +689,7 @@ public final class UDDI4JRegistrationServiceComponent
               }
             }
             public void handle(Frame f, Exception e) {
-              log.error("getServiceDetail", e);
+              UDDI4JRegistrationServiceComponent.this.log.error("getServiceDetail", e);
               callback.handle(e);
             }
           });
@@ -679,7 +703,7 @@ public final class UDDI4JRegistrationServiceComponent
               // copacetic
             }
             public void handle(Frame f, Exception e) {
-              log.error("saveService", e);
+              UDDI4JRegistrationServiceComponent.this.log.error("saveService", e);
               callback.handle(e);
             }
           });
@@ -747,23 +771,26 @@ public final class UDDI4JRegistrationServiceComponent
             public void invoke() {
               if (iter.hasNext()) {
                 final ServiceClassification sc = (ServiceClassification) iter.next();
+                Callback cb = new Callback() {
+                  public void invoke(Object o) {
+                    KeyedReference kr = (KeyedReference) o;
+                    bag.getKeyedReferenceVector().add(kr);
+                    transit("initBagLoop");
+                    kick();
+                  }
+                  public void handle(Exception e) {
+                    UDDI4JRegistrationServiceComponent.this.log.error(
+                      "initBagLoop.getKeyedReference(" + sc + ")",
+                      e);
+                    //transit("ERROR");
+                    callback.handle(e);
+                  }
+                };
                 getKeyedReference(getYPProxy(),
 				  sc.getClassificationSchemeName(),
                                   sc.getClassificationName(),
                                   sc.getClassificationCode(),
-                                  new Callback() {
-                                    public void invoke(Object o) {
-                                      KeyedReference kr = (KeyedReference) o;
-                                      bag.getKeyedReferenceVector().add(kr);
-                                      transit("initBagLoop");
-                                      kick();
-                                    }
-                                    public void handle(Exception e) {
-                                      log.error("initBagLoop.getKeyedReference("+sc+")", e);
-                                      //transit("ERROR");
-                                      callback.handle(e);
-                                    }
-                                  });
+                                  cb);
               } else {
                 transit("initBagDone");
               }
@@ -778,7 +805,7 @@ public final class UDDI4JRegistrationServiceComponent
               businessList = (BusinessList) result;
             }
             public void handle(Frame f, Exception e) {
-              log.error("findBusiness", e);
+              UDDI4JRegistrationServiceComponent.this.log.error("findBusiness", e);
               callback.handle(e);
             }
           });
@@ -802,8 +829,8 @@ public final class UDDI4JRegistrationServiceComponent
               if (iter.hasNext()) {
                 businessInfo = (BusinessInfo) iter.next();
                 if (businessInfo == null) {
-                  if (log.isDebugEnabled()) {
-                    log.debug("deleteServiceDescription, cannot find registration for: " + providerName);
+                  if (UDDI4JRegistrationServiceComponent.this.log.isDebugEnabled()) {
+                    UDDI4JRegistrationServiceComponent.this.log.debug("deleteServiceDescription, cannot find registration for: " + providerName);
                   }
                 } else {
                   transit("dbLoop1");
@@ -827,7 +854,7 @@ public final class UDDI4JRegistrationServiceComponent
               // dont care
             }
             public void handle(Frame f, Exception e) {
-              log.error("deleteServiceDescription exception", e);
+              UDDI4JRegistrationServiceComponent.this.log.error("deleteServiceDescription exception", e);
               transit("dbLoop"); // continue to next
             }
           });
