@@ -76,7 +76,7 @@ public class SimpleMatchmakerPlugin extends ComponentPlugin {
 
   private long myWarningCutoffTime = 0;
 
-  private LoggingService myLoggingService;
+  protected LoggingService myLoggingService;
   private RegistryQueryService myRegistryQueryService;
   private IncrementalSubscription myClientRequestSubscription;
 
@@ -450,7 +450,7 @@ public class SimpleMatchmakerPlugin extends ComponentPlugin {
    * and to tell us when it is done with a callback we supply. It asks the YP to 
    * walk up the hierarchy of YP communities to find ever broader YP servers if that is necessary.
    */
-  private void findServiceWithDistributedYP(final RQ r) {
+  protected void findServiceWithDistributedYP(final RQ r) {
     if (myLoggingService.isDebugEnabled()) {
       myLoggingService.debug(": findServiceWithDistributedYP - " +
 			     " using YPCommunity search.");

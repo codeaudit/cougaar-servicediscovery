@@ -90,10 +90,10 @@ public class SimpleSDClientPlugin extends ComponentPlugin {
   private DomainService myDomainService;
 
   // Used to create ServiceContractRelay, etc
-  private SDFactory mySDFactory;
+  protected SDFactory mySDFactory;
 
   // Used to create AllocationResults, Dispositions, etc
-  private PlanningFactory planningFactory;
+  protected PlanningFactory planningFactory;
 
   // A pointer to the local (self) entity
   private Entity selfEntity;
