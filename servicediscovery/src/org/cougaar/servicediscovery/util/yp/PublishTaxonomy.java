@@ -30,7 +30,7 @@ import org.apache.xerces.parsers.*;
 import org.cougaar.core.component.*;
 import org.cougaar.core.service.LoggingService;
 import org.cougaar.util.log.*;
-import org.cougaar.yp.YPService;
+import org.cougaar.yp.*;
 import org.cougaar.servicediscovery.util.UDDIConstants;
 
 import org.uddi4j.UDDIException;
@@ -56,9 +56,11 @@ import java.util.Vector;
 public class PublishTaxonomy extends ComponentSupport {
   private LoggingService logger;
 
-  private static UDDIProxy proxy;
   private static String userid;
   private static String password;
+
+  private YPProxy proxy;
+  private YPService ypService;
 
   public void initialize() {
     super.initialize();
@@ -66,7 +68,7 @@ public class PublishTaxonomy extends ComponentSupport {
     ServiceBroker sb = getServiceBroker();
     LoggingService logger = 
       (LoggingService) sb.getService(this, LoggingService.class, null);
-    YPService ypService = 
+    ypService = 
       (YPService) sb.getService(this, YPService.class, null);
     String ypAgent = System.getProperty("org.cougaar.yp.ypAgent");
       
@@ -74,10 +76,10 @@ public class PublishTaxonomy extends ComponentSupport {
 
     initTaxonomy(proxy);
 
-    proxy = null;
+    proxy  = null;
   }
 
-  private void initTaxonomy(UDDIProxy proxyArg) {
+  private void initTaxonomy(YPProxy proxyArg) {
     userid = "cougaar";
     password = "cougaarPass";
     
@@ -97,6 +99,18 @@ public class PublishTaxonomy extends ComponentSupport {
     }
   }
 
+  private TModelDetail saveTModel(Vector tModels) throws UDDIException {
+    // why are we getting a token every single time?...
+    AuthToken token = (AuthToken) ypService.submit(proxy.get_authToken(userid, password)).get();
+
+    TModelDetail tModelDetail = 
+      (TModelDetail) ypService.submit(proxy.save_tModel(token.getAuthInfoString(), tModels)).get();
+
+    // and never releasing any tokens?...
+
+    return tModelDetail;
+  }
+
   private void createTaxonomy(String name, String key, String file) throws UDDIException {
     try {
       TModel tModel = new TModel();
@@ -104,8 +118,8 @@ public class PublishTaxonomy extends ComponentSupport {
       Vector tModels = new Vector();
       tModels.addElement(tModel);
 
-      TModelDetail tModelDetail = 
-	proxy.save_tModel(proxy.get_authToken(userid, password).getAuthInfoString(), tModels);
+      TModelDetail tModelDetail;
+      tModelDetail = saveTModel(tModels);
 
       String tModelKey = ((TModel) (tModelDetail.getTModelVector().elementAt(0))).getTModelKey();
 
@@ -123,10 +137,7 @@ public class PublishTaxonomy extends ComponentSupport {
 	KeyedReference keyedReference = categoryBag.get(index);
 	keyedReference.setTModelKey(tModelKey);
       }
-     
-      tModelDetail = 
-	proxy.save_tModel(proxy.get_authToken(userid, password).getAuthInfoString(), tModels);
-
+      tModelDetail = saveTModel(tModels);
     } catch (UDDIException ue) {
       DispositionReport dr = ue.getDispositionReport();
       if (dr!=null) {
@@ -145,6 +156,7 @@ public class PublishTaxonomy extends ComponentSupport {
 
   }
 
+
   private void createBindingTModels() {
     // Creating TModels for our binding templates
     Vector tModels = new Vector();
@@ -154,8 +166,7 @@ public class PublishTaxonomy extends ComponentSupport {
     cougaarTModel.setDefaultDescriptionString("Protocol for COUGAAR services");
     tModels.add(cougaarTModel);
     try {
-      TModelDetail tModelDetail = 
-	proxy.save_tModel(proxy.get_authToken(userid, password).getAuthInfoString(), tModels);
+      TModelDetail tModelDetail = saveTModel(tModels);
 
       tModels = tModelDetail.getTModelVector();
       cougaarTModel = (TModel) tModels.elementAt(0);
@@ -170,9 +181,7 @@ public class PublishTaxonomy extends ComponentSupport {
       tModels.clear();
       tModels.add(cougaarTModel);
 
-      tModelDetail = 
-	proxy.save_tModel(proxy.get_authToken(userid, password).getAuthInfoString(), tModels);
-
+      tModelDetail = saveTModel(tModels);
     // Handle possible errors
     } catch (UDDIException e) {
       DispositionReport dr = e.getDispositionReport();
@@ -196,8 +205,8 @@ public class PublishTaxonomy extends ComponentSupport {
     soapTModel.setDefaultDescriptionString("SOAP binding for non-COUGAAR services");
     tModels.add(soapTModel);
     try {
-      TModelDetail tModelDetail = 
-	proxy.save_tModel(proxy.get_authToken(userid, password).getAuthInfoString(), tModels);
+      TModelDetail tModelDetail;
+      tModelDetail = saveTModel(tModels);
 
       tModels = tModelDetail.getTModelVector();
       soapTModel = (TModel) tModels.elementAt(0);
@@ -217,9 +226,7 @@ public class PublishTaxonomy extends ComponentSupport {
       tModels.clear();
       tModels.add(soapTModel);
     
-      tModelDetail = 
-	proxy.save_tModel(proxy.get_authToken(userid, password).getAuthInfoString(), tModels);
-
+      tModelDetail = saveTModel(tModels);
     // Handle possible errors
     } catch (UDDIException e) {
       DispositionReport dr = e.getDispositionReport();

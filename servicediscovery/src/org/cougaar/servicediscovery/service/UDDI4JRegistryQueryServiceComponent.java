@@ -31,9 +31,8 @@ import org.cougaar.servicediscovery.description.*;
 import org.cougaar.servicediscovery.description.ServiceInfo;
 import org.cougaar.servicediscovery.transaction.RegistryQuery;
 import org.cougaar.util.GenericStateModelAdapter;
-import org.cougaar.yp.YPService;
+import org.cougaar.yp.*;
 
-import org.uddi4j.client.UDDIProxy;
 import org.uddi4j.UDDIException;
 import org.uddi4j.util.CategoryBag;
 import org.uddi4j.util.KeyedReference;
@@ -143,7 +142,7 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
     private String queryURL = null;
     private HashMap tModelKeysCache = new HashMap();
     // TODO: change this to be a static
-    private UDDIProxy proxy = null;
+    private YPProxy proxy = null;
     // TODO: change this to a parameter
     private int maxRows = 100;
     private HashMap tModelNameCache = new HashMap();
@@ -226,8 +225,8 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
         serviceNames.add( new Name(rq.getServiceName()));
       }
       try {
-        ServiceList serviceList = proxy.find_service(null, serviceNames,
-                                                     bag, null, fq, maxRows);
+        ServiceList serviceList = (ServiceList) ypService.submit(proxy.find_service(null, serviceNames,
+                                                                                    bag, null, fq, maxRows)).get();
         Enumeration serviceInfos = serviceList.getServiceInfos().getServiceInfoVector().elements();
         Vector serviceKeys = new Vector();
         while (serviceInfos.hasMoreElements()) {
@@ -255,10 +254,12 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
                     "\n errCode:"  + dr.getErrCode() +
                     "\n errInfoText:" + dr.getErrInfoText(), e);
         }
+        /*
       } catch (TransportException e) {
         if (log.isErrorEnabled()) {
           log.error("Exception", e);
         }
+        */
       }
       return services;
     }
@@ -285,7 +286,7 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
       }
 
       try {
-        BusinessList bzList  = proxy.find_business(providerNames, null, null, bag, null, fq, maxRows);
+        BusinessList bzList  = (BusinessList) ypService.submit(proxy.find_business(providerNames, null, null, bag, null, fq, maxRows)).get();
         Enumeration businessInfos = bzList.getBusinessInfos().getBusinessInfoVector().elements();
         Vector businessKeys = new Vector();
         String serviceKey = null;
@@ -307,10 +308,12 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
                     "\n errCode:"  + dr.getErrCode() +
                     "\n errInfoText:" + dr.getErrInfoText(), e);
         }
+        /*
       } catch (TransportException e) {
         if (log.isErrorEnabled()) {
           log.error("Exception", e);
         }
+        */
       }
       return providers;
     }
@@ -338,7 +341,7 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
       }
 
       try {
-        BusinessList bzList  = proxy.find_business(providerNames, null, null, bag, null, fq, maxRows);
+        BusinessList bzList  = (BusinessList) ypService.submit(proxy.find_business(providerNames, null, null, bag, null, fq, maxRows)).get();
         Enumeration businessInfos = bzList.getBusinessInfos().getBusinessInfoVector().elements();
         Vector businessKeys = new Vector();
         while (businessInfos.hasMoreElements()) {
@@ -367,10 +370,12 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
                     "\n errCode:"  + dr.getErrCode() +
                     "\n errInfoText:" + dr.getErrInfoText(), e);
         }
+        /*
       } catch (TransportException e) {
         if (log.isErrorEnabled()) {
           log.error("Exception", e);
         }
+        */
       }
       return providers;
     }
@@ -401,8 +406,8 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
         serviceNames.add( new Name(query.getServiceName()));
       }
       try {
-        ServiceList serviceList = proxy.find_service(null, serviceNames,
-                                                     bag, null, fq, maxRows);
+        ServiceList serviceList = (ServiceList) ypService.submit(proxy.find_service(null, serviceNames,
+                                                                                    bag, null, fq, maxRows)).get();
 
         Enumeration serviceInfos = serviceList.getServiceInfos().getServiceInfoVector().elements();
         Vector serviceKeys = new Vector();
@@ -431,10 +436,12 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
                     "\n errCode:"  + dr.getErrCode() +
                     "\n errInfoText:" + dr.getErrInfoText(), e);
         }
+        /*
       } catch (TransportException e) {
         if (log.isErrorEnabled()) {
           log.error("Exception", e);
         }
+        */
       }
       return services;
     }
@@ -442,7 +449,7 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
     private Collection createProviderInfos(Vector businessKeys, String serviceName) {
       Collection providers = new ArrayList();
       try {
-        BusinessDetail bd = proxy.get_businessDetail(businessKeys);
+        BusinessDetail bd = (BusinessDetail) ypService.submit(proxy.get_businessDetail(businessKeys)).get();
         Enumeration enum = bd.getBusinessEntityVector().elements();
         while(enum.hasMoreElements()) {
           BusinessEntity be = (BusinessEntity) enum.nextElement();
@@ -485,10 +492,12 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
                     "\n errCode:"  + dr.getErrCode() +
                     "\n errInfoText:" + dr.getErrInfoText(), e);
         }
+        /*
       } catch (TransportException e) {
         if (log.isErrorEnabled()) {
           log.error("Exception", e);
         }
+        */
       }
       return providers;
     }
@@ -509,7 +518,7 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
       Collection serviceInfos = new ArrayList();
 
       try {
-        ServiceDetail sd = proxy.get_serviceDetail(serviceKeys);
+        ServiceDetail sd = (ServiceDetail) ypService.submit(proxy.get_serviceDetail(serviceKeys)).get();
         Enumeration serviceEnum = sd.getBusinessServiceVector().elements();
         while(serviceEnum.hasMoreElements()) {
           BusinessService bs = (BusinessService) serviceEnum.nextElement();
@@ -518,7 +527,7 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
           serviceInfo.setServiceName(bs.getDefaultNameString());
           serviceInfo.setServiceClassifications(getServiceClassifications(bs.getCategoryBag()));
           serviceInfo.setServiceBindings(getServiceBindings(bs.getBindingTemplates()));
-          BusinessDetail bd = proxy.get_businessDetail(bs.getBusinessKey());
+          BusinessDetail bd = (BusinessDetail) ypService.submit(proxy.get_businessDetail(bs.getBusinessKey())).get();
           Enumeration businessEnum = bd.getBusinessEntityVector().elements();
           while (businessEnum.hasMoreElements()) {
             BusinessEntity be = (BusinessEntity) businessEnum.nextElement();
@@ -541,10 +550,12 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
                     "\n errCode:"  + dr.getErrCode() +
                     "\n errInfoText:" + dr.getErrInfoText(), e);
         }
+        /*
       } catch (TransportException e) {
         if (log.isErrorEnabled()) {
           log.error("Exception", e);
         }
+        */
       }
       return serviceInfos;
     }
@@ -554,7 +565,7 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
 
       try {
 	log.debug("[createSimpleServiceInfo]calling get_serviceDetail()");
-        ServiceDetail sd = proxy.get_serviceDetail(serviceKeys);
+        ServiceDetail sd = (ServiceDetail) ypService.submit(proxy.get_serviceDetail(serviceKeys)).get();
 	log.debug("[createSimpleServiceInfo]returned get_serviceDetail() - sd = " +
 		  sd);
 	Vector serviceVector = sd.getBusinessServiceVector();
@@ -589,10 +600,12 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
                     "\n errCode:"  + dr.getErrCode() +
                     "\n errInfoText:" + dr.getErrInfoText(), e);
         }
+        /*
       } catch (TransportException e) {
         if (log.isErrorEnabled()) {
           log.error("Exception", e);
         }
+        */
       }
       return serviceInfos;
     }
@@ -647,7 +660,7 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
       if(!tModelKeysCache.containsKey(tModelName)) {
         TModelList tlist = null;
         try {
-          tlist = proxy.find_tModel(tModelName, null, null, null, 1);
+          tlist = (TModelList) ypService.submit(proxy.find_tModel(tModelName, null, null, null, 1)).get();
         } catch (Exception e) {
           if (log.isErrorEnabled()) {
             log.error("Caught an Exception finding tModel.", e);
@@ -674,7 +687,7 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
       if(!tModelNameCache.containsKey(tModelKey)) {
         TModelDetail tDetail = null;
         try {
-          tDetail = proxy.get_tModelDetail(tModelKey);
+          tDetail = (TModelDetail) ypService.submit(proxy.get_tModelDetail(tModelKey)).get();
         } catch (Exception e) {
           if (log.isErrorEnabled()) {
             log.error("Caught an Exception finding tModel.", e);

@@ -38,9 +38,8 @@ import org.cougaar.util.UnaryPredicate;
 import org.cougaar.util.log.Logger;
 import org.cougaar.util.log.Logging;
 
-import org.cougaar.yp.YPService;
+import org.cougaar.yp.*;
 
-import org.uddi4j.client.UDDIProxy;
 import org.uddi4j.response.*;
 import org.uddi4j.UDDIException;
 import org.uddi4j.util.KeyedReference;
@@ -91,7 +90,7 @@ public final class UDDI4JRegistrationServiceComponent
   private final List todo = new ArrayList(5);
 
   // TODO:  This could be made static
-  private UDDIProxy proxy;
+  private YPProxy proxy;
 
   //TODO:  This could be shared as well, it would reduce the number of calls to the registry
   HashMap schemeKeys = new HashMap();
@@ -184,7 +183,7 @@ public final class UDDI4JRegistrationServiceComponent
     }
   }
 
-  private static AuthToken authorization = null;
+  private AuthToken authorization = null;
 
   //The following 4 uddi registry parameters are set via System properties.
   private static String username = "cougaar";
@@ -203,10 +202,10 @@ public final class UDDI4JRegistrationServiceComponent
 
   }
 
-  synchronized private static void initAuthToken(UDDIProxy proxy) {
+  synchronized private void initAuthToken(YPProxy proxy) {
     if (authorization == null) {
       try {
-        authorization = proxy.get_authToken(username, password);
+        authorization = (AuthToken) ypService.submit(proxy.get_authToken(username, password)).get();
       } catch (UDDIException e) {
 	e.printStackTrace();
         DispositionReport dr = e.getDispositionReport();
@@ -217,14 +216,16 @@ public final class UDDI4JRegistrationServiceComponent
                      "\n errno:"    + dr.getErrno() +
                      "\n errCode:"  + dr.getErrCode() +
                      "\n errInfoText:" + dr.getErrInfoText(), e);
+        /*
       } catch (TransportException e) {
         Logger logger = Logging.getLogger(UDDI4JRegistrationServiceComponent.class);
         logger.error("Caught an Exception getting authorization", e);
+        */
       }
     }
   }
 
-  synchronized private static void handleExpiration(AuthToken expiredToken, UDDIProxy p) {
+  synchronized private void handleExpiration(AuthToken expiredToken, YPProxy p) {
     if (expiredToken.equals(authorization)) {
       authorization = null;
       initAuthToken(p);
@@ -271,7 +272,7 @@ public final class UDDI4JRegistrationServiceComponent
       
     }
 
-    private UDDIProxy currentProxy() {
+    private YPProxy currentProxy() {
       if (proxy == null) {
 	makeProxy();
       }
@@ -349,11 +350,11 @@ public final class UDDI4JRegistrationServiceComponent
       boolean saveBusiness = false;
       while (!saveBusiness) {
         AuthToken token = authorization;
-	UDDIProxy currentProxy = currentProxy();
+	YPProxy currentProxy = currentProxy();
         try {
           be.setBusinessServices (businessServices);
           entities.add(be);
-          currentProxy.save_business(token.getAuthInfoString(), entities);
+          ypService.submit(currentProxy.save_business(token.getAuthInfoString(), entities)).get();
           saveBusiness = true;
         } catch (UDDIException e) {
           DispositionReport dr = e.getDispositionReport();
@@ -371,9 +372,11 @@ public final class UDDI4JRegistrationServiceComponent
                       "\n errInfoText:" + dr.getErrInfoText(), e);
           }
           return false;
+          /*
         } catch (TransportException te) {
           log.error("Caught a TransportException saving business", te);
           return false;
+          */
         }
       }
       return success;
@@ -418,7 +421,7 @@ public final class UDDI4JRegistrationServiceComponent
 	  if (log.isDebugEnabled()) {
 	    log.debug("findTModelKey: " + tModelName);
 	  }
-          tlist = currentProxy().find_tModel(tModelName, null, null, null, 1);
+          tlist = (TModelList) ypService.submit(currentProxy().find_tModel(tModelName, null, null, null, 1)).get();
         } catch (Exception e) {
           if (log.isErrorEnabled()) {
             log.error("Caught an Exception finding tModel.", e);
@@ -508,7 +511,7 @@ public final class UDDI4JRegistrationServiceComponent
       BusinessList businessList;
 
       try {
-        businessList = currentProxy().find_business(namePatterns, null, null, null, null, findQualifiers, 5);
+        businessList = (BusinessList) ypService.submit(currentProxy().find_business(namePatterns, null, null, null, null, findQualifiers, 5)).get();
         Vector businessInfoVector  = businessList.getBusinessInfos().getBusinessInfoVector();
         BusinessInfo businessInfo = null;
         for (int i = 0; i < businessInfoVector.size(); i++) {
@@ -539,7 +542,7 @@ public final class UDDI4JRegistrationServiceComponent
                                                                     serviceClass.getClassificationName(),
                                                                     serviceClass.getClassificationCode()));
         }
-        ServiceDetail sd = currentProxy().get_serviceDetail(serviceKeys);
+        ServiceDetail sd = (ServiceDetail) ypService.submit(currentProxy().get_serviceDetail(serviceKeys)).get();
         Enumeration e = sd.getBusinessServiceVector().elements();
         while (e.hasMoreElements()) {
           BusinessService bs  = (BusinessService)e.nextElement();
@@ -560,19 +563,21 @@ public final class UDDI4JRegistrationServiceComponent
                     "\n errInfoText:" + d.getErrInfoText(), ex);
         }
         return false;
+        /*
       } catch (TransportException te) {
         if (log.isErrorEnabled()) {
           log.error("Exception", te);
         }
         return false;
+        */
       }
 
       boolean saveService = false;
       while (!saveService) {
         AuthToken currentToken = authorization;
-	UDDIProxy currentProxy = currentProxy();
+	YPProxy currentProxy = currentProxy();
         try {
-          currentProxy.save_service(currentToken.getAuthInfoString(), services);
+          ypService.submit(currentProxy.save_service(currentToken.getAuthInfoString(), services)).get();
           saveService = true;
         } catch (UDDIException e) {
           DispositionReport dr = e.getDispositionReport();
@@ -590,9 +595,11 @@ public final class UDDI4JRegistrationServiceComponent
                       "\n errInfoText:" + dr.getErrInfoText(), e);
           }
           success = false;
+          /*
         } catch (TransportException te) {
           log.error("Caught a TransportException saving business", te);
           success = false;
+          */
         }
       }
       return success;
@@ -625,7 +632,7 @@ public final class UDDI4JRegistrationServiceComponent
       BusinessList businessList = null;
 
       try {
-        businessList = currentProxy().find_business(namePatterns, null, null, bag, null, findQualifiers, 1);
+        businessList = (BusinessList) ypService.submit(currentProxy().find_business(namePatterns, null, null, bag, null, findQualifiers, 1)).get();
       } catch (UDDIException ex) {
         DispositionReport d = ex.getDispositionReport();
         if (log.isErrorEnabled()) {
@@ -638,11 +645,13 @@ public final class UDDI4JRegistrationServiceComponent
                     "\n errInfoText:" + d.getErrInfoText(), ex);
         }
       }
+      /*
       catch (TransportException te) {
         if (log.isErrorEnabled()) {
           log.error("Caught a TransportException deleting service ", te);
         }
       }
+      */
 
       if (businessList == null ) {
         return false;
@@ -676,9 +685,9 @@ public final class UDDI4JRegistrationServiceComponent
       boolean deleteService = false;
       while (!deleteService) {
         AuthToken currentToken = authorization;
-	UDDIProxy currentProxy = currentProxy();
+	YPProxy currentProxy = currentProxy();
         try {
-          currentProxy.delete_service(currentToken.getAuthInfoString(), serviceKeys);
+          ypService.submit(currentProxy.delete_service(currentToken.getAuthInfoString(), serviceKeys)).get();
           deleteService = true;
         } catch (UDDIException ex) {
           DispositionReport dr = ex.getDispositionReport();
@@ -700,11 +709,13 @@ public final class UDDI4JRegistrationServiceComponent
             }
             success = false;
           }
+          /*
         } catch (TransportException te) {
           if (log.isErrorEnabled()) {
             log.error("Caught a TransportException deleting service ", te);
           }
           success = false;
+          */
         }
       }
       return success;
