@@ -224,7 +224,6 @@ public class ServiceContractRelay extends RelayAdapter {
 	">, serviceContract=<" +
         getServiceContract() +
         ">, UID=<" + getUID() + ">";
-      myToString = myToString.intern();
     }
 
     return myToString;

@@ -116,7 +116,6 @@ public class LineageListRelay extends RelayAdapter {
 	">, lineageLists=<" +
         getLineageLists() +
         ">, UID=<" + getUID() + ">";
-      myToString = myToString.intern();
     }
 
     return myToString;
