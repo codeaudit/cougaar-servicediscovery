@@ -181,7 +181,10 @@ public class SDCommunityBasedRegistrationPlugin extends SDRegistrationPluginBase
 	    scaInfo.clearCommunity();
 
 	    retryAlarm = null;   // probably not safe
-	    getBlackboardService().signalClientActivity();
+            {
+              org.cougaar.core.service.BlackboardService bbs = getBlackboardService();
+              if (bbs != null) bbs.signalClientActivity();
+            }
 	  }
 	
           public void handle(Exception e) {
@@ -342,7 +345,10 @@ public class SDCommunityBasedRegistrationPlugin extends SDRegistrationPluginBase
 			availabilityChange.getRole() + 
 			"with " + scaInfo.getCommunity());
 	    }
-	    getBlackboardService().signalClientActivity();
+            {
+              org.cougaar.core.service.BlackboardService bbs = getBlackboardService();
+              if (bbs != null) bbs.signalClientActivity();
+            }
 	  }
 
 	  public void handle(Exception e) {
@@ -395,7 +401,10 @@ public class SDCommunityBasedRegistrationPlugin extends SDRegistrationPluginBase
 			availabilityChange.getRole() + 
 			"with " + scaInfo.getCommunity());
 	    }
-	    getBlackboardService().signalClientActivity();
+            {
+              org.cougaar.core.service.BlackboardService bbs = getBlackboardService();
+              if (bbs != null) bbs.signalClientActivity();
+            }
 	  }
 
 	  public void handle(Exception e) {
@@ -524,7 +533,10 @@ public class SDCommunityBasedRegistrationPlugin extends SDRegistrationPluginBase
       Community scaCommunity = (Community) resp.getContent();
 
       scaInfo.setCommunity(scaCommunity);
-      getBlackboardService().signalClientActivity();
+      {
+        org.cougaar.core.service.BlackboardService bbs = getBlackboardService();
+        if (bbs != null) bbs.signalClientActivity();
+      }
     }
   }
 
@@ -574,7 +586,8 @@ public class SDCommunityBasedRegistrationPlugin extends SDRegistrationPluginBase
 		     " - getBlackboardService() returned null");
 	    scaInfo.clearCommunity();
 	  } else {
-	    getBlackboardService().signalClientActivity();
+            org.cougaar.core.service.BlackboardService bbs = getBlackboardService();
+            if (bbs != null) bbs.signalClientActivity();
 	  }
 	}
       } else if (log.isDebugEnabled()) {
