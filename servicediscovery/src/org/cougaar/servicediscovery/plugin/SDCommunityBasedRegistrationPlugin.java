@@ -22,47 +22,30 @@
 
 package org.cougaar.servicediscovery.plugin;
 
-import org.cougaar.core.agent.service.alarm.Alarm;
 import org.cougaar.core.blackboard.IncrementalSubscription;
 import org.cougaar.core.blackboard.PrivilegedClaimant;
 import org.cougaar.core.mts.MessageAddress;
-import org.cougaar.core.plugin.ComponentPlugin;
 import org.cougaar.core.service.AlarmService;
-import org.cougaar.core.service.DomainService;
-import org.cougaar.core.service.LoggingService;
 import org.cougaar.core.service.community.Community;
 import org.cougaar.core.service.community.CommunityChangeEvent;
 import org.cougaar.core.service.community.CommunityChangeListener;
 import org.cougaar.core.service.community.CommunityResponse;
 import org.cougaar.core.service.community.CommunityResponseListener;
 import org.cougaar.core.service.community.CommunityService;
-import org.cougaar.core.service.community.Entity;
 
-import org.cougaar.planning.ldm.PlanningFactory;
-import org.cougaar.planning.ldm.plan.AllocationResult;
-import org.cougaar.planning.ldm.plan.Disposition;
-import org.cougaar.planning.ldm.plan.PlanElement;
-import org.cougaar.planning.ldm.plan.Role;
-import org.cougaar.planning.ldm.plan.Schedule;
 import org.cougaar.planning.ldm.plan.Task;
-import org.cougaar.planning.plugin.legacy.SimplePlugin;
-import org.cougaar.planning.plugin.util.PluginHelper;
 
 import org.cougaar.servicediscovery.Constants;
+import org.cougaar.servicediscovery.description.AvailabilityChangeMessage;
 import org.cougaar.servicediscovery.description.LineageList;
 import org.cougaar.servicediscovery.description.LineageListWrapper;
-import org.cougaar.servicediscovery.description.ProviderCapabilities;
 import org.cougaar.servicediscovery.description.ProviderDescription;
-import org.cougaar.servicediscovery.description.ProviderDescriptionImpl;
 import org.cougaar.servicediscovery.description.ServiceCategory;
 import org.cougaar.servicediscovery.description.ServiceClassification;
 import org.cougaar.servicediscovery.description.ServiceClassificationImpl;
-import org.cougaar.servicediscovery.description.ServiceProfile;
-import org.cougaar.servicediscovery.description.StatusChangeMessage;
 import org.cougaar.servicediscovery.description.SupportLineageList;
 import org.cougaar.servicediscovery.service.RegistrationService;
 import org.cougaar.servicediscovery.util.UDDIConstants;
-import org.cougaar.servicediscovery.transaction.DAMLReadyRelay;
 import org.cougaar.servicediscovery.SDFactory;
 import org.cougaar.servicediscovery.SDDomain;
 
@@ -71,10 +54,6 @@ import org.cougaar.util.UnaryPredicate;
 
 
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -86,88 +65,17 @@ import java.util.Set;
  * Read local agent DAML profile file. Use the listed roles and register this agent with those
  * roles in the YP.
  **/
-public class SDCommunityBasedRegistrationPlugin extends ComponentPlugin implements PrivilegedClaimant {
-  private static final long DEFAULT_START = TimeSpan.MIN_VALUE;
-  private static final long DEFAULT_END = TimeSpan.MAX_VALUE;
-
-  private static final String DAML_IDENTIFIER = ".profile.daml";
-
-  private LoggingService log;
-
+public class SDCommunityBasedRegistrationPlugin extends SDRegistrationPluginBase {
   private CommunityService communityService = null;
-  private DomainService domainService = null;
-  private RegistrationService registrationService = null;
 
-  private IncrementalSubscription supportLineageSubscription;
-  protected IncrementalSubscription statusChangeSubscription;
-  private IncrementalSubscription registerTaskSubscription;
-
-  private static int WARNING_SUPPRESSION_INTERVAL = 5;
-  private long warningCutoffTime = 0;
-  private static final String REGISTRATION_GRACE_PERIOD_PROPERTY = 
-                "org.cougaar.servicediscovery.plugin.RegistrationGracePeriod";
-
-  private Alarm retryAlarm;
-
-  private boolean rehydrated;
-
-  private int knownSCAs;
   private HashMap scaHash = null;
-
-  private ProviderDescription provD = null;
-  private boolean publishProviderCapabilities = true;
-
-  private UnaryPredicate supportLineagePredicate = new UnaryPredicate() {
-    public boolean execute(Object o) {
-      if (o instanceof LineageListWrapper) {
-	LineageListWrapper wrapper = (LineageListWrapper) o;
-	return (wrapper.getType() == LineageList.SUPPORT);
-      } else {
-	return false;
-      }
-    }
-  };
-
-  private UnaryPredicate statusChangePredicate = new UnaryPredicate() {
-    public boolean execute(Object o) {
-      return (o instanceof StatusChangeMessage);
-    }
-  };
-
-  private UnaryPredicate registerTaskPredicate = new UnaryPredicate() {
-    public boolean execute(Object o) {
-      return ((o instanceof Task) &&
-	      (((Task) o).getVerb().equals(org.cougaar.glm.ldm.Constants.Verb.RegisterServices)));
-    }
-  };
-
 
   public void setCommunityService(CommunityService cs) { 
     this.communityService = cs; 
   }
 
-
-  public void setDomainService(DomainService ds) {
-    this.domainService = ds;
-  }
-
-  public void setLoggingService(LoggingService log) {
-    this.log = log;
-  }
-
-
   public void suspend() {
-    if (log.isInfoEnabled()) {
-      log.info(getAgentIdentifier() + " suspend.");
-    }
     super.suspend();
-
-    if (retryAlarm != null) {
-      if (log.isInfoEnabled()) {
-	log.info(getAgentIdentifier() + " cancelling retryAlarm.");
-      }
-      retryAlarm.cancel();
-    }
 
     // Remove all community change notifications
     Set scaSet = scaHash.entrySet();
@@ -185,34 +93,9 @@ public class SDCommunityBasedRegistrationPlugin extends ComponentPlugin implemen
   }
 
   protected void setupSubscriptions() {
-    supportLineageSubscription =
-      (IncrementalSubscription) getBlackboardService().subscribe(supportLineagePredicate);
-    statusChangeSubscription =
-      (IncrementalSubscription) getBlackboardService().subscribe(statusChangePredicate);
-    registerTaskSubscription =
-      (IncrementalSubscription) getBlackboardService().subscribe(registerTaskPredicate);
-
-    registrationService = (RegistrationService) getBindingSite().
-      getServiceBroker().getService(this, RegistrationService.class, null);
-
-    Collection params = getParameters();
-
-    if (params.size() > 0) {
-	String numStr = (String) params.iterator().next();
-      try {
-	knownSCAs = Integer.parseInt(numStr);
-      } catch (NumberFormatException nfe) {
-        knownSCAs = 0;
-	log.error(getAgentIdentifier() + " invalid SCA count parameter - " + 
-		  numStr, nfe);
-      }
-    } else {
-      knownSCAs = 0;
-    }
+    super.setupSubscriptions();
 
     scaHash = new HashMap();
-
-    rehydrated = getBlackboardService().didRehydrate();
 
     if (rehydrated) {
       // Currently losing all pre-existing status change messages.
@@ -227,14 +110,9 @@ public class SDCommunityBasedRegistrationPlugin extends ComponentPlugin implemen
   }
 
   protected void execute () {
-    if (isProvider()) {
+    super.execute();
 
-      if (publishProviderCapabilities) {
-	getBlackboardService().publishAdd(createProviderCapabilities());
-	
-	publishProviderCapabilities = false;
-      }
-	
+    if (isProvider()) {
       Set scaSet = scaHash.entrySet();
       
       for (Iterator iterator = scaSet.iterator();
@@ -265,12 +143,10 @@ public class SDCommunityBasedRegistrationPlugin extends ComponentPlugin implemen
 	  //updateRegistration(adds);
 	}
       }
-
-      handleStatusChange();
     }
 
-
-    updateRegisterTaskDispositions(registerTaskSubscription);
+    // No harm since publish change only occurs if the conf rating has changed.
+    updateRegisterTaskDispositions();
   }
 
   private void initialRegister(final SCAInfo scaInfo) {
@@ -340,32 +216,6 @@ public class SDCommunityBasedRegistrationPlugin extends ComponentPlugin implemen
       }
     }
   }
-	
-  private ProviderDescription getPD() {
-    if (provD == null) {
-      ProviderDescription pd = new ProviderDescriptionImpl(log);
-
-      try {
-	boolean ok = pd.parseDAML(getAgentIdentifier() + DAML_IDENTIFIER);
-	if (!ok) {
-	  throw new RuntimeException("parseDAML failed " + getAgentIdentifier());
-	}
-      } catch (java.util.ConcurrentModificationException cme) {
-	// Jena can do a concurrent mod exception. See bug 3052
- 	// catch this above.
- 	throw new RuntimeException("getPD() failed in " + 
-				   getAgentIdentifier() + 
-				   ". ConcurrentModException in Jena. See bug 3052.");
-      }
-      if (pd.getProviderName() == null) {
-        throw new RuntimeException("getPD() failed to parse a provider name " + 
-				   getAgentIdentifier());
-      }
-      provD = pd;
-    }
-
-    return provD;
-  }
 
   private void updateRegistration(Collection scas) {
     final Collection adds = scas;
@@ -414,28 +264,12 @@ public class SDCommunityBasedRegistrationPlugin extends ComponentPlugin implemen
     }
   }
 
-  private Collection scaServiceClassifications(Collection supportLineageCollection) {
-    Collection serviceClassifications =
-      new ArrayList(supportLineageCollection.size());
-    for (Iterator iterator = supportLineageCollection.iterator();
-	 iterator.hasNext();) {
-      SupportLineageList supportList = 
-	(SupportLineageList) ((LineageListWrapper) iterator.next()).getLineageList();
-      ServiceClassification sca =
-	new ServiceClassificationImpl(supportList.getRoot(),
-				      supportList.getRoot(),
-				      UDDIConstants.SUPPORT_COMMAND_ASSIGNMENT);
-      serviceClassifications.add(sca);
-    }
-    return serviceClassifications;
-  }
-
-  private boolean isRegistered() {
+  protected boolean registrationComplete() {
 
     // Have all the known SCAs reported in?
     if (scaHash.size() < knownSCAs) {
       if (log.isDebugEnabled()) {
-	log.debug(getAgentIdentifier() + " isRegistered(): scaHash.size() = " + 
+	log.debug(getAgentIdentifier() + " registrationComplete(): scaHash.size() = " + 
 		  scaHash.size() + " knownSCAs = " + knownSCAs);
       }
       return false;
@@ -451,7 +285,7 @@ public class SDCommunityBasedRegistrationPlugin extends ComponentPlugin implemen
       
       if (!scaInfo.getIsRegistered()) {
 	if (log.isDebugEnabled()) {
-	  log.debug(getAgentIdentifier() + " isRegistered(): " + 
+	  log.debug(getAgentIdentifier() + " registrationComplete(): " + 
 		    scaInfo.getCommunity() + " is not registered.");
 	}
 	return false;
@@ -459,184 +293,6 @@ public class SDCommunityBasedRegistrationPlugin extends ComponentPlugin implemen
     } 
 
     return true;
-  }
-
-  private void updateRegisterTaskDispositions(Collection registerTasks) {
-    for (Iterator iterator = registerTasks.iterator();
-	 iterator.hasNext();) {
-      Task task = (Task) iterator.next();
-      PlanElement pe = task.getPlanElement();
-      double conf = 1.0;
-
-      if (isProvider() && !isRegistered()) {
-	// BOZO - special rehydration kludge for quiesence monitor.
-	// Plugin will reregister because it doesn't know whether the previous
-	// registration exists but does not downgrade the confidence as the  
-	// change would propagate via GLSExpander back to NCA. 
-	if ((rehydrated) && 
-	    (pe != null) &&
-	    (pe.getEstimatedResult().getConfidenceRating() == 1.0)) {
-	  if (log.isWarnEnabled()) {
-	    log.warn(getAgentIdentifier() + 
-		     ": updateRegisterTaskDisposition() " +
-		     "leaving confidence at 1.0 after rehydration even though " +
-		     "reregistration is not complete.");
-	  }
-
-	  conf = 1.0;
-	} else {
-	  if ((pe != null) &&
-	      (pe.getEstimatedResult().getConfidenceRating() == 1.0)) {
-	    if (log.isDebugEnabled()) {
-	      log.debug(getAgentIdentifier() + 
-		       ": updateRegisterTaskDisposition() " +
-		       "changing confidence back to 0.0." +
-		       " didRehydrate() == " + 
-			getBlackboardService().didRehydrate() + 
-		       " rehydrated == " + rehydrated);
-	    }
-	  }
-	  conf = 0.0;
-	}
-      } else {
-	conf = 1.0;
-      } 
-
-      PlanningFactory planningFactory = 
-	(PlanningFactory) domainService.getFactory("planning");
-      AllocationResult estResult =
-	PluginHelper.createEstimatedAllocationResult(task,
-						     planningFactory,
-						     conf,
-						     true);
-      if (pe == null) {
-	if (log.isInfoEnabled()) {
-	  log.info(getAgentIdentifier() +
-		   " adding a disposition to RegisterServices task, confidence rating is  " +
-		   conf);
-	}
-	Disposition disposition =
-	  planningFactory.createDisposition(task.getPlan(), task, estResult);
-	getBlackboardService().publishAdd(disposition);
-      }else if (pe.getEstimatedResult().getConfidenceRating() != conf) {
-	double previousConf = pe.getEstimatedResult().getConfidenceRating();
-	
-	// If we're backing up from a Confidence of 1.0 to lower, like at rehydration
-	// when we don't know whether the YP lost our registration,
-	// be a little more verbose.
-        if (previousConf == 1.0) {
-	  log.warn(getAgentIdentifier() + " SDRegistrationPlugin is " +
-		   " changing RegisterServices confidence rating from " +
-		   previousConf + " to " +
-		   conf + ". Rehydrated?");
-	} else if (log.isInfoEnabled()) {
-	  log.info(getAgentIdentifier() +
-		   " changing RegisterServices confidence rating from " +
-		   previousConf + " to " +
-		   conf);
-	}
-
-	pe.setEstimatedResult(estResult);
-	getBlackboardService().publishChange(pe);
-      }
-    }
-  }
-
-  protected void handleStatusChange() {
-    for (Iterator iterator = statusChangeSubscription.iterator(); iterator.hasNext();) {
-      final StatusChangeMessage statusChange = (StatusChangeMessage) iterator.next();
-
-      synchronized (statusChange) {
-        switch (statusChange.getStatus()) {
-
-        case StatusChangeMessage.REQUESTED:
-	  if (!isProvider()) {
-	    statusChange.setStatus(StatusChangeMessage.DONE);
-	    statusChange.setRegistryUpdated(true);
-	    getBlackboardService().publishChange(statusChange);
-	    break;
-	  } else {
-	    synchronized(statusChange) {
-	      statusChange.setStatus(StatusChangeMessage.PENDING);
-	    }
-	    initiateDelete(statusChange);
-	  }	
-	break;
-
-        case StatusChangeMessage.PENDING:
-          // let it go.  might want to check to see if it takes a very long time...
-          break;
-
-        case StatusChangeMessage.COMPLETED:
-          statusChange.setRegistryUpdated(true);
-	  statusChange.setStatus(StatusChangeMessage.DONE);
-          getBlackboardService().publishChange(statusChange);
-          break;
-
-        case StatusChangeMessage.DONE:
-          // should drop it from the list;
-          break;
-
-        case StatusChangeMessage.ERROR:
-          // retry, perhaps?
-          break;
-        }
-      }
-    }
-
-    // Handle statusChangeMessage as trumping the presence of DAML file.
-    // Don't change isRegistered flag because that would assume that we
-    // should reregister.
-    //isRegistered = false;
-    return;
-  }
-
-  // Is this Agent a service provider?
-  private boolean isProvider() {
-      return getProviderFile().exists();
-  }
-
-  // Get the DAML service provider file
-  private File getProviderFile() {
-      String damlFileName = getAgentIdentifier().toString() + DAML_IDENTIFIER;
-      return new File(org.cougaar.servicediscovery.Constants.getServiceProfileURL().getFile() +
-		      damlFileName);
-  }
-
-  private long getWarningCutOffTime() {
-    if (warningCutoffTime == 0) {
-      WARNING_SUPPRESSION_INTERVAL = Integer.getInteger(REGISTRATION_GRACE_PERIOD_PROPERTY,
-							WARNING_SUPPRESSION_INTERVAL).intValue();
-            warningCutoffTime = System.currentTimeMillis() + WARNING_SUPPRESSION_INTERVAL*60000;
-    }
-
-    return warningCutoffTime;
-  }
-
-  private void retryErrorLog(String message) {
-    retryErrorLog(message, null);
-  }
-
-  // When an error occurs, but we'll be retrying later, treat it as a DEBUG
-  // at first. After a while it becomes an error.
-  private void retryErrorLog(String message, Throwable e) {
-    long absTime = getAlarmService().currentTimeMillis()+ 
-      (int)(Math.random()*10000) + 1000;
-
-    retryAlarm = new RetryAlarm(absTime);
-    getAlarmService().addAlarm(retryAlarm);
-
-    if(System.currentTimeMillis() > getWarningCutOffTime()) {
-      if (e == null)
-	log.error(getAgentIdentifier() + message);
-      else
-	log.error(getAgentIdentifier() + message, e);
-    } else if (log.isDebugEnabled()) {
-      if (e == null)
-	log.debug(getAgentIdentifier() + message);
-      else
-	log.debug(getAgentIdentifier() + message, e);
-    }
   }
 
   private void handleNewSCA(SupportLineageList sca) {
@@ -663,7 +319,7 @@ public class SDCommunityBasedRegistrationPlugin extends ComponentPlugin implemen
     }
   }
 
-  private void initiateDelete(final StatusChangeMessage statusChange) {
+  protected void addRegisteredRole(final AvailabilityChangeMessage availabilityChange) {
     Set scaSet = scaHash.entrySet();
 
     for (Iterator scaIterator = scaSet.iterator();
@@ -674,29 +330,84 @@ public class SDCommunityBasedRegistrationPlugin extends ComponentPlugin implemen
       
       if (scaInfo.getIsRegistered() ||
 	  scaInfo.getPendingRegistration()) {
-	// Delete entry
+	// Add the role
 	Collection serviceClassifications = new ArrayList(1);
 	ServiceClassification sca =
-	  new ServiceClassificationImpl(statusChange.getRole(),
-					statusChange.getRole(),
+	  new ServiceClassificationImpl(availabilityChange.getRole().toString(),
+					availabilityChange.getRole().toString(),
 					UDDIConstants.MILITARY_SERVICE_SCHEME);
 	serviceClassifications.add(sca);
 	
 	RegistrationService.Callback cb =
 	  new RegistrationService.Callback() {
 	  public void invoke(Object o) {
-	    boolean success = ((Boolean) o).booleanValue();
-	    synchronized(statusChange) {
-	      scaInfo.setIsDeleted(true);
-	      updateStatusChange(statusChange);
+	    if (log.isDebugEnabled()) {
+	      log.debug(getAgentIdentifier() + 
+			" added yp registration for role " +
+			availabilityChange.getRole() + 
+			"with " + scaInfo.getCommunity());
 	    }
 	    getBlackboardService().signalClientActivity();
 	  }
 
 	  public void handle(Exception e) {
-	    log.error("handleStatusChange", e);
-	    synchronized(statusChange) {
-	      statusChange.setStatus(StatusChangeMessage.ERROR);
+	    log.error(getAgentIdentifier() + ":addRegisteredRole()", e);
+	    synchronized(availabilityChange) {
+	      availabilityChange.setStatus(AvailabilityChangeMessage.ERROR);
+	    }
+	    getBlackboardService().signalClientActivity();
+	  }
+	};
+	registrationService.updateServiceDescription(scaInfo.getCommunity(),
+						     getAgentIdentifier().toString(),
+						     serviceClassifications,
+						     cb);
+      } else {
+	if (log.isInfoEnabled()) {
+	  log.info(getAgentIdentifier() + 
+		   " unable to add yp registration for role " +
+		   availabilityChange.getRole() + 
+		   "with " + scaInfo.getCommunity());
+	}
+      }
+    }
+  }
+
+  protected void removeRegisteredRole(final AvailabilityChangeMessage availabilityChange) {
+    Set scaSet = scaHash.entrySet();
+
+    for (Iterator scaIterator = scaSet.iterator();
+	 scaIterator.hasNext();) {
+      Map.Entry entry = (Map.Entry) scaIterator.next();
+      
+      final SCAInfo scaInfo = (SCAInfo) entry.getValue();
+      
+      if (scaInfo.getIsRegistered() ||
+	  scaInfo.getPendingRegistration()) {
+	// Delete role
+	Collection serviceClassifications = new ArrayList(1);
+	ServiceClassification sca =
+	  new ServiceClassificationImpl(availabilityChange.getRole().toString(),
+					availabilityChange.getRole().toString(),
+					UDDIConstants.MILITARY_SERVICE_SCHEME);
+	serviceClassifications.add(sca);
+	
+	RegistrationService.Callback cb =
+	  new RegistrationService.Callback() {
+	  public void invoke(Object o) {
+	    if (log.isDebugEnabled()) {
+	      log.debug(getAgentIdentifier() + 
+			" removed yp registration for role " +
+			availabilityChange.getRole() + 
+			"with " + scaInfo.getCommunity());
+	    }
+	    getBlackboardService().signalClientActivity();
+	  }
+
+	  public void handle(Exception e) {
+	    log.error(getAgentIdentifier() + ":removeRegisteredRole()", e);
+	    synchronized(availabilityChange) {
+	      availabilityChange.setStatus(AvailabilityChangeMessage.ERROR);
 	    }
 	    getBlackboardService().signalClientActivity();
 	  }
@@ -710,71 +421,10 @@ public class SDCommunityBasedRegistrationPlugin extends ComponentPlugin implemen
     }
   }
 
-  private void updateStatusChange(final StatusChangeMessage statusChange) {
-    Set scaSet = scaHash.entrySet();
-    boolean complete = true;
-    for (Iterator scaIterator = scaSet.iterator();
-	 scaIterator.hasNext();) {
-      Map.Entry entry = (Map.Entry) scaIterator.next();
-      
-      SCAInfo scaInfo = (SCAInfo) entry.getValue();
-      if (!scaInfo.getIsDeleted()) {
-	break;
-      }
-    }
-    
-    if (complete) {
-      statusChange.setStatus(StatusChangeMessage.COMPLETED);
-    }
-  }
-
   private String getYPCommunityName(SupportLineageList sca) {
     // For now assume every SCA represented by a YPCommunity called
     // <sca>-YPCOMMUNITY
     return sca.getRoot() + "-YPCOMMUNITY";
-  }
-
-  private ProviderCapabilities createProviderCapabilities() {
-    ProviderDescription pd = getPD();
-    Collection serviceProfiles = pd.getServiceProfiles();
-
-    PlanningFactory planningFactory = 
-	(PlanningFactory) domainService.getFactory("planning");
-    SDFactory sdFactory = (SDFactory) domainService.getFactory(SDDomain.SD_NAME);
-    ProviderCapabilities providerCapabilities = 
-      sdFactory.newProviderCapabilities(getAgentIdentifier().toString());
-
-    for (Iterator iterator = serviceProfiles.iterator();
-	 iterator.hasNext();) {
-      ServiceProfile serviceProfile = (ServiceProfile) iterator.next();
-      
-      Collection serviceCategories = serviceProfile.getServiceCategories();
-
-      Role role = null;
-      String echelon = null;
-
-      for (Iterator scIterator = serviceCategories.iterator();
-	   scIterator.hasNext();) {
-	ServiceCategory serviceCategory = (ServiceCategory) scIterator.next();
-	
-	String scheme = serviceCategory.getCategorySchemeName();
-	if (scheme.equals(UDDIConstants.MILITARY_ECHELON_SCHEME)) {
-	  echelon = serviceCategory.getCategoryName();
-	} else if (scheme.equals(UDDIConstants.MILITARY_SERVICE_SCHEME)) {
-	  role = Role.getRole(serviceCategory.getCategoryName());
-	}
-
-	if ((role != null) &&
-	    (echelon != null)) {
-	  Schedule defaultSchedule = 
-	    planningFactory.newSimpleSchedule(DEFAULT_START, DEFAULT_END);
-	  providerCapabilities.addCapability(role, echelon, defaultSchedule);
-	  break;
-	}
-      }
-    }
-
-    return providerCapabilities;
   }
     
   private class SCAInfo {
@@ -947,34 +597,4 @@ public class SDCommunityBasedRegistrationPlugin extends ComponentPlugin implemen
       return communityName;
     }
   }
-
-  public class RetryAlarm implements Alarm {
-    private long expiresAt;
-    private boolean expired = false;
-
-    public RetryAlarm (long expirationTime) {
-      expiresAt = expirationTime;
-    }
-
-    public long getExpirationTime() { return expiresAt; }
-    public synchronized void expire() {
-      if (!expired) {
-        expired = true;
-        getBlackboardService().signalClientActivity();
-      }
-    }
-    public boolean hasExpired() { return expired; }
-    public synchronized boolean cancel() {
-      boolean was = expired;
-      expired=true;
-      return was;
-    }
-    public String toString() {
-      return "<RetryAlarm "+expiresAt+
-        (expired?"(Expired) ":" ")+
-        "for SDCommunityBasedRegistrationPlugin at " + 
-	getAgentIdentifier() + ">";
-    }
-  }
 }
-

@@ -189,7 +189,7 @@ public class SDRegistrationPlugin extends SDRegistrationPluginBase {
 
 
     // No harm since publish change only occurs if the conf rating has changed.
-    updateRegisterTaskDispositions(registerTaskSubscription);
+    updateRegisterTaskDispositions();
     
     // Not enabling this quiescent reporting yet -- currently
     // configuration change to ignore SDRegistrationPlugin appears to avoid
@@ -242,14 +242,14 @@ public class SDRegistrationPlugin extends SDRegistrationPluginBase {
 		     adds);
 	  }
 	}
-	wake();
+	getBlackboardService().signalClientActivity();
       }
       public void handle(Exception e) {
 	// Success or not, we've completed
 	// handling this transaction.
 	outstandingSCAUpdates--;
 	log.error("UpdateServiceDescription", e);
-	wake();
+	getBlackboardService().signalClientActivity();
       }
     });
     
@@ -286,13 +286,13 @@ public class SDRegistrationPlugin extends SDRegistrationPluginBase {
                   isPending = true; // let the plugin set isRegistered
                   retryAlarm = null;   // probably not safe
                   inProgress = false; // ok to update
-                  wake();
+                  getBlackboardService().signalClientActivity();
                 }
                 public void handle(Exception e) {
                   log.error("initialRegister", e);
                   failed = true;
                   inProgress = false; // ok to update
-                  wake();
+                  getBlackboardService().signalClientActivity();
                 }
               };
 
@@ -335,18 +335,19 @@ public class SDRegistrationPlugin extends SDRegistrationPluginBase {
     RegistrationService.Callback cb =
       new RegistrationService.Callback() {
       public void invoke(Object o) {
-	boolean success = ((Boolean) o).booleanValue();
-	synchronized(availabilityChange) {
-	  availabilityChange.setStatus(AvailabilityChangeMessage.COMPLETED);
+	if (log.isDebugEnabled()) {
+	  log.debug(getAgentIdentifier() + 
+		    " removed yp registration for role " +
+		    availabilityChange.getRole());
 	}
-	wake();
+        getBlackboardService().signalClientActivity();
       }
       public void handle(Exception e) {
 	log.error("handleAvailabilityChange", e);
 	synchronized(availabilityChange) {
 	  availabilityChange.setStatus(AvailabilityChangeMessage.ERROR);
 	}
-	wake();
+	getBlackboardService().signalClientActivity();
       }
     };
     registrationService.deleteServiceDescription(ypAgent,
@@ -366,18 +367,18 @@ public class SDRegistrationPlugin extends SDRegistrationPluginBase {
     RegistrationService.Callback cb =
       new RegistrationService.Callback() {
       public void invoke(Object o) {
-	boolean success = ((Boolean) o).booleanValue();
-	synchronized(availabilityChange) {
-	  availabilityChange.setStatus(AvailabilityChangeMessage.COMPLETED);
+	if (log.isDebugEnabled()) {
+	  log.debug(getAgentIdentifier() + " added yp registration for role " +
+		    availabilityChange.getRole());
 	}
-	wake();
+	getBlackboardService().signalClientActivity();
       }
       public void handle(Exception e) {
 	log.error("handleAvailabilityChange", e);
 	synchronized(availabilityChange) {
 	  availabilityChange.setStatus(AvailabilityChangeMessage.ERROR);
 	}
-	wake();
+	getBlackboardService().signalClientActivity();
       }
     };
     registrationService.updateServiceDescription(ypAgent,

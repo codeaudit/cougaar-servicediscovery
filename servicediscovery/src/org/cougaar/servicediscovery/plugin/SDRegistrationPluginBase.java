@@ -24,6 +24,9 @@ package org.cougaar.servicediscovery.plugin;
 
 import org.cougaar.core.agent.service.alarm.Alarm;
 import org.cougaar.core.blackboard.IncrementalSubscription;
+import org.cougaar.core.plugin.ComponentPlugin;
+import org.cougaar.core.service.AlarmService;
+import org.cougaar.core.service.DomainService;
 import org.cougaar.core.service.LoggingService;
 
 /** Left in so that we can decide at a future point to include quiescence
@@ -78,7 +81,7 @@ import java.util.Iterator;
  * Read local agent DAML profile file. Use the listed roles and register this agent with those
  * roles in the YP.
  **/
-public abstract class SDRegistrationPluginBase extends SimplePlugin {
+public abstract class SDRegistrationPluginBase extends ComponentPlugin {
 
   protected static final long DEFAULT_START = TimeSpan.MIN_VALUE;
   protected static final long DEFAULT_END = TimeSpan.MAX_VALUE;
@@ -88,6 +91,8 @@ public abstract class SDRegistrationPluginBase extends SimplePlugin {
   protected LoggingService log;
 
   protected RegistrationService registrationService = null;
+
+  protected DomainService domainService = null;
 
   /**
    * Quiescence preparedness
@@ -145,11 +150,33 @@ public abstract class SDRegistrationPluginBase extends SimplePlugin {
     }
   };
 
+  public void setDomainService(DomainService ds) {
+    this.domainService = ds;
+  }
+
 
   public void setLoggingService(LoggingService log) {
     this.log = log;
   }
 
+  public void setRegistrationService(RegistrationService rs) {
+    registrationService = rs;
+  }
+
+
+  public void suspend() {
+    if (log.isInfoEnabled()) {
+      log.info(getAgentIdentifier() + " suspend.");
+    }
+    super.suspend();
+
+    if (retryAlarm != null) {
+      if (log.isInfoEnabled()) {
+	log.info(getAgentIdentifier() + " cancelling retryAlarm.");
+      }
+      retryAlarm.cancel();
+    }
+  }
 
   /* Quiescence reporting support should we decide we need it */
 //   public void load() {
@@ -193,18 +220,16 @@ public abstract class SDRegistrationPluginBase extends SimplePlugin {
     super.unload();
   }
 
+
   protected void setupSubscriptions() {
     supportLineageSubscription =
-      (IncrementalSubscription) subscribe(supportLineagePredicate);
+      (IncrementalSubscription) getBlackboardService().subscribe(supportLineagePredicate);
     availabilityChangeSubscription =
-      (IncrementalSubscription) subscribe(availabilityChangePredicate);
+      (IncrementalSubscription) getBlackboardService().subscribe(availabilityChangePredicate);
     registerTaskSubscription =
-      (IncrementalSubscription) subscribe(registerTaskPredicate);
+      (IncrementalSubscription) getBlackboardService().subscribe(registerTaskPredicate);
 
-    registrationService = (RegistrationService) getBindingSite().
-      getServiceBroker().getService(this, RegistrationService.class, null);
-
-    Collection params = getDelegate().getParameters();
+    Collection params = getParameters();
 
     if (params.size() > 0) {
 	String numStr = (String) params.iterator().next();
@@ -226,7 +251,7 @@ public abstract class SDRegistrationPluginBase extends SimplePlugin {
     if (isProvider()) {
 
       if (publishProviderCapabilities) {
-	publishAdd(createProviderCapabilities());
+	getBlackboardService().publishAdd(createProviderCapabilities());
 	publishProviderCapabilities = false;
       }
 
@@ -235,10 +260,6 @@ public abstract class SDRegistrationPluginBase extends SimplePlugin {
 	handleAvailabilityChange(adds);
       }
     }
-
-
-    // No harm since publish change only occurs if the conf rating has changed.
-    updateRegisterTaskDispositions(registerTaskSubscription);
   }
 
   protected  ProviderDescription getPD() {
@@ -266,6 +287,16 @@ public abstract class SDRegistrationPluginBase extends SimplePlugin {
   }
 
 
+  protected long getWarningCutOffTime() {
+    if (warningCutoffTime == 0) {
+      WARNING_SUPPRESSION_INTERVAL = Integer.getInteger(REGISTRATION_GRACE_PERIOD_PROPERTY,
+							WARNING_SUPPRESSION_INTERVAL).intValue();
+            warningCutoffTime = System.currentTimeMillis() + WARNING_SUPPRESSION_INTERVAL*60000;
+    }
+
+    return warningCutoffTime;
+  }
+
   protected void retryErrorLog(String message) {
     retryErrorLog(message, null);
   }
@@ -273,15 +304,14 @@ public abstract class SDRegistrationPluginBase extends SimplePlugin {
   // When an error occurs, but we'll be retrying later, treat it as a DEBUG
   // at first. After a while it becomes an error.
   protected void retryErrorLog(String message, Throwable e) {
-    if(warningCutoffTime == 0) {
-      WARNING_SUPPRESSION_INTERVAL = (Integer.valueOf(System.getProperty(
-									 "org.cougaar.servicediscovery.plugin.RegistrationGracePeriod",
-									 String.valueOf(WARNING_SUPPRESSION_INTERVAL)))).intValue();
-      warningCutoffTime = System.currentTimeMillis() + WARNING_SUPPRESSION_INTERVAL*60000;
-    }
-    int rand = (int)(Math.random()*10000) + 1000;
-    retryAlarm = this.wakeAfter(rand);
-    if(System.currentTimeMillis() > warningCutoffTime) {
+
+    long absTime = getAlarmService().currentTimeMillis()+ 
+      (int)(Math.random()*10000) + 1000;
+
+    retryAlarm = new RetryAlarm(absTime);
+    getAlarmService().addAlarm(retryAlarm);
+
+    if(System.currentTimeMillis() > getWarningCutOffTime()) {
       if (e == null)
 	log.error(getAgentIdentifier() + message);
       else
@@ -316,8 +346,9 @@ public abstract class SDRegistrationPluginBase extends SimplePlugin {
     Collection serviceProfiles = pd.getServiceProfiles();
 
     PlanningFactory planningFactory = 
-	(PlanningFactory) getFactory("planning");
-    SDFactory sdFactory = (SDFactory) getFactory(SDDomain.SD_NAME);
+	(PlanningFactory) domainService.getFactory("planning");
+    SDFactory sdFactory = 
+      (SDFactory) domainService.getFactory(SDDomain.SD_NAME);
     ProviderCapabilities providerCapabilities = 
       sdFactory.newProviderCapabilities(getAgentIdentifier().toString());
 
@@ -355,8 +386,11 @@ public abstract class SDRegistrationPluginBase extends SimplePlugin {
   }
 
 
-  protected void updateRegisterTaskDispositions(Collection registerTasks) {
-    for (Iterator iterator = registerTasks.iterator();
+  protected void updateRegisterTaskDispositions() {
+    PlanningFactory planningFactory = 
+      (PlanningFactory) domainService.getFactory("planning");
+    
+    for (Iterator iterator = registerTaskSubscription.iterator();
 	 iterator.hasNext();) {
       Task task = (Task) iterator.next();
       PlanElement pe = task.getPlanElement();
@@ -384,7 +418,6 @@ public abstract class SDRegistrationPluginBase extends SimplePlugin {
 	      log.debug(getAgentIdentifier() + 
 		       ": updateRegisterTaskDisposition() " +
 		       "changing confidence back to 0.0." +
-		       " didRehydrate() == " + didRehydrate() + 
 		       " rehydrated == " + rehydrated);
 	    }
 	  }
@@ -396,7 +429,7 @@ public abstract class SDRegistrationPluginBase extends SimplePlugin {
 
       AllocationResult estResult =
 	PluginHelper.createEstimatedAllocationResult(task,
-						     theLDMF,
+						     planningFactory,
 						     conf,
 						     true);
 
@@ -407,8 +440,8 @@ public abstract class SDRegistrationPluginBase extends SimplePlugin {
 		   conf);
 	}
 	Disposition disposition =
-	  theLDMF.createDisposition(task.getPlan(), task, estResult);
-	publishAdd(disposition);
+	  planningFactory.createDisposition(task.getPlan(), task, estResult);
+	getBlackboardService().publishAdd(disposition);
       } else if (pe.getEstimatedResult().getConfidenceRating() != conf) {
 	double previousConf = pe.getEstimatedResult().getConfidenceRating();
 	
@@ -427,7 +460,7 @@ public abstract class SDRegistrationPluginBase extends SimplePlugin {
 		   conf);
 	}
 	pe.setEstimatedResult(estResult);
-	publishChange(pe);
+	getBlackboardService().publishChange(pe);
       }
     }
   }
@@ -453,13 +486,17 @@ public abstract class SDRegistrationPluginBase extends SimplePlugin {
       switch (availabilityChange.getStatus()) {
       case AvailabilityChangeMessage.REQUESTED:
 	  updateProviderCapability(availabilityChange);
+	  availabilityChange.setStatus(AvailabilityChangeMessage.COMPLETED);
+	  getBlackboardService().publishChange(availabilityChange);
 	  break;
       case AvailabilityChangeMessage.PENDING:
         // let it go.  might want to check to see if it takes a very long time...
         break;
       case AvailabilityChangeMessage.COMPLETED:
-        availabilityChange.setRegistryUpdated(true);
-        publishChange(availabilityChange);
+	if (!availabilityChange.isRegistryUpdated()) {
+	  availabilityChange.setRegistryUpdated(true);
+	  getBlackboardService().publishChange(availabilityChange);
+	}
         break;
       case AvailabilityChangeMessage.DONE:
         // should drop it from the list;
@@ -477,15 +514,12 @@ public abstract class SDRegistrationPluginBase extends SimplePlugin {
       handleAvailabilityChange(availabilityChange);
     }
     
-    // Handle availabilityChangeMessage as trumping the presence of DAML file.
-    // Don't change isRegistered flag because that would assume that we
-    // should reregister.
-    //isRegistered = false;
     return;
   }
   
   protected void updateProviderCapability(AvailabilityChangeMessage availabilityChange) {
-    Collection pcCollection = query(providerCapabilitiesPredicate);
+    Collection pcCollection = 
+      getBlackboardService().query(providerCapabilitiesPredicate);
 
     if (log.isDebugEnabled()) {
       log.debug(getAgentIdentifier() + ": updateProviderCapability handling " +
@@ -514,7 +548,7 @@ public abstract class SDRegistrationPluginBase extends SimplePlugin {
 	}
 	
 	PlanningFactory planningFactory = 
-	  (PlanningFactory) getFactory("planning");
+	  (PlanningFactory) domainService.getFactory("planning");
 	Schedule newAvailability = 
 	  planningFactory.newSchedule(currentAvailability.getAllScheduleElements());
 	
@@ -587,7 +621,7 @@ public abstract class SDRegistrationPluginBase extends SimplePlugin {
 
 
 	  capability.setAvailableSchedule(newAvailability);
-	  publishChange(capabilities);
+	  getBlackboardService().publishChange(capabilities);
 
 	  
 	  if (newAvailability.size() == 0) {
@@ -625,6 +659,35 @@ public abstract class SDRegistrationPluginBase extends SimplePlugin {
     String damlFileName = getAgentIdentifier().toString() + DAML_IDENTIFIER;
     return new File(org.cougaar.servicediscovery.Constants.getServiceProfileURL().getFile() +
 		    damlFileName);
+  }
+
+  public class RetryAlarm implements Alarm {
+    private long expiresAt;
+    private boolean expired = false;
+
+    public RetryAlarm (long expirationTime) {
+      expiresAt = expirationTime;
+    }
+
+    public long getExpirationTime() { return expiresAt; }
+    public synchronized void expire() {
+      if (!expired) {
+        expired = true;
+        getBlackboardService().signalClientActivity();
+      }
+    }
+    public boolean hasExpired() { return expired; }
+    public synchronized boolean cancel() {
+      boolean was = expired;
+      expired=true;
+      return was;
+    }
+    public String toString() {
+      return "<RetryAlarm "+expiresAt+
+        (expired?"(Expired) ":" ")+
+        "for SDCommunityBasedRegistrationPlugin at " + 
+	getAgentIdentifier() + ">";
+    }
   }
 }
 
