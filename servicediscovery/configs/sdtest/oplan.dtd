@@ -1,0 +1,142 @@
+<!ELEMENT Boolean EMPTY>
+<!--
+   Boolean.value: E
+-->
+<!ATTLIST Boolean 
+	value CDATA #IMPLIED
+>
+<!ELEMENT Integer EMPTY>
+<!--
+   Integer.min: N
+   Integer.max: N
+   Integer.value: N
+-->
+<!ATTLIST Integer 
+	min CDATA #IMPLIED
+	max CDATA #IMPLIED
+	value CDATA #IMPLIED
+>
+<!ELEMENT Policies (Policy)>
+<!ELEMENT Policy (RuleParam+)>
+<!--
+   Policy.type: E
+   Policy.name: E
+-->
+<!ATTLIST Policy 
+	type CDATA #IMPLIED
+	name CDATA #IMPLIED
+>
+<!ELEMENT RuleParam (Boolean|Integer)>
+<!--
+   RuleParam.name: E
+-->
+<!ATTLIST RuleParam 
+	name CDATA #IMPLIED
+>
+<!ELEMENT dfsp (geoloc)>
+<!--
+   dfsp.name: E
+-->
+<!ATTLIST dfsp 
+	name CDATA #IMPLIED
+>
+<!ELEMENT forcepackage (timespan?,orgrelation+)>
+<!--
+   forcepackage.ForcePackageId: I
+-->
+<!ATTLIST forcepackage 
+	ForcePackageId CDATA #IMPLIED
+>
+<!ELEMENT geoloc EMPTY>
+<!--
+   geoloc.name: E
+   geoloc.code: E
+   geoloc.long: N
+   geoloc.lat: N
+-->
+<!ATTLIST geoloc 
+	name CDATA #IMPLIED
+	code CDATA #IMPLIED
+	long CDATA #IMPLIED
+	lat CDATA #IMPLIED
+>
+<!ELEMENT keyvalue EMPTY>
+<!--
+   keyvalue.value: I
+   keyvalue.key: I
+-->
+<!ATTLIST keyvalue 
+	value CDATA #IMPLIED
+	key CDATA #IMPLIED
+>
+<!ELEMENT oplan (organization+,forcepackage*,Policies*)>
+<!--
+   oplan.priority: I
+   oplan.operationName: N S 
+   oplan.oplanID: N
+   oplan.hostNationPOLSupport: E
+   oplan.theaterId: E
+   oplan.hostNationWaterSupport: E
+   oplan.enemyForceType: N S 
+   oplan.season: E
+   oplan.terrainType: E
+-->
+<!ATTLIST oplan 
+	cDay CDATA #IMPLIED
+	priority CDATA #IMPLIED
+	operationName CDATA #IMPLIED
+	oplanID CDATA #IMPLIED
+	hostNationPOLSupport CDATA #IMPLIED
+	theaterId CDATA #IMPLIED
+	hostNationWaterSupport CDATA #IMPLIED
+	enemyForceType CDATA #IMPLIED
+	season CDATA #IMPLIED
+	hostNationPOLCapability CDATA #IMPLIED
+	hostNationWaterCapability CDATA #IMPLIED
+	terrainType CDATA #IMPLIED
+>
+<!ELEMENT orgactivity (keyvalue*,timespan?,geoloc?)>
+<!--
+   orgactivity.ActivityType: N S 
+   orgactivity.OpTempo: E
+   orgactivity.ActivityName: E
+-->
+<!ATTLIST orgactivity 
+	ActivityType CDATA #IMPLIED
+	OpTempo CDATA #IMPLIED
+	ActivityName CDATA #IMPLIED
+>
+<!ELEMENT organization (orgactivity+,orgrelation*)>
+<!--
+   organization.OrgId: E
+-->
+<!ATTLIST organization 
+	OrgId CDATA #IMPLIED
+>
+<!ELEMENT orgrelation (timespan?)>
+<!--
+   orgrelation.OtherOrgId: E
+   orgrelation.AssignedRole: N S 
+   orgrelation.RelationType: E
+-->
+<!ATTLIST orgrelation 
+	OtherOrgId CDATA #IMPLIED
+	AssignedRole CDATA #IMPLIED
+	RelationType CDATA #IMPLIED
+>
+<!ELEMENT pod EMPTY>
+<!--
+   pod.type: E
+   pod.value: E
+-->
+<!ATTLIST pod 
+	type CDATA #IMPLIED
+	value CDATA #IMPLIED
+>
+<!ELEMENT timespan EMPTY>
+<!--
+-->
+<!ATTLIST timespan 
+	startTime CDATA #IMPLIED
+	thruTime CDATA #IMPLIED
+>
