@@ -135,20 +135,27 @@ public class Proxy {
             System.out.println("getRequest = " + getRequest);
 
             URL myURL = new URL(getRequest);
-            URLConnection myConnection = myURL.openConnection();
-            System.out.println("opened query connection = "+ myConnection.toString());
+            try {
+              URLConnection myConnection = myURL.openConnection();
+              System.out.println("opened query connection = "+ myConnection.toString());
 
-            // PASS BACK data ...
-            InputStream is = myConnection.getInputStream();
-            BufferedInputStream bis = new BufferedInputStream(is);
-            byte buf[] = new byte[512];
-            int sz;
-            while ((sz = bis.read(buf, 0, 512)) != -1) {
-              oStream.write(buf, 0, sz);
+              // PASS BACK data ...
+              InputStream is = myConnection.getInputStream();
+              BufferedInputStream bis = new BufferedInputStream(is);
+              byte buf[] = new byte[512];
+              int sz;
+              while ((sz = bis.read(buf, 0, 512)) != -1) {
+                oStream.write(buf, 0, sz);
+              }
+              socketOut.write("\n");
+              socketOut.flush();
+              valid = true;
+//              is.close();
+//              oStream.close();
             }
-            is.close();
-            oStream.close();
-            valid = true;
+            catch (Exception ex) {
+ex.printStackTrace();
+            }
           }
         } else {
           System.out.println("getRequest = " + getRequest);
