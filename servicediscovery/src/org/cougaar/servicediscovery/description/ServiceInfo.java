@@ -161,10 +161,12 @@ public class ServiceInfo{
   }
 
   /**
-   * Method to provide another way to get the provider name which is also used as
-   * the MessageAddress i.e., the address of the agent providing the service.  This often is,
-   * but is not limited to, the agent name.  Provider name may not be the correct usage in terms
-   * of how one agent accesses a another agent's service.
+   * Temporary method to provide another way to get the provider name from the UDDI registry
+   * that is less costly.  The other code is using provider name as a means to contact the
+   * provider.  Provider names in Cougaar are often, but not limited to, the MessageAddress i.e.,
+   * the address of the agent providing the service. Provider name may not be the correct usage
+   * in terms of how one agent accesses a another agent's service and we should rethink the usage
+   * of this API.
    * @return String address of the agent.
    */
   private String getMessageAddress() {
