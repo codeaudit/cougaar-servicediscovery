@@ -486,15 +486,13 @@ public class ServiceContractLP implements LogicProvider, EnvelopeLogicProvider {
       return relationships;
     }
 
-    try {
-    relationships.add(SDFactory.newServiceContractRelationship(relay, 
-							       localProvider, 
-							       client));
-    } catch (IllegalArgumentException iae) {
-      logger.error("Unable to create relationship provider " + localProvider + 
-		   " and client " + client,
-		   iae);
-    }
+    ServiceContractRelationship relationship = 
+      SDFactory.newServiceContractRelationship(relay, 
+					       localProvider, 
+					       client);
+    if (relationship != null) {
+      relationships.add(relationship);
+    } 
     return relationships;
   }
 
