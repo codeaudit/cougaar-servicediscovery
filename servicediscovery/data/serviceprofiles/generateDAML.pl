@@ -391,10 +391,10 @@ sub output_wsdl_file {
     }
     $genericFile = $generic."CougaarGrounding.wsdl";
     $genericBinding = $generic."CougaarBinding";
-    $filepath = $cougaarInstallPath."/".$groundingDirectory."/".$uniqueServiceIndex."-".$agentName.".wsdl";
+    $filepath = "../../.."."/".$groundingDirectory."/".$uniqueServiceIndex."-".$agentName.".wsdl";
     $genericpath = $cougaarInstallPath."/".$groundingDirectory."/".$genericFile;
     $cougaarpath = $cougaarInstallPath."/".$groundingDirectory."/"."cougaar.wsdl";
-    $WSDL_TEMPLATEFILE = $cougaarInstallPath."/".$groundingDirectory."/"."template-CougaarGrounding.txt";
+    $WSDL_TEMPLATEFILE = "../../.."."/".$groundingDirectory."/"."template-CougaarGrounding.txt";
 #    open(OUTPUT, ">$OUTPUTFILE")
 #    open(TEMPLATE, "$TEMPLATEFILE") || &error_out("Can't open file $TEMPLATEFILE");
     open(WSDL_TEMPLATE, "$WSDL_TEMPLATEFILE") || &error_out("Can't open file $WSDL_TEMPLATEFILE");
@@ -433,7 +433,7 @@ sub process_agent {
 	    ($name, $value) = split("=", $_);
 	    $agentName = $value;
 	    print "process_agent ".$agentName."\n" if $dump;
-	    $OUTPUTFILE = $cougaarInstallPath."/".$profileDirectory."/".$agentName.".profile.daml"; 
+	    $OUTPUTFILE = "../../.."."/".$profileDirectory."/".$agentName.".profile.daml"; 
 	    &print_through_Ontology;
 
 	    $nextService = 1;

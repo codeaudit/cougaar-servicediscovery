@@ -29,7 +29,7 @@ import org.cougaar.util.log.Logging;
  * Service binding info for the provider
  */
 
-public class ServiceBinding {
+public class ServiceBinding implements java.io.Serializable {
   public static final String SOAP_BINDING = "SOAP:Binding";
   public static final String COUGAAR_BINDING = "COUGAAR:Binding";
 
@@ -93,6 +93,8 @@ public class ServiceBinding {
 	    (bindingType.equals(SOAP_BINDING)));
   }
 }
+
+
 
 
 

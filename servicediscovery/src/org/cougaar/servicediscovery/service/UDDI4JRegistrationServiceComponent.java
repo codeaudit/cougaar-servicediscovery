@@ -20,14 +20,17 @@
  * </copyright>
  */
 
-
 package org.cougaar.servicediscovery.service;
-
 
 import org.cougaar.core.component.ServiceBroker;
 import org.cougaar.core.component.ServiceProvider;
+import org.cougaar.core.mts.MessageAddress;
 import org.cougaar.core.plugin.ComponentPlugin;
+import org.cougaar.core.service.community.Community;
 import org.cougaar.core.service.LoggingService;
+import org.cougaar.core.service.ThreadService;
+import org.cougaar.core.service.AgentIdentificationService;
+
 import org.cougaar.servicediscovery.description.AdditionalQualificationRecord;
 import org.cougaar.servicediscovery.description.BusinessCategory;
 import org.cougaar.servicediscovery.description.ProviderDescription;
@@ -38,19 +41,20 @@ import org.cougaar.util.UnaryPredicate;
 import org.cougaar.util.log.Logger;
 import org.cougaar.util.log.Logging;
 
-import org.cougaar.yp.*;
+//import org.cougaar.yp.*;
+import org.cougaar.yp.YPProxy;
+import org.cougaar.yp.YPService;
+import org.cougaar.yp.OneShotMachine;
+import org.cougaar.yp.YPStateMachine;
+import org.cougaar.yp.YPFuture;
 
 import org.uddi4j.response.*;
 import org.uddi4j.UDDIException;
-import org.uddi4j.util.KeyedReference;
-import org.uddi4j.util.CategoryBag;
-import org.uddi4j.util.FindQualifiers;
-import org.uddi4j.util.FindQualifier;
+import org.uddi4j.util.*;
 import org.uddi4j.datatype.business.BusinessEntity;
 import org.uddi4j.datatype.service.BusinessService;
 import org.uddi4j.datatype.service.BusinessServices;
 import org.uddi4j.datatype.binding.*;
-import org.uddi4j.transport.TransportException;
 import org.uddi4j.client.*;
 import org.uddi4j.datatype.Name;
 import org.uddi4j.datatype.binding.*;
@@ -58,8 +62,6 @@ import org.uddi4j.datatype.business.*;
 import org.uddi4j.datatype.service.*;
 
 import java.util.*;
-
-
 
 /**
  * This component provides access to the Registration Service
@@ -73,45 +75,34 @@ import java.util.*;
  * @see RegistrationService
  */
 
-
+// why is this a plugin?? it doesn't use the blackboard!
 public final class UDDI4JRegistrationServiceComponent
   extends ComponentPlugin
 {
+  private static Logger staticLogger = 
+        Logging.getLogger(UDDI4JRegistrationServiceComponent.class);
 
- /**  Cougaar service used for logging **/
-  protected LoggingService log;
-  protected YPService ypService;
+
+  /**  Cougaar service used for logging **/
+  private LoggingService log;
+  public void setLoggingService(LoggingService ls) { log=ls; }
+  private YPService ypService;
+  public void setYPService(YPService yp) { ypService = yp; }
+  private ThreadService threads;
+  public void setThreadService(ThreadService t) { threads=t; }
+
+  protected String agentName = "anonymous";
+
   private RegistrationServiceProviderImpl mySP;
-
-  /** Local storage of ProviderDescriptions **/
-  private Hashtable storedData = new Hashtable(5);
-
-  /** List of objects to add to the blackboard **/
-  private final List todo = new ArrayList(5);
-
-  // TODO:  This could be made static
-  private YPProxy proxy;
-
-  //TODO:  This could be shared as well, it would reduce the number of calls to the registry
-  HashMap schemeKeys = new HashMap();
 
   public void load() {
     super.load();
-    this.log = (LoggingService)
-      getServiceBroker().getService(this, LoggingService.class, null);
-    if (log == null) {
-      log = LoggingService.NULL;
-    }
-
-    this.ypService = 
-      (YPService) getServiceBroker().getService(this, YPService.class, null);
-    if (ypService == null) {
-      throw new RuntimeException("Unable to obtain YPService");
-    }
 
     // create and advertise our service
     this.mySP = new RegistrationServiceProviderImpl();
     getServiceBroker().addService(RegistrationService.class, mySP);
+
+    agentName = agentIdentificationService.getName();
   }
 
   public void unload() {
@@ -119,11 +110,6 @@ public final class UDDI4JRegistrationServiceComponent
     if (mySP != null) {
       getServiceBroker().revokeService(RegistrationService.class, mySP);
       mySP = null;
-    }
-    // release all services
-    if ((log != null) && (log != LoggingService.NULL)) {
-      getServiceBroker().releaseService(this, LoggingService.class, log);
-      log = null;
     }
     super.unload();
   }
@@ -133,722 +119,730 @@ public final class UDDI4JRegistrationServiceComponent
    * The only reason ProviderDescriptions would exist is if the
    * agent is re-hydrating.
    */
-  protected void setupSubscriptions() {
-    populateLocalHash();
-  }
+  protected void setupSubscriptions() {}
 
-  protected void execute() {
-    addAll();
-  }
+  protected void execute() {}
 
-  private void populateLocalHash() {
-      Iterator iter = (blackboard.query(new UnaryPredicate() {
-          public boolean execute(Object o) {
-            if(o instanceof MyBlackboardObject) {
-              return true;
-            } else {
-              return false;
-            }}})).iterator();
+  private class RegistrationServiceProviderImpl implements ServiceProvider {
+    private RegistrationServiceImpl regService;
 
-      while(iter.hasNext()) {
-        MyBlackboardObject mbb = (MyBlackboardObject)iter.next();
-        storedData.put(mbb.getKey(), mbb.getData());
-      }
-    }
-
-  private class RegistrationServiceProviderImpl
-    implements ServiceProvider {
-
-    private final RegistrationServiceImpl regService;
-
-    public RegistrationServiceProviderImpl() {
-      // keep only one instance
-      regService = new RegistrationServiceImpl();
-    }
-
-    public Object getService(ServiceBroker sb,
-                             Object requestor,
-                             Class serviceClass) {
+    public Object getService(ServiceBroker sb, Object requestor, Class serviceClass) {
       if (serviceClass == RegistrationService.class) {
+        /* 
+	if (regService == null) {
+	  regService = new RegistrationServiceImpl();
+	}
         return regService;
+        */
+        return new RegistrationServiceImpl();
       } else {
         return null;
       }
     }
 
-    public void releaseService(ServiceBroker sb,
-                               Object requestor,
-                               Class serviceClass,
-                               Object service) {
-    }
+    public void releaseService(ServiceBroker sb, Object requestor, Class serviceClass, Object service) {}
   }
 
-  private AuthToken authorization = null;
-
-  //The following 4 uddi registry parameters are set via System properties.
-  private static String username = "cougaar";
-  private static String password = "cougaarPass";
-  private static String queryURL = null;
-  private static String publishURL = null;
+  //The following uddi registry parameters are set via System properties.
+  private static String username = null;
+  private static String password = null;
 
   static {
-    // FIXME: CHECK VALUES EXIST!!!!
-    /*
-    username = System.getProperty("org.cougaar.servicediscovery.registry.username");
-    password = System.getProperty("org.cougaar.servicediscovery.registry.password");
-    queryURL = System.getProperty("org.cougaar.servicediscovery.registry.queryURL");
-    publishURL = System.getProperty("org.cougaar.servicediscovery.registry.publishURL");
-    */
-
+    username = System.getProperty("org.cougaar.yp.juddi-users.username", YPProxy.DEFAULT_UDDI_USERNAME);
+    password = System.getProperty("org.cougaar.yp.juddi-users.password", YPProxy.DEFAULT_UDDI_PASSWORD);
   }
 
-  synchronized private void initAuthToken(YPProxy proxy) {
-    if (authorization == null) {
-      try {
-        authorization = (AuthToken) ypService.submit(proxy.get_authToken(username, password)).get();
-      } catch (UDDIException e) {
-	e.printStackTrace();
-        DispositionReport dr = e.getDispositionReport();
-        Logger logger = Logging.getLogger(UDDI4JRegistrationServiceComponent.class);
-        logger.error("UDDIException faultCode:" + e.getFaultCode() +
-                     "\n operator:" + dr.getOperator() +
-                     "\n generic:"  + dr.getGeneric() +
-                     "\n errno:"    + dr.getErrno() +
-                     "\n errCode:"  + dr.getErrCode() +
-                     "\n errInfoText:" + dr.getErrInfoText(), e);
-        /*
-      } catch (TransportException e) {
-        Logger logger = Logging.getLogger(UDDI4JRegistrationServiceComponent.class);
-        logger.error("Caught an Exception getting authorization", e);
-        */
-      }
-    }
-  }
+  private class RegistrationServiceImpl extends UDDI4JUtility implements RegistrationService {
 
-  synchronized private void handleExpiration(AuthToken expiredToken, YPProxy p) {
-    if (expiredToken.equals(authorization)) {
-      authorization = null;
-      initAuthToken(p);
-    }
-  }
+    private YPProxy makeProxy(Object ypContext) {
+      YPProxy proxy = null;
 
-  private class RegistrationServiceImpl
-    implements RegistrationService {
-     // TODO:  This could be shared
-    HashMap schemes = new HashMap();
-
-
-    public RegistrationServiceImpl() {
-
-    }
-
-    public boolean addProviderDescription(ProviderDescription pd) {
-      return addProviderDescription(pd, Collections.EMPTY_LIST);
-    }
-
-
-    /**
-     * Adds a new ProviderDescription object.
-     *
-     * @param pd ProviderDescription for this provider.
-     * @return success if the Provider was added without error
-     */
-    public boolean addProviderDescription(ProviderDescription pd, Collection additionalServiceClassifications) {
-      boolean success=false;
-
-      if (storeProviderDescription(pd)) {
-        success = executePublish(pd, additionalServiceClassifications);
-      }
-      return success;
-    }
-
-    /**
-     * Creates a proxy to communicate with the registry.
-     *
-     */
-    private boolean makeProxy() {
-      // Define configuration properties.
-      String ypAgent = System.getProperty("org.cougaar.yp.ypAgent");
-      
-      if ((ypAgent == null) || ypAgent.equals("")) {
-	proxy = null;
-	log.error(getAgentIdentifier() + ": ypAgent not identified.");
-	return false;
-      }
-      proxy = ypService.getYP(ypAgent);
-
-      initAuthToken(proxy);
-      return true;
-      
-    }
-
-    private YPProxy currentProxy() {
-      if (proxy == null) {
-	makeProxy();
+      if (ypContext == null) {
+	proxy = ypService.getYP();
+      } else if (ypContext instanceof String) {
+	proxy = ypService.getYP((String) ypContext);
+      } else if (ypContext instanceof MessageAddress) {
+	proxy = ypService.getYP((MessageAddress) ypContext);
+      } else if (ypContext instanceof Community) {
+	proxy = ypService.getYP((Community) ypContext);
+      } else {
+	throw new IllegalArgumentException("Invalid datatype for ypContext - " +
+					   ypContext.getClass() +
+					   " - must be String, MessageAddress, or Community.");
       }
 
       return proxy;
     }
 
+    public RegistrationServiceImpl() { 
+      super(UDDI4JRegistrationServiceComponent.this.log, 
+            UDDI4JRegistrationServiceComponent.this.ypService,
+            UDDI4JRegistrationServiceComponent.this.threads);
+    }
+
+    //
+    // Implement the registrationservice api
+    //
+    public void addProviderDescription(Object ypContext, 
+				       ProviderDescription pd, 
+				       Callback callback) {
+      addProviderDescription(ypContext,
+			     pd, 
+			     Collections.EMPTY_LIST, 
+			     callback);
+    }
+
+
+    private class SMBase extends YPStateMachine {
+      protected final Object ypContext;
+      protected final Callback callback;
+
+      public SMBase(Object ypContext, Callback callback) {
+        super(ypService, makeProxy(ypContext), threads);
+	this.ypContext = ypContext;
+        this.callback = callback;
+      }
+      protected void handleException(Exception e) {
+        staticLogger.error("Caught unexpected Exception.  StateMachine will exit", e);
+        callback.handle(e);
+      }
+    
+
+      public void transit(State s0, State s1) {
+	if (staticLogger.isInfoEnabled()) {
+	  staticLogger.info(this.toString()+" StateMachine transit: "+s0+" to "+s1);
+	}
+	super.transit(s0, s1);
+      }
+      protected void kick() {
+	if (staticLogger.isInfoEnabled()) {
+	  staticLogger.info(this.toString()+" kicked"/*, new Throwable()*/); // sigh
+	}
+	super.kick();
+      }
+      protected Frame popFrame() {
+	Frame f = super.popFrame();
+	if (staticLogger.isInfoEnabled()) {
+	  staticLogger.info(this.toString()+
+		      " StateMachine pop("+stackSize()+") backto "+
+                            f.getReturnTag() /*, new Throwable()*/ );
+	}
+	return f;
+      }
+      
+      protected void pushFrame(Frame f) {
+	if (staticLogger.isInfoEnabled()) {
+	  staticLogger.info(this.toString()+" StateMachine push("+stackSize()+")");
+	}
+	super.pushFrame(f);
+      }
+      public  void set(State s) {
+	super.set(s);
+	if (staticLogger.isInfoEnabled()) {
+	  /*
+          if ("POP".equals(s.getKey()))
+            staticLogger.info(this.toString()+" StateMachine set to "+s, new Throwable());
+          else
+          */
+	  staticLogger.info(this.toString()+" StateMachine set to "+s);
+	}
+      }
+      public boolean step() {
+	State s1= getState();
+	boolean b = super.step();
+	State s2 = getState();
+	if (staticLogger.isInfoEnabled()) {
+	  staticLogger.info(this.toString()+" StateMachine stepped from "+s1+" to "+s2+
+		   " progress="+b );
+	}
+	return b;
+      }
+      
+      public void go() {
+	super.go();
+	if (staticLogger.isInfoEnabled()) {
+	  staticLogger.info(this.toString()+" StateMachine stopped in state "+getState(
+));
+	}
+      }
+
+      /*
+      public String toString() {
+	if (agentName != null) {
+	  return super.toString()+"("+agentName+")";
+	} else { 
+	  return super.toString();
+	}
+      } */
+
+    }
+    
+
     /**
-     * Creates an organization, its classification, and its
-     * services, and saves it to the registry.
+     * Adds a new ProviderDescription object.
      *
-     * @param pd        the ProviderDescription object
+     * @param pd ProviderDescription for this provider.
+     * @param callback Callback.invoke(Boolean) called with true on success
      */
-    private boolean executePublish(ProviderDescription pd, Collection additionalServiceClassifications) {
+    public void addProviderDescription(Object ypContext,
+				       ProviderDescription pd, 
+				       Collection additionalServiceClassifications, 
+				       Callback callback) {
+      (new PublishSM(ypContext, pd, additionalServiceClassifications, 
+		     callback)).start();
+    }
 
-      boolean success = true;
+    private class PublishSM extends SMBase {
+      private ProviderDescription pd;
+      private Collection additionalServiceClassifications;
 
-      // Save business
-      //Add classifications at organization level.
-      CategoryBag bzBag = new CategoryBag();
-      if (pd.getProviderName() == null)  {
-        success = false;
-        if (log.isErrorEnabled()) {
-          log.error("Provider name is null, unable to register. ");
+      public String toString() { return (pd!=null)?(pd.getProviderName()):"anonymous"; }
+      public PublishSM(Object ypContext, ProviderDescription pd, Collection additionalServiceClassifications, Callback callback) {
+	super(ypContext, callback);
+        if (pd.getProviderName() == null) {
+          throw new IllegalArgumentException("Provider name is null, unable to register. ");
         }
-        return success;
+        this.pd = pd;
+        this.additionalServiceClassifications = additionalServiceClassifications;
       }
 
-      BusinessEntity be = new BusinessEntity("", pd.getProviderName());
-      for (Iterator iter = pd.getBusinessCategories().iterator(); iter.hasNext();) {
-        BusinessCategory bc = (BusinessCategory) iter.next();
-        bzBag.getKeyedReferenceVector().add(getKeyedReference(bc.getCategorySchemeName(),
-                                                              bc.getCategoryName(), bc.getCategoryCode()));
-      }
-      be.setCategoryBag(bzBag);
+      BusinessEntity be;
+      CategoryBag bzBag = new CategoryBag();
+      Iterator iter;
+
       Vector entities = new Vector();
-
-      // Create services and service classifications
       Vector services = new Vector();
-      Collection serviceDescriptions = pd.getServiceProfiles();
+      Collection serviceDescriptions;
       BusinessServices businessServices = new BusinessServices ();
 
-      for (Iterator i = serviceDescriptions.iterator();i.hasNext() ;) {
-        ServiceProfile sd = (ServiceProfile)i.next();
-        BusinessService bSvc = new BusinessService("");
-        bSvc.setDefaultName(new Name(sd.getServiceProfileID()));
-        Collection serviceCategories = sd.getServiceCategories();
-        CategoryBag categoryBag = new CategoryBag();
-        for (Iterator it = serviceCategories.iterator(); it.hasNext() ;) {
-          ServiceCategory sc = (ServiceCategory)it.next();
-          categoryBag.getKeyedReferenceVector().add(getKeyedReference(sc.getCategorySchemeName(), sc.getCategoryName(),
-                                                                sc.getCategoryCode()));
+      protected void init() {
+        super.init();
 
-          // add additional service type qualifiers
-          for (Iterator j = sc.getAdditionalQualifications().iterator(); j.hasNext();) {
-            AdditionalQualificationRecord aqr = (AdditionalQualificationRecord) j.next();
-            categoryBag.getKeyedReferenceVector().add(getKeyedReference(sc.getCategorySchemeName(),
-                                                                  aqr.getQualificationName(),
-                                                                  aqr.getQualificationValue()));
-          }
-        }
 
-	for (Iterator iterator = additionalServiceClassifications.iterator();
-	     iterator.hasNext();) {
-	  ServiceClassification serviceClassification = 
-	    (ServiceClassification) iterator.next();
-          categoryBag.getKeyedReferenceVector().add(getKeyedReference(serviceClassification.getClassificationSchemeName(),
-                                                                    serviceClassification.getClassificationName(),
-                                                                    serviceClassification.getClassificationCode()));
+      addLink("YPError", "handleYPError");
+      add(new SState("handleYPError") {
+	public void invoke() {
+	  callback.handle((Exception) getVar("YPErrorException"));
 	}
-      
-        bSvc.setCategoryBag(categoryBag);
-        bSvc.setBusinessKey ("");
-        if(sd.getTextDescription().trim().length() != 0) {
-          bSvc.setDefaultDescriptionString(sd.getTextDescription());
-        }
-        BindingTemplates bindings = createBindingTemplates(sd.getServiceGroundingURI(),
-                                                           createTModelInstance(sd.getServiceGroundingBindingType(),
-                                                                                pd.getProviderName()));
-        bSvc.setBindingTemplates(bindings);
-        services.add(bSvc);
-      }
-      businessServices.setBusinessServiceVector (services);
+      });
 
-      boolean saveBusiness = false;
-      while (!saveBusiness) {
-        AuthToken token = authorization;
-	YPProxy currentProxy = currentProxy();
-        try {
-          be.setBusinessServices (businessServices);
-          entities.add(be);
-          ypService.submit(currentProxy.save_business(token.getAuthInfoString(), entities)).get();
-          saveBusiness = true;
-        } catch (UDDIException e) {
-          DispositionReport dr = e.getDispositionReport();
-          if (dr.getErrCode().equals(DispositionReport.E_authTokenExpired)) {
-            if (log.isDebugEnabled()) {
-              log.debug("Auth Token expired, getting a new one " + getAgentIdentifier());
-            }
-            handleExpiration(token, currentProxy);
-          } else {
-            log.error("UDDIException faultCode:" + e.getFaultCode() +
-                      "\n operator:" + dr.getOperator() +
-                      "\n generic:"  + dr.getGeneric() +
-                      "\n errno:"    + dr.getErrno() +
-                      "\n errCode:"  + dr.getErrCode() +
-                      "\n errInfoText:" + dr.getErrInfoText(), e);
-          }
-          return false;
-          /*
-        } catch (TransportException te) {
-          log.error("Caught a TransportException saving business", te);
-          return false;
-          */
-        }
-      }
-      return success;
-    }
-
-
-    private BindingTemplates createBindingTemplates(String uri, TModelInstanceDetails tModelInstanceDetails) {
-
-      BindingTemplates bindings = new BindingTemplates();
-      BindingTemplate binding = new BindingTemplate("", tModelInstanceDetails);
-      AccessPoint accessPoint = new AccessPoint(uri, "http");
-      binding.setAccessPoint(accessPoint);
-      bindings.getBindingTemplateVector().add(binding);
-      return bindings;
-    }
-
-    private TModelInstanceDetails createTModelInstance(String tModelName, String messageAddress) {
-      String suffix = ":Binding";
-      TModelInstanceDetails tModelInstanceDetails = null;
-      Vector tModelInstanceInfoVector = new Vector();
-      TModelInstanceInfo tModelInstanceInfo = new TModelInstanceInfo(findTModelKey(tModelName+suffix));
-      InstanceDetails id = new InstanceDetails();
-      id.setInstanceParms(new InstanceParms(messageAddress));
-      tModelInstanceInfo.setInstanceDetails(id);
-      tModelInstanceInfoVector.add(tModelInstanceInfo);
-      tModelInstanceDetails = new TModelInstanceDetails();
-      tModelInstanceDetails.setTModelInstanceInfoVector(tModelInstanceInfoVector);
-      return tModelInstanceDetails;
-    }
-
-    private KeyedReference getKeyedReference(String tModelName, String attribute, String value) {
-      String key = findTModelKey(tModelName);
-      KeyedReference kr = new KeyedReference(attribute, value);
-      kr.setTModelKey(key);
-      return kr;
-    }
-
-    private String findTModelKey(String tModelName) {
-      if(!schemeKeys.containsKey(tModelName)) {
-        TModelList tlist = null;
-	int retryCount = 100;
-	
-	while (retryCount-- > 0) {
-	  if (log.isDebugEnabled()) {
-	    log.debug("findTModelKey: " + tModelName + 
-		      " retryCount " + retryCount);
-	  }
-	  try {
-	    tlist = (TModelList) ypService.submit(currentProxy().find_tModel(tModelName, null, null, null, 1)).get();
-
-	    if (tlist == null) {
-	      Thread.sleep(10000);
+        addLink("START", "getToken");
+        add(new SState("getToken") {
+            public void invoke() { 
+	      call("getAuthToken", null, "gotToken");
 	    }
-	  } catch (InterruptedException ie) {
-	    continue;
-	  } catch (Exception e) {
-	    log.error("Caught an Exception finding tModel.", e);
-	  }
-	}
+	});
 
-	if (tlist == null) {
-	  log.error("Unable to find tModel for " + tModelName);
-	  return "";
-	}
+        addLink("gotToken","initBag");
 
-        TModelInfos infos = tlist.getTModelInfos();
-        Vector tms = infos.getTModelInfoVector();
-        schemeKeys.put(tModelName, ((TModelInfo) tms.elementAt(0)).getTModelKey());
+        // initBag - fills up the new BusinessEntity with keyedrefs to the business categories
+        add(new SState("initBag") { public void invoke() {
+          be = new BusinessEntity("", pd.getProviderName());
+          setVar("be", be);
+          setVar("bzBag", bzBag);
+          iterate(pd.getBusinessCategories(), "initBag.Loop", "initBagDone");
+        }});
+
+        add(new SState("initBag.Loop") { public void invoke() {
+          final BusinessCategory bc = (BusinessCategory) getArgument();
+          getKeyedReference(getYPProxy(),
+			    bc.getCategorySchemeName(),
+                            bc.getCategoryName(), 
+                            bc.getCategoryCode(),
+                            new Callback() {
+                              public void invoke(Object o) {
+                                KeyedReference kr = (KeyedReference) o;
+                                bzBag.getKeyedReferenceVector().add(kr);
+                                callReturn(null);
+                                kick();
+                              }
+                              public void handle(Exception e) {
+                                log.error("initBag.Loop.getKeyedReference("+bc+")", e);
+                                //transit("ERROR");
+                                callback.handle(e);
+                              }
+                            });
+        }});
+        add(new SState("initBagDone") {
+            public void invoke() {
+              be.setCategoryBag(bzBag);
+              transit("initBS");
+            }});
+
+
+        // initBS - inits the be's Services, iterate over the SDs
+        add(new SState("initBS") { public void invoke() {
+          serviceDescriptions = pd.getServiceProfiles();
+          iterate(serviceDescriptions, "ibsl", "initBSDone");
+        }});
+        // foreach service description, loop over service categories
+        add(new SState("ibsl") { public void invoke() {
+          ServiceProfile sd = (ServiceProfile) getArgument();
+          setVar("sd", sd);
+          BusinessService bSvc = new BusinessService("");
+          bSvc.setDefaultName(new Name(sd.getServiceProfileID()));
+          setVar("bSvc", bSvc);
+          Collection serviceCategories = sd.getServiceCategories();
+          CategoryBag categoryBag = new CategoryBag();
+          setVar("categoryBag", categoryBag);
+          iterate(serviceCategories, "ibsl_sub1", "ibsl_1b");
+        }});
+        // foreach service category, get the SC ref and add to the bag
+        add(new SState("ibsl_sub1") { public void invoke() {
+          final ServiceCategory sc = (ServiceCategory) getArgument();
+          setVar("sc", sc);
+          final CategoryBag categoryBag = (CategoryBag) getVar("categoryBag");
+          getKeyedReference(getYPProxy(),
+			    sc.getCategorySchemeName(), 
+                            sc.getCategoryName(),
+                            sc.getCategoryCode(),
+                            new Callback() {
+                              public void invoke(Object o) {
+                                KeyedReference kr = (KeyedReference) o;
+                                categoryBag.getKeyedReferenceVector().add(kr);
+                                transit("ibsl_sub1a");
+                                kick();
+                              }
+                              public void handle(Exception e) {
+                                log.error("ibsl_sub1.getKeyedReference("+sc+")", e);
+                                //transit("ERROR");
+                                callback.handle(e);
+                              }});
+        }});
+        // foreach Service category, loop over the additional qualifications
+        add(new SState("ibsl_sub1a") { public void invoke() {
+          ServiceCategory sc = (ServiceCategory) getVar("sc");
+          iterate(sc.getAdditionalQualifications(), "ibsl_sub2", "ibsl_sub1b");
+        }});
+
+        // foreach AQ, collect the keyed refs and return.
+        add(new SState("ibsl_sub2") { public void invoke() {
+          AdditionalQualificationRecord aqr = (AdditionalQualificationRecord) getArgument();
+          final ServiceCategory sc = (ServiceCategory) getVar("sc");
+          final CategoryBag categoryBag = (CategoryBag) getVar("categoryBag");
+          getKeyedReference(getYPProxy(),
+			    sc.getCategorySchemeName(),
+                            aqr.getQualificationName(),
+                            aqr.getQualificationValue(),
+                            new Callback() {
+                              public void invoke(Object o) {
+                                KeyedReference kr = (KeyedReference) o;
+                                categoryBag.getKeyedReferenceVector().add(kr);
+                                callReturn(null);
+                                kick();
+                              }
+                              public void handle(Exception e) {
+                                log.error("ibsl_sub2.getKeyedReference("+sc+")", e);
+                                //transit("ERROR");
+                                callback.handle(e);
+                              }});
+        }});
+
+        // endpoint of loop started in ibsl_sub1a, returns up to loop started in ibsl which may 
+        // progress to ibsl_1
+        add(new SState("ibsl_sub1b") { public void invoke() {
+          callReturn(null);
+        }});
+
+        // ibsl_1b, iterate over additionalServiceClassifications
+        add(new SState("ibsl_1b") { public void invoke() {
+          iterate(additionalServiceClassifications, "ibsl_sub3", "ibsl_1c");
+        }});
+
+        // foreach ASQ, collect the keyed refs and return.
+        add(new SState("ibsl_sub3") { public void invoke() {
+          final ServiceClassification sc = (ServiceClassification) getArgument();
+          final CategoryBag categoryBag = (CategoryBag) getVar("categoryBag");
+          getKeyedReference(getYPProxy(),
+			    sc.getClassificationSchemeName(),
+                            sc.getClassificationName(),
+                            sc.getClassificationCode(),
+                            new Callback() {
+                              public void invoke(Object o) {
+                                KeyedReference kr = (KeyedReference) o;
+                                categoryBag.getKeyedReferenceVector().add(kr);
+                                callReturn(null);
+                                kick();
+                              }
+                              public void handle(Exception e) {
+                                log.error("ibsl_sub3.getKeyedReference("+sc+")", e);
+                                //transit("ERROR");
+                                callback.handle(e);
+                              }});
+        }});
+
+        // ibsl_1c, collect results
+        add(new SState("ibsl_1c") { public void invoke() { 
+          final CategoryBag categoryBag = (CategoryBag) getVar("categoryBag");
+          final BusinessService bSvc = (BusinessService)getVar("bSvc");
+          bSvc.setCategoryBag(categoryBag);
+          bSvc.setBusinessKey("");
+
+          final ServiceProfile sd = (ServiceProfile) getVar("sd");
+          if(sd.getTextDescription().trim().length() != 0) {
+            bSvc.setDefaultDescriptionString(sd.getTextDescription());
+          }
+          
+          createTModelInstance(getYPProxy(),
+			       sd.getServiceGroundingBindingType(),
+                               pd.getProviderName(),
+                               new Callback() {
+                                 public void invoke(Object o) {
+                                   TModelInstanceDetails tModelInstanceDetails = (TModelInstanceDetails) o;
+                                   BindingTemplates bindings = createBindingTemplates(sd.getServiceGroundingURI(),
+                                                                                      tModelInstanceDetails);
+                                   bSvc.setBindingTemplates(bindings);
+                                   services.add(bSvc);
+                                   callReturn(null); // return back to initBS
+                                   kick();
+                                 }
+                                 public void handle(Exception e) {
+                                   log.error("ibsl_1c.createTModelInstance", e);
+                                   //transit("ERROR");
+                                   callback.handle(e);
+                                 }});
+        }});
+
+
+
+        add(new SState("initBSDone") { public void invoke() {
+          businessServices.setBusinessServiceVector (services);
+          transit("saveBusiness");
+        }});
+
+
+        addYPQ("saveBusiness", "saveBusinessDone", new YPQ() {
+            public YPFuture get(Frame f) {
+              be.setBusinessServices (businessServices);
+              entities.add(be);
+              return getYPProxy().save_business(getAuthToken().getAuthInfoString(), entities);
+            }
+            public void set(Frame f, Object result) {
+              // ignore the result.
+            }
+            public void handle(Frame f, Exception e) {
+              log.error("saveBusiness exception", e);
+              callback.handle(e);
+            }
+          });
+        addLink("saveBusinessDone", "finish");
+        add(new SState("finish") {
+            public void invoke() { 
+              callback.invoke(Boolean.TRUE); // let complete while discarding token
+              call("discardAuthToken", null, "DONE");
+            }
+          });
       }
-      return (String) schemeKeys.get(tModelName);
     }
 
-
-    public boolean addServiceDescription(String providerKey, ServiceProfile sd){
-      return false;
-    }
-
-//  FIXME -NEED TO DELETE THE PROVIDER DESC STORED LOCALLY AS WELL
-    public boolean deleteProviderDescription(String providerKey){
-      log.error(" This method has not been implemented ");
-      return false;
-    }
 
     /**
-     * Use a local HashMap for speed, but also place
-     * object on the Blackboard for persistence.
+     * @param callback Callback.invoke(Boolean) true on success, Callback.handle(Exception) on failure
      */
-    private boolean storeProviderDescription(ProviderDescription pd) {
-      if(pd != null) {
-        MyBlackboardObject mbb = new MyBlackboardObject();
+    public void updateServiceDescription(Object ypContext, 
+					 String providerName, 
+					 Collection serviceCategories, 
+					 Callback callback){
+      (new UpdateSM(ypContext, 
+		    providerName, 
+		    serviceCategories, 
+		    callback)).start();
+    }
+    private class UpdateSM extends SMBase {
+      final String providerName;
+      final Collection serviceCategories;
 
+      private UpdateSM(Object ypContext,String providerName, Collection serviceCategories, Callback callback) {
+	super(ypContext, callback);
+        this.providerName = providerName;
+        this.serviceCategories = serviceCategories;
 
-        if (pd.getProviderName() != null) {
-          // Place on the Blackboard for persistence.
-          mbb.setKey(pd.getProviderName());
-          mbb.setData(pd);
-          addLater(mbb);
-          storedData.put(pd.getProviderName(),mbb);
-        } else {
-          if (log.isErrorEnabled()) {
-            log.error("Cannot store ProviderDescription, ProviderName is null!");
-          }
-          return false;
-        }
-      } else {
-        if (log.isErrorEnabled()) {
-          log.error("Received a NULL ProviderDescription");
-        }
-        return false;
+        // do some pre-machine initialization
+        namePatterns.add(new Name(providerName));
       }
-      return true;
-    }
 
-
-    public ProviderDescription getProviderDescription(Object key){
-      MyBlackboardObject mbb = (MyBlackboardObject)storedData.get(key);
-      if (mbb == null) {
-          if(log.isDebugEnabled()) {
-            log.debug("MyBlackboardObject is null for key: " + key.toString());
-          }
-        return null;
-      }
-      ProviderDescription pd = (ProviderDescription)mbb.getData();
-      return pd;
-    }
-
-
-    //Below methods not yet implemented
-    public boolean updateProviderDescription(String providerKey, ProviderDescription pd){
-      log.error(" This method has not been implemented ");
-      return false;
-    }
-
-
-    public boolean updateServiceDescription(String providerName, Collection serviceCategories){
-      boolean success = true;
-
-      Vector namePatterns = new Vector();
-      namePatterns.add(new Name(providerName));
-      Vector services = new Vector();
-
-      // Setting FindQualifiers to 'caseSensitiveMatch'
-      FindQualifiers findQualifiers = new FindQualifiers();
-      Vector qualifier = new Vector();
-      qualifier.add(new FindQualifier("caseSensitiveMatch"));
-      findQualifiers.setFindQualifierVector(qualifier);
       BusinessList businessList;
+      Iterator iter;
+      CategoryBag updateBag = new CategoryBag();
+      Vector namePatterns = new Vector();
+      Vector services = new Vector();
+      Vector serviceKeys = new Vector();
 
-      try {
-        businessList = (BusinessList) ypService.submit(currentProxy().find_business(namePatterns, null, null, null, null, findQualifiers, 5)).get();
-        Vector businessInfoVector  = businessList.getBusinessInfos().getBusinessInfoVector();
-        BusinessInfo businessInfo = null;
-        for (int i = 0; i < businessInfoVector.size(); i++) {
-          businessInfo = (BusinessInfo)businessInfoVector.elementAt(i);
-          if (log.isDebugEnabled()) {
-            log.debug("updateServiceDescription for organization: " + businessInfo.getNameString());
-          }
-          break;
-        }
-        if(businessInfo == null) {
-          if (log.isDebugEnabled()) {
-            log.debug("updateServiceDescription, cannot find registration for: " + providerName);
-          }
-
-          return false;
-        }
-        Enumeration enum = businessInfo.getServiceInfos().getServiceInfoVector().elements();
-        Vector serviceKeys = new Vector();
-        while (enum.hasMoreElements()) {
-          ServiceInfo service = (ServiceInfo) enum.nextElement();
-          serviceKeys.add(service.getServiceKey());
-        }
-        CategoryBag updateBag = new CategoryBag();
-
-        for(Iterator iter = serviceCategories.iterator(); iter.hasNext();) {
-          ServiceClassification serviceClass = (ServiceClassification) iter.next();
-          updateBag.getKeyedReferenceVector().add(getKeyedReference(serviceClass.getClassificationSchemeName(),
-                                                                    serviceClass.getClassificationName(),
-                                                                    serviceClass.getClassificationCode()));
-        }
-        ServiceDetail sd = (ServiceDetail) ypService.submit(currentProxy().get_serviceDetail(serviceKeys)).get();
-        Enumeration e = sd.getBusinessServiceVector().elements();
-        while (e.hasMoreElements()) {
-          BusinessService bs  = (BusinessService)e.nextElement();
-          CategoryBag thisBag = bs.getCategoryBag();
-          thisBag.getKeyedReferenceVector().addAll(updateBag.getKeyedReferenceVector());
-          services.add(bs);
-        }
-
-      } catch (UDDIException ex) {
-        DispositionReport d = ex.getDispositionReport();
-        if (log.isErrorEnabled()) {
-
-          log.error("UDDIException faultCode:" + ex.getFaultCode() +
-                    "\n operator:" + d.getOperator() +
-                    "\n generic:"  + d.getGeneric() +
-                    "\n errno:"    + d.getErrno() +
-                    "\n errCode:"  + d.getErrCode() +
-                    "\n errInfoText:" + d.getErrInfoText(), ex);
-        }
-        return false;
-        /*
-      } catch (TransportException te) {
-        if (log.isErrorEnabled()) {
-          log.error("Exception", te);
-        }
-        return false;
-        */
-      }
-
-      boolean saveService = false;
-      while (!saveService) {
-        AuthToken currentToken = authorization;
-	YPProxy currentProxy = currentProxy();
-        try {
-          ypService.submit(currentProxy.save_service(currentToken.getAuthInfoString(), services)).get();
-          saveService = true;
-        } catch (UDDIException e) {
-          DispositionReport dr = e.getDispositionReport();
-          if (dr.getErrCode().equals(DispositionReport.E_authTokenExpired)) {
-            if (log.isDebugEnabled()) {
-              log.debug("Auth token expired, getting a new one " + getAgentIdentifier());
+      protected void init() {
+        super.init();
+        addLink("START", "getToken");
+        add(new SState("getToken") {
+            public void invoke() { 
+              call("getAuthToken", null, "gotToken");
             }
-            handleExpiration(currentToken, currentProxy);
-          } else {
-            log.error("UDDIException faultCode:" + e.getFaultCode() +
-                      "\n operator:" + dr.getOperator() +
-                      "\n generic:"  + dr.getGeneric() +
-                      "\n errno:"    + dr.getErrno() +
-                      "\n errCode:"  + dr.getErrCode() +
-                      "\n errInfoText:" + dr.getErrInfoText(), e);
-          }
-          success = false;
-          /*
-        } catch (TransportException te) {
-          log.error("Caught a TransportException saving business", te);
-          success = false;
-          */
-        }
+          });
+        addLink("gotToken","findBusiness");
+
+        addYPQ("findBusiness", "findBusinessDone", new YPQ() {
+            public YPFuture get(Frame f) {
+              FindQualifiers findQualifiers = new FindQualifiers();
+              Vector qualifier = new Vector();
+              qualifier.add(new FindQualifier("caseSensitiveMatch"));
+              findQualifiers.setFindQualifierVector(qualifier);
+              return getYPProxy().find_business(namePatterns, null, null, null, null, findQualifiers, 5);
+            }
+            public void set(Frame f, Object r) {
+              businessList = (BusinessList) r;
+            }
+            public void handle(Frame f, Exception e) {
+              log.error("updateServiceDescription.findBusiness", e);
+              callback.handle(e);
+              transit("ERROR");
+            }
+          });
+        addLink("findBusinessDone", "ScanBusinesses");
+        add(new SState("ScanBusinesses") {
+            public void invoke() {
+              Iterator it = businessList.getBusinessInfos().getBusinessInfoVector().iterator();
+              if (!it.hasNext()) {
+                if (log.isDebugEnabled()) {
+                  log.debug("updateServiceDescription, cannot find registration for: " + providerName);
+                }
+                callback.invoke(Boolean.TRUE);
+                transit("DONE");
+                return;
+              } 
+              while (it.hasNext()) {
+                BusinessInfo businessInfo = (BusinessInfo) it.next();
+                for (Iterator kit = businessInfo.getServiceInfos().getServiceInfoVector().iterator(); kit.hasNext(); ) {
+                  serviceKeys.add(((ServiceInfo) kit.next()).getServiceKey());
+                }
+              }
+              transit("SBDone");
+            } });
+
+        addLink("SBDone", "initBag");
+
+        add(new SState("initBag") {
+            public void invoke() {
+              iter = serviceCategories.iterator();
+              transit("initBagLoop");
+            }});
+        add(new SState("initBagLoop") {
+            public void invoke() {
+              if (iter.hasNext()) {
+                final ServiceClassification sc = (ServiceClassification) iter.next();
+                getKeyedReference(getYPProxy(),
+				  sc.getClassificationSchemeName(),
+                                  sc.getClassificationName(),
+                                  sc.getClassificationCode(),
+                                  new Callback() {
+                                    public void invoke(Object o) {
+                                      KeyedReference kr = (KeyedReference) o;
+                                      updateBag.getKeyedReferenceVector().add(kr);
+                                      transit("initBagLoop");
+                                      kick();
+                                    }
+                                    public void handle(Exception e) {
+                                      log.error("initBagLoop.getKeyedReference("+sc+")", e);
+                                      //transit("ERROR");
+                                      callback.handle(e);
+                                    }
+                                  });
+              } else {
+                transit("initBagDone");
+              }
+            }});
+        addLink("initBagDone", "getServiceDetail");
+
+        addYPQ("getServiceDetail", "getServiceDetailDone", new YPQ() {
+            public YPFuture get(Frame f) {
+              return getYPProxy().get_serviceDetail(serviceKeys);
+            }
+            public void set(Frame f, Object r) {
+              ServiceDetail sd = (ServiceDetail) r;
+              Enumeration e = sd.getBusinessServiceVector().elements();
+              while (e.hasMoreElements()) {
+                BusinessService bs  = (BusinessService)e.nextElement();
+                CategoryBag thisBag = bs.getCategoryBag();
+                thisBag.getKeyedReferenceVector().addAll(updateBag.getKeyedReferenceVector());
+                services.add(bs);
+              }
+            }
+            public void handle(Frame f, Exception e) {
+              log.error("getServiceDetail", e);
+              callback.handle(e);
+            }
+          });
+
+        addLink("getServiceDetailDone", "saveService");
+        addYPQ("saveService", "saveServiceDone", new YPQ() {
+            public YPFuture get(Frame f) {
+              return getYPProxy().save_service(getAuthToken().getAuthInfoString(), services);
+            }
+            public void set(Frame f, Object r) {
+              // copacetic
+            }
+            public void handle(Frame f, Exception e) {
+              log.error("saveService", e);
+              callback.handle(e);
+            }
+          });
+        addLink("saveServiceDone", "finish");
+        add(new SState("finish") {
+            public void invoke() { 
+              callback.invoke(Boolean.TRUE); // let complete while discarding token
+              call("discardAuthToken", null, "DONE");
+            }
+          });
+
       }
-      return success;
     }
 
+    /**
+     * @param callback Callback.invoke(Boolean) true IFF success.
+     **/
+    public void deleteServiceDescription(Object ypContext,
+					 String providerName, 
+					 Collection serviceCategories, 
+					 Callback callback) {
+      (new DeleteSM(ypContext, providerName, serviceCategories, callback)).start();
+    }      
+    
+    private class DeleteSM extends SMBase {
+      final String providerName;
+      final Collection serviceCategories;
 
-    // delete a service description given provider name and service categories.
-    // NOTE:  This really should use service keys and business keys to ensure uniqueness instead.
-    public boolean deleteServiceDescription(String providerName, Collection serviceCategories) {
-      boolean success = true;
       ServiceInfo service = null;
-
       Vector namePatterns = new Vector();
-      namePatterns.add(new Name(providerName));
-
       FindQualifiers findQualifiers = new FindQualifiers();
       Vector qualifier = new Vector();
-      // find the service based on the service categories
-      qualifier.add(new FindQualifier(FindQualifier.serviceSubset));
-      findQualifiers.setFindQualifierVector(qualifier);
-
       CategoryBag bag = new CategoryBag();
-      for(Iterator iter = serviceCategories.iterator(); iter.hasNext();) {
-        ServiceClassification serviceClass = (ServiceClassification) iter.next();
-        bag.getKeyedReferenceVector().add(getKeyedReference(serviceClass.getClassificationSchemeName(),
-                                                            serviceClass.getClassificationName(),
-                                                            serviceClass.getClassificationCode()));
+      Iterator iter;            // used by initBag
+      BusinessList businessList; // set by findBusiness
+      BusinessInfo businessInfo; // set by findBusinessDone
+      Vector serviceKeys;       // used in dbLoop
+
+      private DeleteSM(Object ypContext, String providerName, Collection serviceCategories, Callback callback) {
+	super(ypContext, callback);
+        this.providerName = providerName;
+        this.serviceCategories = serviceCategories;
+
+        namePatterns.add(new Name(providerName));
+        qualifier.add(new FindQualifier(FindQualifier.serviceSubset));
+        findQualifiers.setFindQualifierVector(qualifier);
       }
 
-      BusinessList businessList = null;
-
-      try {
-        businessList = (BusinessList) ypService.submit(currentProxy().find_business(namePatterns, null, null, bag, null, findQualifiers, 1)).get();
-      } catch (UDDIException ex) {
-        DispositionReport d = ex.getDispositionReport();
-        if (log.isErrorEnabled()) {
-
-          log.error("UDDIException faultCode:" + ex.getFaultCode() +
-                    "\n operator:" + d.getOperator() +
-                    "\n generic:"  + d.getGeneric() +
-                    "\n errno:"    + d.getErrno() +
-                    "\n errCode:"  + d.getErrCode() +
-                    "\n errInfoText:" + d.getErrInfoText(), ex);
-        }
-      }
-      /*
-      catch (TransportException te) {
-        if (log.isErrorEnabled()) {
-          log.error("Caught a TransportException deleting service ", te);
-        }
-      }
-      */
-
-      if (businessList == null ) {
-        return false;
-      }
-
-      Vector businessInfoVector  = businessList.getBusinessInfos().getBusinessInfoVector();
-      BusinessInfo businessInfo = null;
-      for (int i = 0; i < businessInfoVector.size(); i++) {
-        businessInfo = (BusinessInfo)businessInfoVector.elementAt(i);
-        if (log.isDebugEnabled()) {
-          log.debug("updateServiceDescription for organization: " + businessInfo.getNameString());
-        }
-        break;
-      }
-
-      if(businessInfo == null) {
-        if (log.isDebugEnabled()) {
-          log.debug("deleteServiceDescription, cannot find registration for: " + providerName);
-        }
-
-        return false;
-      }
-
-
-      Enumeration enum = businessInfo.getServiceInfos().getServiceInfoVector().elements();
-      Vector serviceKeys = new Vector();
-      if (enum.hasMoreElements()) {
-        service = (ServiceInfo) enum.nextElement();
-        serviceKeys.add(service.getServiceKey());
-      }
-      boolean deleteService = false;
-      while (!deleteService) {
-        AuthToken currentToken = authorization;
-	YPProxy currentProxy = currentProxy();
-        try {
-          ypService.submit(currentProxy.delete_service(currentToken.getAuthInfoString(), serviceKeys)).get();
-          deleteService = true;
-        } catch (UDDIException ex) {
-          DispositionReport dr = ex.getDispositionReport();
-          if (dr.getErrCode().equals(DispositionReport.E_authTokenExpired)) {
-            if (log.isDebugEnabled()) {
-              log.debug("Auth token expired, gettting a new token " + getAgentIdentifier());
+      protected void init() {
+        super.init();
+        addLink("START", "getToken");
+        add(new SState("getToken") {
+            public void invoke() { 
+              call("getAuthToken", null, "gotToken");
             }
-            handleExpiration(currentToken, currentProxy);
-          } else {
-            DispositionReport d = ex.getDispositionReport();
-            if (log.isErrorEnabled()) {
+          });
+        addLink("gotToken","initBag");
 
-              log.error("UDDIException faultCode:" + ex.getFaultCode() +
-                        "\n operator:" + d.getOperator() +
-                        "\n generic:"  + d.getGeneric() +
-                        "\n errno:"    + d.getErrno() +
-                        "\n errCode:"  + d.getErrCode() +
-                        "\n errInfoText:" + d.getErrInfoText(), ex);
+        add(new SState("initBag") {
+            public void invoke() {
+              iter = serviceCategories.iterator();
+              transit("initBagLoop");
+            }});
+        add(new SState("initBagLoop") {
+            public void invoke() {
+              if (iter.hasNext()) {
+                final ServiceClassification sc = (ServiceClassification) iter.next();
+                getKeyedReference(getYPProxy(),
+				  sc.getClassificationSchemeName(),
+                                  sc.getClassificationName(),
+                                  sc.getClassificationCode(),
+                                  new Callback() {
+                                    public void invoke(Object o) {
+                                      KeyedReference kr = (KeyedReference) o;
+                                      bag.getKeyedReferenceVector().add(kr);
+                                      transit("initBagLoop");
+                                      kick();
+                                    }
+                                    public void handle(Exception e) {
+                                      log.error("initBagLoop.getKeyedReference("+sc+")", e);
+                                      //transit("ERROR");
+                                      callback.handle(e);
+                                    }
+                                  });
+              } else {
+                transit("initBagDone");
+              }
+            }});
+        addLink("initBagDone", "findBusiness");
+
+        addYPQ("findBusiness", "findBusinessDone", new YPQ() {
+            public YPFuture get(Frame f) {
+              return getYPProxy().find_business(namePatterns, null, null, bag, null, findQualifiers, 1);
             }
-            success = false;
-          }
-          /*
-        } catch (TransportException te) {
-          if (log.isErrorEnabled()) {
-            log.error("Caught a TransportException deleting service ", te);
-          }
-          success = false;
-          */
-        }
+            public void set(Frame f, Object result) {
+              businessList = (BusinessList) result;
+            }
+            public void handle(Frame f, Exception e) {
+              log.error("findBusiness", e);
+              callback.handle(e);
+            }
+          });
+
+        add(new SState("findBusinessDone") {
+            public void invoke() {
+              if (businessList == null) {
+                callback.invoke(Boolean.TRUE); // easy - nothing to delete
+                transit(DONE);
+              }
+              transit("deleteBusiness");
+            } 
+          });
+        add(new SState("deleteBusiness") {
+            public void invoke() {
+              iter = businessList.getBusinessInfos().getBusinessInfoVector().iterator();
+              transit("dbLoop");
+            }});
+        add(new SState("dbLoop") {
+            public void invoke() {
+              if (iter.hasNext()) {
+                businessInfo = (BusinessInfo) iter.next();
+                if (businessInfo == null) {
+                  if (log.isDebugEnabled()) {
+                    log.debug("deleteServiceDescription, cannot find registration for: " + providerName);
+                  }
+                } else {
+                  transit("dbLoop1");
+                }
+              } else {
+                transit("dbDone");
+              }
+            }
+          });
+        addYPQ("dbLoop1", "dbLoop", new YPQ() {
+            public YPFuture get(Frame f) {
+              serviceKeys = new Vector();
+              for (Enumeration enum = businessInfo.getServiceInfos().getServiceInfoVector().elements(); 
+                   enum.hasMoreElements();
+                   ) {
+                serviceKeys.add(((ServiceInfo) enum.nextElement()).getServiceKey());
+              }
+              return getYPProxy().delete_service(getAuthToken().getAuthInfoString(), serviceKeys);
+            }
+            public void set(Frame f, Object r) {
+              // dont care
+            }
+            public void handle(Frame f, Exception e) {
+              log.error("deleteServiceDescription exception", e);
+              transit("dbLoop"); // continue to next
+            }
+          });
+        add(new SState("dbDone") {
+            public void invoke() { 
+              callback.invoke(Boolean.TRUE); 
+	      // let it complete while we're discarding the token
+              call("discardAuthToken", null, "DONE");
+            }
+          });
       }
-      return success;
-    }
-  }
-
-  /**
-   * Add all queued up objects to the blackboard.
-   * @param bb
-   */
-  protected void addLater(MyBlackboardObject bb) {
-    synchronized (todo) {
-      todo.add(bb);
-    }
-    blackboard.signalClientActivity();
-  }
-
-
-  private void addAll() {
-    int n;
-    List l;
-    synchronized (todo) {
-      n = todo.size();
-      if (n <= 0) {
-        return;
-      }
-      l = new ArrayList(todo);
-      todo.clear();
-    }
-    for (int i = 0; i < n; i++) {
-      blackboard.publishAdd(l.get(i));
-    }
-  }
-
-
-  /**
-   * Simple class used to hold ServiceDescriptions on the Blackboard.
-   * The Blackboard is used to persist objects in case the Agent goes away.
-   *
-   */
-  public class MyBlackboardObject {
-    private String uuid;
-    private String key;
-    private Object data;
-
-
-    /**
-     * Gets the UUID for local object
-     * @return String uuid
-     */
-    public String getUUID() {
-      return this.uuid;
-    }
-
-
-    /**
-     * Sets the UUID for this provider
-     * @param uuid
-     */
-    public void setUUID(String uuid) {
-      this.uuid = uuid;
-    }
-
-
-    /**
-     * Gets the key for this object.
-     *
-     * @return HashMap key
-     */
-    public String getKey() {
-      return this.key;
-    }
-
-
-    /**
-     * Sets the key for the HashMap
-     * @param key
-     */
-    public void setKey(String key) {
-      this.key = key;
-    }
-
-
-    /**
-     * Gets the data associated with this object.
-     * @return
-     */
-    public Object getData() {
-      return this.data;
-    }
-
-
-    /**
-     * Sets the data associated with this object.
-     * @param data
-     */
-    public void setData(Object data) {
-      this.data = data;
     }
   }
 }
+
+
+
+

@@ -30,28 +30,85 @@ import java.util.Collection;
  * Service interface for querying the registry to find providers
  * that provide a particular service.
  */
-public interface RegistryQueryService extends Service {
+public interface RegistryQueryService extends Service, YPServiceAdapter {
 
   /**
-   * Returns all providers matching the attributes in the RegistryQuery object.
+   * Returns providers matching the attributes in the RegistryQuery 
+   * object. Uses default YPService search, i.e. query progresses
+   * up the structure of YP servers until either a match is found or
+   * search has reached the topmost server. 
    * @param query RegistryQuery containing the attributes to be matched.
-   * @return Collection of ProviderInfo objects.  If no matches, returns empty list.
+   * @param callback  callback.invoke(Collection) of ProviderInfo objects.
+   * If no matches, returns empty list. 
    */
-  public Collection findProviders(RegistryQuery query);
+  public void findProviders(RegistryQuery query, Callback callback);
+
+  /**
+   * Returns providers matching the attributes in the RegistryQuery 
+   * object. Uses single step YPService search. Query is applied to the
+   * YP server in the next YPContext. If lastYPContext argument is null, 
+   * search starts with the closest YPServer. 
+   * @param lastYPContext YP context where the previous search ended. 
+   * Use null if starting search.
+   * @param query RegistryQuery containing the attributes to be matched.
+   * @param callback  CallbackWithContext, callback.setNextContext(object) with
+   * yp server context, callback.invoke(Collection) of ProviderInfo objects. 
+   * If no matches, returns empty list. 
+   */
+  public void findProviders(Object lastYPContext, RegistryQuery query, 
+			    CallbackWithContext callback);
 
   /**
    * Returns all services matching the attributes in the RegistryQuery object.
+   * Uses default YPService search, i.e. query progresses
+   * up the structure of YP servers until either a match is found or
+   * search has reached the topmost server. 
    * @param query RegistryQuery containing the attributes to be matched.
-   * @return Collection of ServiceInfo objects.  If no matches, returns empty list.
+   * @param callback  callback.invoke(Collection) of ServiceInfo objects. If
+   * no matches, returns empty list. 
    */
-  public Collection findServices(RegistryQuery query);
+  public void findServices(RegistryQuery query, Callback callback);
 
   /**
    * Returns all services matching the attributes in the RegistryQuery object.
+   * Uses single step YPService search. Query is applied to the
+   * YP server in the next YPContext. If lastYPContext argument is null, 
+   * search starts with the closest YPServer. 
+   * @param lastYPContext YP context where the previous search ended. 
+   * Use null if starting search.
    * @param query RegistryQuery containing the attributes to be matched.
-   * @return Collection of lightweight ServiceInfo objects.
-   * If no matches, returns empty list.
+   * @param callback  CallbackWithContext, callback.setNextContext(object) with
+   * yp server context, callback.invoke(Collection) with ServiceInfo objects.
+   * If no matches, returns empty list. 
    */
-  public Collection findServiceAndBinding(RegistryQuery query);
+  public void findServices(Object lastYPContext, RegistryQuery query, 
+			   CallbackWithContext callback);
 
+  /**
+   * Returns all services matching the attributes in the RegistryQuery object.
+   * Uses default YPService search, i.e. query progresses
+   * up the structure of YP servers until either a match is found or
+   * search has reached the topmost server. 
+   * @param query RegistryQuery containing the attributes to be matched.
+   * @param callback  callback.invoke(Collection) of lightweight ServiceInfo 
+   * objects. If no matches, returns empty list. 
+   */
+  public void findServiceAndBinding(RegistryQuery query, Callback callback);
+
+  /**
+   * Returns all services matching the attributes in the RegistryQuery object.
+   * Uses single step YPService search. Query is applied to the
+   * YP server in the next YPContext. If lastYPContext argument is null, 
+   * search starts with the closest YPServer. 
+   * @param lastYPContext YP context where the previous search ended. 
+   * Use null if starting search.
+   * @param query RegistryQuery containing the attributes to be matched.
+   * @param callback  CallbackWithContext, callback.setNextContext(object) with
+   * yp server context, callback.invoke(Collection) with lightweight 
+   * ServiceInfo, objects. If no matches, returns empty list. 
+   */
+  public void findServiceAndBinding(Object lastYPContext, RegistryQuery query,
+				    CallbackWithContext callback);
 }
+
+

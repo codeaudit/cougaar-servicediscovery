@@ -22,10 +22,18 @@
 
 package org.cougaar.servicediscovery.description;
 import org.cougaar.planning.ldm.plan.Role;
+import org.cougaar.util.UnaryPredicate;
 
-public class  MMRoleQuery implements MMQuery {
-  private Role myRole;
-  private String myEchelon;
+public class MMRoleQuery implements MMQuery, java.io.Serializable {
+  private Role myRole = null;
+  private String myEchelon = null;
+  private UnaryPredicate myPredicate = DEFAULT_PREDICATE;
+
+  private static UnaryPredicate DEFAULT_PREDICATE = new UnaryPredicate() {
+    public boolean execute(Object o) {
+      return true;
+    }
+  };
 
   public MMRoleQuery(Role role) {
     myRole = role;
@@ -34,6 +42,12 @@ public class  MMRoleQuery implements MMQuery {
   public MMRoleQuery(Role role, String eos) {
     myRole = role;
     myEchelon = eos;
+  }
+
+  public MMRoleQuery(Role role, String eos, UnaryPredicate predicate) {
+    myRole = role;
+    myEchelon = eos;
+    setPredicate(predicate);
   }
 
   public MMRoleQuery() {
@@ -55,4 +69,26 @@ public class  MMRoleQuery implements MMQuery {
   public String getEchelon() {
     return myEchelon;
   }
+
+  public UnaryPredicate getPredicate() {
+    return myPredicate;
+  }
+
+  public void setPredicate(UnaryPredicate predicate) {
+    if (predicate == null) {
+      myPredicate = DEFAULT_PREDICATE;
+    } else {
+      myPredicate = predicate;
+    }
+  }
+
+  public String toString() {
+    return "Role: " + myRole + ", Echelon: " + myEchelon;
+  }
 }
+
+
+
+
+
+

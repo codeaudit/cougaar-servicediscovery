@@ -5,3 +5,4 @@ http://www.w3.org/2000/10/XMLSchema.xsd -> XMLSchema.xsd
 http://www.daml.org/services/daml-s/2001/10/Service.daml -> Service.daml
 http://www.daml.org/services/daml-s/2001/10/Process.daml -> Process.daml
 http://www.daml.org/services/daml-s/2001/10/Profile.daml -> Profile.daml
+http://cougaar.daml -> cougaar.daml

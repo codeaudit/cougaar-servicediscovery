@@ -1,8 +1,7 @@
 [Prototype]     Organization
         
 [Relationship]
-StrategicTransportationProvider "UIC/1BDE" "UTC/RTOrg" "1BDE" "" ""
-StrategicTransportationProvider "UIC/3-69-ARBN" "UTC/RTOrg" "3-69-ARBN" "" ""
+
 
 [ItemIdentificationPG]
 ItemIdentification String "UIC/3ID"

@@ -33,7 +33,7 @@ import org.cougaar.servicediscovery.util.UDDIConstants;
  * @version 1.0
  */
 
-public class ServiceClassificationImpl implements ServiceClassification {
+public class ServiceClassificationImpl implements ServiceClassification, java.io.Serializable {
 
   private String code;
   private String name;

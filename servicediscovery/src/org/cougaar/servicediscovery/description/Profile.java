@@ -32,13 +32,12 @@ import com.hp.hpl.mesa.rdf.jena.common.PropertyImpl;
 import com.hp.hpl.mesa.rdf.jena.common.ResourceImpl;
 import com.hp.hpl.mesa.rdf.jena.model.Property;
 import com.hp.hpl.mesa.rdf.jena.model.Resource;
-import org.cougaar.util.ConfigFinder;
 
 /**
  */
 public class Profile {
 
-  protected static String cougaar_uri ="";
+  protected static final String cougaar_uri = "http://cougaar.daml#";
   protected static final String profile_uri ="http://www.daml.org/services/daml-s/2001/10/Profile.daml#";
   protected static final String service_uri = "http://www.daml.org/services/daml-s/2001/10/Service.daml#";
 
@@ -98,11 +97,13 @@ public class Profile {
 
   static {
     try {
-      String s = ConfigFinder.getInstance().locateFile("cougaar.daml").getAbsolutePath();
-      s = s.replaceFirst(":","");
-      s = s.replace('\\', '/');
-      cougaar_uri = "file://" + s + "#";
+//       String s = ConfigFinder.getInstance().locateFile("cougaar.daml").getAbsolutePath();
+//       s = s.replaceFirst(":","");
+//       s = s.replace('\\', '/');
+//       cougaar_uri = "file://" + s + "#";
 //      cougaar_uri = "http://localhost:8800/$DAML/cougaar.daml#";
+
+      // Use Jena cache, allowing install independent service profiles
 
       //ServiceProfile level properties
       SERVICEPROFILE = new ResourceImpl(cougaar_uri, nSERVICEPROFILE);

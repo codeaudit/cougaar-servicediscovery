@@ -23,7 +23,7 @@ Download the source for a version with unexpanded entities.
 
   <daml:Ontology>
     <daml:versionInfo>
-      $Id: Profile.daml,v 1.2 2003-01-22 17:30:38 mthome Exp $
+      $Id: Profile.daml,v 1.3 2003-10-22 16:21:58 ahelsing Exp $
     </daml:versionInfo> 
     <daml:comment>
       Process and Service Coalition

@@ -21,53 +21,47 @@
  */
 package org.cougaar.servicediscovery.description;
 
+import org.cougaar.core.util.UniqueObject;
+import org.cougaar.planning.ldm.plan.Role;
 
-import java.util.List;
+import java.util.Collection;
 
 /**
- * A Collection which maintains an ordered list of agent names - reflecting
- * the superior/subordinate chain from a root agent. 
- * Iteration starts with the current agent and goes to the root.
+ * A Collection which maintains an ordered list of provider capabilities
  */
 
-public interface LineageList extends List, java.io.Serializable {
-
-  public static final int COMMAND = 1;
-  public static final int SUPPORT = 2;
+public interface ProviderCapabilities extends java.io.Serializable, UniqueObject {
 
   /**
-   * @return the type of the lineage.
-   * Should be one of the defined lineage types.
+   * @return the name of the provider
    **/
-  public int getType();
+  public String getProviderName();
 
   /**
-   * @return the name of the agent at the end of the lineage.
-   */ 
-  public String getLeaf();
+   * @param providerName
+   **/
+  public void setProviderName(String providerName);
+
 
   /**
-   * @return the name of the agent at the root of the lineage.
+   * @return the  provider capabilities
    */ 
-  public String getRoot();
+  public Collection getCapabilities();
+
 
   /**
-   * @return the number of links in the lineage between the two agents. 
-   * Returns -1 if the agents are not linked.
-   */ 
-  public int countHops(String startingAgent, String endingAgent);
+   * Add a provider capability
+   * @param role
+   * @param echelon
+   */
+   public void addCapability(Role role, String echelon);
 
+  /**
+   * Add a provider capability
+   * @param capability
+   */
+   public void addCapability(ProviderCapability capability);
 }
-
-
-
-
-
-
-
-
-
-
 
 
 

@@ -3,11 +3,11 @@
  *  Copyright 1997-2003 BBNT Solutions, LLC
  *  under sponsorship of the Defense Advanced Research Projects Agency (DARPA)
  *  and the Defense Logistics Agency (DLA).
- * 
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the Cougaar Open Source License as published by
  *  DARPA on the Cougaar Open Source Website (www.cougaar.org).
- * 
+ *
  *  THE COUGAAR SOFTWARE AND ANY DERIVATIVE SUPPLIED BY LICENSOR IS
  *  PROVIDED 'AS IS' WITHOUT WARRANTIES OF ANY KIND, WHETHER EXPRESS OR
  *  IMPLIED, INCLUDING (BUT NOT LIMITED TO) ALL IMPLIED WARRANTIES OF
@@ -33,6 +33,7 @@ import org.cougaar.planning.ldm.asset.LocalPG;
 import org.cougaar.planning.ldm.asset.PropertyGroup;
 import org.cougaar.planning.ldm.asset.PropertyGroupSchedule;
 
+import org.cougaar.planning.ldm.plan.Preference;
 import org.cougaar.planning.ldm.plan.HasRelationships;
 import org.cougaar.planning.ldm.plan.RelationshipSchedule;
 import org.cougaar.planning.ldm.PlanningFactory;
@@ -157,6 +158,8 @@ public class ServiceContractLP implements LogicProvider, EnvelopeLogicProvider {
 
     Collection changes = new ArrayList();
     changes.add(new RelationshipSchedule.RelationshipScheduleChangeReport());
+    if (logger.isInfoEnabled())
+      logger.info(self + ": PubChanged an OrgAsset: " + provider);
     rootplan.change(provider, changes); // change this to root plan
 
     if (localClient == null) {
@@ -164,6 +167,8 @@ public class ServiceContractLP implements LogicProvider, EnvelopeLogicProvider {
     } else {
       changes.clear();
       changes.add(new RelationshipSchedule.RelationshipScheduleChangeReport());
+      if (logger.isInfoEnabled())
+	logger.info(self + ": PubChanged an OrgAsset: " + client);
       rootplan.change(client, changes);
     }
 
@@ -256,8 +261,12 @@ public class ServiceContractLP implements LogicProvider, EnvelopeLogicProvider {
       if (updateRelationships) {
         Collection changeReports = new ArrayList();
         changeReports.add(new RelationshipSchedule.RelationshipScheduleChangeReport());
+	if (logger.isInfoEnabled())
+	  logger.info(self + ": PubChanged an OrgAsset: " + provider);
         rootplan.change(provider, changeReports);
       } else {
+	if (logger.isInfoEnabled())
+	  logger.info(self + ": PubChanged an OrgAsset: " + provider);
         rootplan.change(provider, null);
       }
     }
@@ -272,6 +281,12 @@ public class ServiceContractLP implements LogicProvider, EnvelopeLogicProvider {
 				HasRelationships client) {
 
     if(relay.getServiceContract().isRevoked()) {
+      return;
+    }
+    if(SDFactory.getPreference(relay.getServiceContract().getServicePreferences(),
+                               Preference.START_TIME) >=
+                               SDFactory.getPreference(relay.getServiceContract().getServicePreferences(),
+                               Preference.END_TIME)) {
       return;
     }
 

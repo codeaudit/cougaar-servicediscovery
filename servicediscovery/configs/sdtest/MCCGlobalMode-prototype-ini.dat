@@ -1,8 +1,7 @@
 [Prototype]     Organization
 
 [Relationship]
-StrategicTransportationProvider "UIC/3ID" "UTC/RTOrg" "3ID" "" ""
-Subordinate "125-FSB"   "Organization" "125-FSB" "" ""
+SupportSubordinate "UIC/3ID" "UTC/RTOrg" "3ID" "" ""
 
 [ItemIdentificationPG]
 ItemIdentification String "UIC/MCCGlobalMode"

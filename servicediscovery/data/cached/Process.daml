@@ -10,7 +10,7 @@
 
 <daml:Ontology rdf:about="">
   <daml:versionInfo>
-    $Id: Process.daml,v 1.2 2003-01-22 17:30:38 mthome Exp $
+    $Id: Process.daml,v 1.3 2003-10-22 16:21:58 ahelsing Exp $
   </daml:versionInfo>
   <rdfs:comment>
     Upper-level DAML ontology for Processes.

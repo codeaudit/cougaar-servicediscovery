@@ -25,7 +25,7 @@ package org.cougaar.servicediscovery.servlet;
 import org.cougaar.core.blackboard.BlackboardClient;
 import org.cougaar.core.service.BlackboardService;
 import org.cougaar.core.servlet.BaseServletComponent;
-import org.cougaar.servicediscovery.util.StatusChangeMessage;
+import org.cougaar.servicediscovery.description.StatusChangeMessage;
 import org.cougaar.util.UnaryPredicate;
 
 import javax.servlet.Servlet;

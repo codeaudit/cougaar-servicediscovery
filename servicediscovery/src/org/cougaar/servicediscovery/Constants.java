@@ -22,10 +22,17 @@
 
 package org.cougaar.servicediscovery;
 
-
 import org.cougaar.glm.ldm.Constants.RelationshipType;
+import org.cougaar.util.Configuration; 
+import org.cougaar.util.log.Logger; 
+import org.cougaar.util.log.Logging;
+
+
+import java.net.URL;
 
 public class Constants implements org.cougaar.planning.Constants {
+  private static Logger logger = Logging.getLogger(Constants.class);
+
   private Constants() {}
 
   public static class Role {
@@ -159,6 +166,17 @@ public class Constants implements org.cougaar.planning.Constants {
       return -1;
     }
   }
+
+  public static URL getServiceProfileURL() {
+    try {
+      return new URL(Configuration.getInstallURL(), 
+		     "servicediscovery/data/serviceprofiles/");
+    } catch (java.net.MalformedURLException mue) {
+      logger.error("Exception constructing service profile URL: " , mue);
+      return null;
+    }
+  }
+    
 }
 
 

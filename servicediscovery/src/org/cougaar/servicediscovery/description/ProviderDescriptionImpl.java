@@ -3,11 +3,11 @@
  *  Copyright 2002-2003 BBNT Solutions, LLC
  *  under sponsorship of the Defense Advanced Research Projects Agency (DARPA)
  *  and the Defense Logistics Agency (DLA).
- * 
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the Cougaar Open Source License as published by
  *  DARPA on the Cougaar Open Source Website (www.cougaar.org).
- * 
+ *
  *  THE COUGAAR SOFTWARE AND ANY DERIVATIVE SUPPLIED BY LICENSOR IS
  *  PROVIDED 'AS IS' WITHOUT WARRANTIES OF ANY KIND, WHETHER EXPRESS OR
  *  IMPLIED, INCLUDING (BUT NOT LIMITED TO) ALL IMPLIED WARRANTIES OF
@@ -29,12 +29,15 @@ import com.hp.hpl.jena.daml.common.DAMLModelImpl;
 import com.hp.hpl.mesa.rdf.jena.model.RDFException;
 import com.hp.hpl.mesa.rdf.jena.model.Resource;
 import com.hp.hpl.mesa.rdf.jena.model.Statement;
+
 import org.cougaar.core.service.LoggingService;
-import org.cougaar.util.ConfigFinder;
+import org.cougaar.servicediscovery.Constants;
 
 import java.io.IOException;
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -50,7 +53,7 @@ public class ProviderDescriptionImpl implements ProviderDescription {
 
   //store the model that Jena parses from the file
   private DAMLModel model = null;
-  private String filename;
+  private String fileName;
 
   private LoggingService log;
 
@@ -68,12 +71,21 @@ public class ProviderDescriptionImpl implements ProviderDescription {
     this.log = log;
   }
 
-  public boolean parseDAML(String fileName) {
-    this.filename = fileName;
+  public boolean parseDAML(String damlFileName) {
+    this.fileName = damlFileName;
 
     InputStream in = null;
     try {
-      in = ConfigFinder.getInstance().open(fileName);
+
+      URL inURL = new URL(Constants.getServiceProfileURL(), damlFileName);
+
+      in = inURL.openStream();
+
+    } catch (java.net.MalformedURLException mue) {
+      if (log != null && log.isErrorEnabled()) {
+        log.error("Error:  Cannot open file, " + fileName, mue);
+      }
+      return false;
     } catch (IOException e1) {
       if (log != null && log.isErrorEnabled()) {
         log.error("Error:  Cannot open file, " + fileName, e1);
@@ -95,10 +107,25 @@ public class ProviderDescriptionImpl implements ProviderDescription {
       model.read(reader, "");
     } catch (RDFException e1) {
       if (log != null && log.isErrorEnabled()) {
-        log.error("Error parsing DAML file [" + fileName + "]\n" +
-                  "  Error Number: " + e1.getErrorCode() + "\n" +
-                  "  Error Message: " + e1.getMessage() + "\n" +
-                  "  File: " + filename, e1);
+        String helpMessage =
+        "If the following StackTrace includes \"IO error while reading URL:\"\n" +
+        " you should examine the URL and confirm that it exists and\n" +
+        " is currently accessible. If the URL includes www.daml.org,\n" +
+        " this error means the daml site is temporarily unavailable.\n" +
+        " If the URL is a filepath or includes \"cougaar.daml\", this error\n" +
+        " probably means that your profile.daml files are inconsistent with\n" +
+        " your installation. One common way for this to happen is to have\n" +
+        " generated your profile.daml files from a perl script using an\n" +
+        " agent-input.txt file containing an incorrect or incorrectly formatted\n" +
+        " cougaarInstallPath. Alternatively, you may have generated your\n" +
+        " profile.daml files from a ruby script while your %COUGAAR_INSTALL_PATH%\n" +
+        " environment variable was not set correctly. Check these things and try\n" +
+        " regenerating your profile.daml files. \n";
+          log.error(helpMessage + "Error parsing DAML file [" + fileName + "]\n" +
+                    "  Error Number: " + e1.getErrorCode() + "\n" +
+                    "  Error Message: " + e1.getMessage() + "\n" +
+                    "  Error StackTrace: " + e1.getStackTrace() + "\n" +
+                    "  File: " + fileName, e1);
       }
     }
     return model.getLoadSuccessful();
@@ -118,7 +145,7 @@ public class ProviderDescriptionImpl implements ProviderDescription {
         log.error("Error getting Provider Name \n" +
                   "  Error Number: " + e.getErrorCode() + "\n" +
                   "  Error Message: " + e.getMessage() + "\n" +
-                  "  File: " + filename, e);
+                  "  File: " + fileName, e);
       }
     }
     return name;
@@ -182,7 +209,7 @@ public class ProviderDescriptionImpl implements ProviderDescription {
         log.error("Error getting Service Provider \n" +
                   "  Error Number: " + e.getErrorCode() + "\n" +
                   "  Error Message: " + e.getMessage() + "\n" +
-                  "  File: " + filename, e);
+                  "  File: " + fileName, e);
       }
     }
     return serviceProvider;
@@ -198,7 +225,7 @@ public class ProviderDescriptionImpl implements ProviderDescription {
       }
     }
     if (serviceProfiles.isEmpty() && log.isInfoEnabled()) {
-      log.info("Info: getServicePs() for [" + filename + "] is returning an empty collection.\n" +
+      log.info("Info: getServicePs() for [" + fileName + "] is returning an empty collection.\n" +
                "DAMLInstance does not contain: " + Profile.SERVICEPROFILE.getURI());
     }
 
@@ -216,7 +243,7 @@ public class ProviderDescriptionImpl implements ProviderDescription {
       }
     }
     if (serviceGroundings.isEmpty() && log.isInfoEnabled()) {
-      log.info("Info: getServiceGroundings() for [" +  filename + "] is returning an empty collection.\n" +
+      log.info("Info: getServiceGroundings() for [" +  fileName + "] is returning an empty collection.\n" +
                "DAMLInstance does not contain: " + Profile.GROUNDING.getURI());
     }
 
@@ -244,7 +271,7 @@ public class ProviderDescriptionImpl implements ProviderDescription {
           log.error("Error getting ServiceProfiles \n" +
                     "  Error Number: " + e.getErrorCode() + "\n" +
                     "  Error Message: " + e.getMessage() + "\n" +
-                    "  File: " + filename,    e);
+                    "  File: " + fileName,    e);
         }
       }
       Iterator groundings = serviceGroundings.iterator();
@@ -264,7 +291,7 @@ public class ProviderDescriptionImpl implements ProviderDescription {
             log.error("Error cannot find isSupporteBy in grounding \n" +
                       "  Error Number: " + e.getErrorCode() + "\n" +
                       "  Error Message: " + e.getMessage() + "\n" +
-                      "  File: " + filename , e);
+                      "  File: " + fileName , e);
           }
         }
       }
@@ -293,4 +320,5 @@ public class ProviderDescriptionImpl implements ProviderDescription {
    */
   public void writeDAMLSFiles(String outputFileBase){
   }
+
 }

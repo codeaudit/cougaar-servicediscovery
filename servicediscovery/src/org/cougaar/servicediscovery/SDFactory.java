@@ -3,11 +3,11 @@
  *  Copyright 2002-2003 BBNT Solutions, LLC
  *  under sponsorship of the Defense Advanced Research Projects Agency (DARPA)
  *  and the Defense Logistics Agency (DLA).
- * 
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the Cougaar Open Source License as published by
  *  DARPA on the Cougaar Open Source Website (www.cougaar.org).
- * 
+ *
  *  THE COUGAAR SOFTWARE AND ANY DERIVATIVE SUPPLIED BY LICENSOR IS
  *  PROVIDED 'AS IS' WITHOUT WARRANTIES OF ANY KIND, WHETHER EXPRESS OR
  *  IMPLIED, INCLUDING (BUT NOT LIMITED TO) ALL IMPLIED WARRANTIES OF
@@ -32,7 +32,10 @@ import org.cougaar.planning.ldm.plan.Role;
 import org.cougaar.planning.ldm.LDMServesPlugin;
 import org.cougaar.servicediscovery.description.LineageList;
 import org.cougaar.servicediscovery.description.LineageListImpl;
+import org.cougaar.servicediscovery.description.LineageListWrapper;
 import org.cougaar.servicediscovery.description.MMQuery;
+import org.cougaar.servicediscovery.description.ProviderCapabilities;
+import org.cougaar.servicediscovery.description.ProviderCapabilitiesImpl;
 import org.cougaar.servicediscovery.description.ServiceContract;
 import org.cougaar.servicediscovery.description.ServiceContractImpl;
 import org.cougaar.servicediscovery.description.ServiceContractRelationship;
@@ -52,6 +55,7 @@ import org.cougaar.util.TimeSpan;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.ArrayList;
 
 /**
  * Service discovery factory Domain package definition.
@@ -85,6 +89,32 @@ public class SDFactory implements Factory {
     return mmRequest;
   }
 
+
+  /** Generate a new LineageListWrapper
+    * @return LineageListWrapper
+    **/
+  public LineageListWrapper newLineageListWrapper(int type) {
+    LineageList lineageList = newLineageList(type);
+
+    if (lineageList != null) {
+      LineageListWrapper wrapper = new LineageListWrapper();
+      wrapper.setLineageList(lineageList);
+      wrapper.setUID(myLDM.getUIDServer().nextUID());
+      return wrapper;
+    } else {
+      return null;
+    }
+  }
+
+  /** Generate a new LineageListWrapper
+    * @return LineageListWrapper
+    **/
+  public LineageListWrapper newLineageListWrapper(LineageList lineageList) {
+    LineageListWrapper wrapper = newLineageListWrapper(lineageList.getType());
+    wrapper.setLineageList(lineageList);
+    return wrapper;
+  }
+
   /** Generate a new LineageList
     * @return LineageList
     **/
@@ -97,7 +127,6 @@ public class SDFactory implements Factory {
 	return newSupportLineageList();
       } else {
 	LineageList lineageList = new LineageListImpl(type);
-	lineageList.setUID(myLDM.getUIDServer().nextUID());
 	return lineageList;
       }
     }
@@ -122,7 +151,6 @@ public class SDFactory implements Factory {
     **/
   public SupportLineageList newSupportLineageList() {
     SupportLineageList supportLineageList = new SupportLineageListImpl();
-    supportLineageList.setUID(myLDM.getUIDServer().nextUID());
     return supportLineageList;
   }
 
@@ -146,7 +174,6 @@ public class SDFactory implements Factory {
       } else {
 	lineageList = new LineageListImpl(list);
       }
-    lineageList.setUID(list.getUID());
     return lineageList;
   }
 
@@ -172,6 +199,16 @@ public class SDFactory implements Factory {
    */
   public static boolean validMilitaryEchelon(String echelon) {
     return Constants.MilitaryEchelon.validMilitaryEchelon(echelon);
+  }
+
+  /** Generate a new ProviderCapabilities()
+    * @return a ProviderCapabilities
+    **/
+  public ProviderCapabilities newProviderCapabilities(String providerName) {
+    ProviderCapabilities providerCapabilities =
+      new ProviderCapabilitiesImpl(providerName);
+    providerCapabilities.setUID(myLDM.getUIDServer().nextUID());
+    return providerCapabilities;
   }
 
   /** Generate a new ServiceRequest
@@ -274,6 +311,66 @@ public class SDFactory implements Factory {
       result = preference.getScoringFunction().getBest().getValue();
     }
     return result;
+  }
+
+  static public Preference findPreference(Collection preferences, int aspectType){
+    Preference preference = null;
+
+    for (Iterator iterator = preferences.iterator(); iterator.hasNext();) {
+      Object next = iterator.next();
+
+      if (next instanceof Preference) {
+        Preference testPreference = (Preference) next;
+        if (testPreference.getAspectType() == aspectType) {
+          preference = testPreference;
+          break;
+        }
+      }
+    }
+
+    return preference;
+  }
+
+  public ServiceContract getCompatibleServiceContract(ServiceContract proposedContract,
+      ServiceRequest serviceRequest) {
+
+    Role role = serviceRequest.getServiceRole();
+    Collection proposedPreferences = proposedContract.getServicePreferences();
+    Collection requestedPreferences = serviceRequest.getServicePreferences();
+    ArrayList prefs = new ArrayList();
+    //if the requested and proposed role are not the same, use the requested role but
+    //with a start time == end time
+    if(!role.equals(proposedContract.getServiceRole())) {
+      Preference start = findPreference(requestedPreferences, Preference.START_TIME);
+      Preference end = myLDM.getFactory().newPreference(Preference.END_TIME, start.getScoringFunction());
+      prefs.add(start);
+      prefs.add(end);
+    }
+    //otherwise, use the agreed upon role and the max start time and min end time
+    else {
+      //if the requested start is earlier or the same as the proposed start,
+      //used the proposed start
+      if(getPreference(serviceRequest.getServicePreferences(), Preference.START_TIME) <=
+         getPreference(proposedContract.getServicePreferences(), Preference.START_TIME)) {
+        prefs.add(findPreference(proposedContract.getServicePreferences(), Preference.START_TIME));
+      }
+      //otherwise, use the requested start time
+      else {
+        prefs.add(findPreference(serviceRequest.getServicePreferences(), Preference.START_TIME));
+      }
+      //if the requested end is later or the same as the proposed end,
+      //used the proposed end
+      if(getPreference(serviceRequest.getServicePreferences(), Preference.END_TIME) >=
+         getPreference(proposedContract.getServicePreferences(), Preference.END_TIME)) {
+        prefs.add(findPreference(proposedContract.getServicePreferences(), Preference.END_TIME));
+      }
+      //otherwise, use the requested start time
+      else {
+        prefs.add(findPreference(serviceRequest.getServicePreferences(), Preference.END_TIME));
+      }
+    }
+
+    return newServiceContract(proposedContract.getProvider(), role, prefs);
   }
 
 }

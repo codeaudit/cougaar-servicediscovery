@@ -19,36 +19,23 @@
  *  PERFORMANCE OF THE COUGAAR SOFTWARE.
  * </copyright>
  */
-package org.cougaar.servicediscovery.util;
+
+package org.cougaar.servicediscovery.service;
 
 /**
- *
- * Currently envisioned as the object that the ServiceDisruptionServlet
- * can publish, triggering action on the part of the provider agent.
- * Created by IntelliJ IDEA.
- * User: lgoldsto
- * Date: Jan 10, 2003
- * Time: 2:51:55 PM
- * To change this template use Options | File Templates.
- */
-public class StatusChangeMessage {
-  private String role;
-  private boolean registryUpdated;
+ * Common interface for RegistrationService and RegistryQueryService
+ * */
+public interface YPServiceAdapter {
 
-  public StatusChangeMessage(String role, boolean registryUpdated) {
-    this.role = role;
-    this.registryUpdated = registryUpdated;
-  }
+  // Alias for YPFuture.ResponseCallback
+  public static interface Callback extends org.cougaar.yp.YPFuture.ResponseCallback { }
 
-  public String getRole() {
-    return role;
-  }
-
-  public void setRegistryUpdated(boolean registryUpdated) {
-    this.registryUpdated = registryUpdated;
-  }
-
-  public boolean registryUpdated() {
-    return registryUpdated;
-  }
+  public static interface CallbackWithContext extends Callback, org.cougaar.yp.YPService.NextContextCallback { }
 }
+
+
+
+
+
+
+

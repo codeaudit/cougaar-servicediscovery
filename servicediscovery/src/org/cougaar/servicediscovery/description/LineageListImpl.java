@@ -21,7 +21,6 @@
  */
 package org.cougaar.servicediscovery.description;
 
-import org.cougaar.core.util.UID;
 import org.cougaar.util.ArrayListFoundation;
 import org.cougaar.util.log.Logger;
 import org.cougaar.util.log.Logging;
@@ -41,7 +40,6 @@ import java.util.List;
 public class LineageListImpl extends ArrayListFoundation 
 implements LineageList {
   private static Logger logger = Logging.getLogger(LineageListImpl.class);
-  private UID myUID = null;
   private int myLineageType = -1;
 
   public static boolean validType(int lineageType) {
@@ -141,19 +139,6 @@ implements LineageList {
     }
   }
 
-  public void setUID(UID newUID) {
-    if (myUID != null) {
-      logger.error("Attempt to reset UID.");
-      return;
-    } 
-      
-    myUID = newUID;
-  }
-
-  public UID getUID() {
-    return myUID;
-  }
-
   public boolean add(Object o) {
     if (! (o instanceof String)) 
       throw new IllegalArgumentException();
@@ -239,7 +224,6 @@ implements LineageList {
    */
   public String toString() {
     StringBuffer buf = new StringBuffer();
-    buf.append("UID=" + getUID());
     buf.append("[");
     for (int i = 0; i < size; i++) {
       buf.append(String.valueOf(elementData[i]));
@@ -271,16 +255,18 @@ implements LineageList {
 
   public boolean equals(Object o) {
     if (o instanceof LineageListImpl) {
-      if (!(((LineageListImpl) o).getUID().equals(getUID()))) {
-	return false;
-      } else {
-	return super.equals(o);
-      }
+      return ((myLineageType == ((LineageListImpl) o).getType()) &&
+	      (super.equals(o)));
     } else {
       return false;
     }
   }
 
+  
+  public int hashCode() { 
+    return super.hashCode() + myLineageType;
+  }
+  
  }
 
 

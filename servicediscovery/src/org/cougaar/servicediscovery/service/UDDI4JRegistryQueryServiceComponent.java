@@ -25,8 +25,11 @@ import org.cougaar.core.component.BindingSite;
 import org.cougaar.core.component.Component;
 import org.cougaar.core.component.ServiceBroker;
 import org.cougaar.core.component.ServiceProvider;
+import org.cougaar.core.mts.MessageAddress;
 import org.cougaar.core.service.AgentIdentificationService;
+import org.cougaar.core.service.community.Community;
 import org.cougaar.core.service.LoggingService;
+import org.cougaar.core.service.ThreadService;
 import org.cougaar.core.service.UIDService;
 import org.cougaar.servicediscovery.description.*;
 import org.cougaar.servicediscovery.description.ServiceInfo;
@@ -55,18 +58,33 @@ import java.util.*;
 
 
 /**
- *
- *
- *
  */
 public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModelAdapter
-  implements Component {
+  implements Component 
+{
+  private static String ypAgent = 
+  System.getProperty("org.cougaar.yp.ypAgent", "NCA");
 
   private LoggingService log;
+  public void setLoggingService(LoggingService log) { 
+    this.log = (log==null)?LoggingService.NULL:log; 
+  }
+  
   protected YPService ypService;
-  private RegistryQueryServiceProviderImpl mySP;
+  public void setYPService(YPService yps) { this.ypService = yps; }
+
   private UIDService uidService;
+  public void setUIDService(UIDService us) { uidService = us; }
+
   private AgentIdentificationService agentIdentificationService;
+  public void setAgentIdentificationService(AgentIdentificationService ais) {
+    agentIdentificationService = ais;
+  }
+
+  private ThreadService threads;
+  public void setThreadService(ThreadService t) { threads=t; }
+
+  private RegistryQueryServiceProviderImpl mySP;
   private ServiceBroker sb;
 
   public void setBindingSite(BindingSite bs) {
@@ -77,35 +95,9 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
   public void load() {
     super.load();
 
-    this.log = (LoggingService)
-      sb.getService(this, LoggingService.class, null);
-    if (log == null) {
-      log = LoggingService.NULL;
-    }
-
-    this.uidService = (UIDService)
-      sb.getService(this, UIDService.class, null);
-    if (uidService == null) {
-      throw new RuntimeException("Unable to obtain UID service");
-    }
-
-    this.ypService = 
-      (YPService) sb.getService(this, YPService.class, null);
-    if (ypService == null) {
-      throw new RuntimeException("Unable to obtain YPService");
-    }
-
-    this.agentIdentificationService = 
-      (AgentIdentificationService) sb.getService(this, AgentIdentificationService.class, null);
-    if (agentIdentificationService == null) {
-      throw new RuntimeException("Unable to obtain AgentIdentificationService");
-    }
-
     // create and advertise the service
     this.mySP = new RegistryQueryServiceProviderImpl();
     sb.addService(RegistryQueryService.class, mySP);
-
-
   }
 
   public void unload() {
@@ -114,27 +106,6 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
       sb.revokeService(RegistryQueryService.class, mySP);
       mySP = null;
     }
-    if (uidService != null) {
-      sb.releaseService(this, UIDService.class, uidService);
-      uidService = null;
-    }
-
-    //release all services
-    if ((log != null) && (log != LoggingService.NULL)) {
-      sb.releaseService(this, LoggingService.class, log);
-      log = null;
-    }
-
-    if (agentIdentificationService != null) {
-      sb.releaseService(this, AgentIdentificationService.class, agentIdentificationService);
-      agentIdentificationService = null;
-    }
-
-    if (ypService != null) {
-      sb.releaseService(this, YPService.class, ypService);
-      ypService = null;
-    }
-
     super.unload();
   }
 
@@ -159,376 +130,652 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
     }
   }
 
-  private class RegistryQueryServiceImpl implements RegistryQueryService {
-    private String queryURL = null;
-    private HashMap tModelKeysCache = new HashMap();
-    // TODO: change this to be a static
-    private YPProxy proxy = null;
-    // TODO: change this to a parameter
+  private class RegistryQueryServiceImpl 
+    extends UDDI4JUtility
+    implements RegistryQueryService 
+  {
     private int maxRows = 100;
     private HashMap tModelNameCache = new HashMap();
 
     public RegistryQueryServiceImpl() {
-      queryURL = System.getProperty("org.cougaar.servicediscovery.registry.queryURL");
-    }
-    /**
-     * Establishes a connection to a registry.
-     */
-    private boolean makeConnection() {
-      // Define connection configuratio+n properties.
-      String ypAgent = System.getProperty("org.cougaar.yp.ypAgent");
+      super(UDDI4JRegistryQueryServiceComponent.this.log, 
+            UDDI4JRegistryQueryServiceComponent.this.ypService,
+            UDDI4JRegistryQueryServiceComponent.this.threads);
 
-      if ((ypAgent == null) || ypAgent.equals("")) {
-	proxy = null;
-	log.error(agentIdentificationService.getMessageAddress() + 
-		  ": ypAgent not identified.");
-	return false;
-      }
-      proxy = ypService.getYP(ypAgent);
-
-      return true;
     }
 
-    /**
-     * Finds providers based on the searchable attributes contained in the
-     * RegistryQuery object.
-     * @param query RegistryQuery containing the query attibutes.
-     * @return Collection of ProviderInfo objects.  Can return an empty list.
-     */
-    public Collection findProviders(RegistryQuery query) {
-      if (!makeConnection()) {
-        if (log.isErrorEnabled()) {
-          log.error("findProviders: make connection failed ");
-          return Collections.EMPTY_LIST;
-        }
-      }
-      // if we get a connection, proceed
-      Collection providerInfos;
+
+  /**
+   * Returns providers matching the attributes in the RegistryQuery 
+   * object. Uses default YPService search, i.e. query progresses
+   * up the structure of YP servers until either a match is found or
+   * search has reached the topmost server. 
+   * @param query RegistryQuery containing the attributes to be matched.
+   * @param callback  callback.invoke(Collection) of ProviderInfo objects.
+   * If no matches, returns empty list. 
+   */
+    public void findProviders(RegistryQuery query, Callback callback) {
       // Explicit call for a specific service
+      YPProxy proxy = makeProxy(ypAgent);
+
       if (query.getServiceName() != null) {
-        providerInfos = findServiceByNames(query);
+        findServiceByNames(query, callback, proxy);
+      } else {
+        findAllProviders(query, callback, proxy);
       }
-      else {
-        providerInfos = findAllProviders(query);
-      }
-      return providerInfos;
+    }
+
+  /**
+   * Returns providers matching the attributes in the RegistryQuery 
+   * object. Uses single step YPService search. Query is applied to the
+   * YP server in the next YPContext. If lastYPContext argument is null, 
+   * search starts with the closest YPServer. 
+   * @param lastYPContext YP context where the previous search ended. 
+   * Use null if starting search.
+   * @param query RegistryQuery containing the attributes to be matched.
+   * @param callback  CallbackWithContext, callback.setNextContext(object) with
+   * yp server context, callback.invoke(Collection) of ProviderInfo objects. 
+   * If no matches, returns empty list. 
+   */
+    public void findProviders(final Object lastYPContext, 
+			      final RegistryQuery query, 
+			      final CallbackWithContext callback) {
+      // Explicit call for a specific service
+      ypService.nextYPServerContext(lastYPContext, 
+				    new YPService.NextContextCallback() {
+	public void setNextContext(Object context){
+	  callback.setNextContext(context);
+
+	  if (context != null) {
+	    YPProxy proxy = 
+	      makeProxy(context, 
+			YPProxy.SearchMode.SINGLE_COMMUNITY_SEARCH);
+
+	    if (query.getServiceName() != null) {
+	      findServiceByNames(query, callback, proxy);
+	    } else {
+	      findAllProviders(query, callback, proxy);
+	    }
+	  } else {
+	    if (log.isDebugEnabled()) {
+	      log.debug("No subsequent yp context for " + lastYPContext);
+	    }
+	    
+	    callback.invoke(Collections.EMPTY_LIST);
+	  }
+	}
+      });
+
     }
 
     /**
-     * Finds all services based on the searchable attributes contained in the
-     * RegistryQuery object.
-     * @param query RegistryQuery containing the query attibutes.
-     * @return Collection of ServiceInfo objects.  Can return an empty list.
+     * Returns all services matching the attributes in the RegistryQuery object.
+     * @param query RegistryQuery containing the attributes to be matched.
+     * @note callback.invoke(Collection) of ServiceInfo objects.  If no matches, returns empty list.
      */
-    public Collection findServices(RegistryQuery query) {
-      if (!makeConnection()) {
-        if (log.isErrorEnabled()) {
-          log.error("findProviders: make connection failed ");
-          return Collections.EMPTY_LIST;
-        }
-      }
-      Collection services = findAllServices(query);
-      return services;
+    public void findServices(RegistryQuery query, Callback callback) {
+      YPProxy proxy = makeProxy(ypAgent);
+
+      findAllServices(query, callback, proxy);
     }
 
-    private Collection findAllServices(RegistryQuery rq) {
-      Collection services = new ArrayList();
 
-      CategoryBag bag = null;
-      if (rq.getServiceClassifications() != null) {
-        bag = createCategoryBag(rq.getServiceClassifications());
-      }
+  /**
+   * Returns all services matching the attributes in the RegistryQuery object.
+   * Uses single step YPService search. Query is applied to the
+   * YP server in the next YPContext. If lastYPContext argument is null, 
+   * search starts with the closest YPServer. 
+   * @param lastYPContext YP context where the previous search ended. 
+   * Use null if starting search.
+   * @param query RegistryQuery containing the attributes to be matched.
+   * @param callback  CallbackWithContext, callback.setNextContext(object) with
+   * yp server context, callback.invoke(Collection) with ServiceInfo objects.
+   * If no matches, returns empty list. 
+   */
+    public void findServices(final Object lastYPContext, 
+			     final RegistryQuery query, 
+			     final CallbackWithContext callback) {
+      ypService.nextYPServerContext(lastYPContext, 
+				    new YPService.NextContextCallback() {
+	public void setNextContext(Object context){
+	  callback.setNextContext(context);
 
-      FindQualifiers fq = null;
-      if (rq.getFindQualifiers() != null) {
-        String qualifier = (String) rq.getFindQualifiers().iterator().next();
-        fq = new FindQualifiers();
-        fq.getFindQualifierVector().add(new FindQualifier(qualifier));
-      }
+	  if (context != null) {
+	    YPProxy proxy = 
+	      makeProxy(context, 
+			YPProxy.SearchMode.SINGLE_COMMUNITY_SEARCH);
 
-      Vector serviceNames = null;
-      if (rq.getServiceName() != null) {
-        serviceNames = new Vector();
-        serviceNames.add( new Name(rq.getServiceName()));
+	    findAllServices(query, callback, proxy);
+	  } else {
+	    if (log.isDebugEnabled()) {
+	      log.debug("No subsequent yp context for " + lastYPContext);
+	    }
+	    callback.invoke(Collections.EMPTY_LIST);
+	  }
+	}
+      });
+    }
+
+    /**
+     * Returns all services matching the attributes in the RegistryQuery object.
+     * Uses default YPService search, i.e. query progresses
+     * up the structure of YP servers until either a match is found or
+     * search has reached the topmost server. 
+     * @param query RegistryQuery containing the attributes to be matched.
+     * @param callback  callback.invoke(Collection) of lightweight ServiceInfo 
+     * objects. If no matches, returns empty list. 
+     */
+    public void findServiceAndBinding(RegistryQuery query, Callback callback) {
+      YPProxy proxy = makeProxy(ypAgent);
+      
+      findServiceAndBinding(query, callback, proxy);
+    }
+      
+      
+
+    /**
+     * Returns all services matching the attributes in the RegistryQuery object.
+     * Uses single step YPService search. Query is applied to the
+     * YP server in the next YPContext. If lastYPContext argument is null, 
+     * search starts with the closest YPServer. 
+     * @param lastYPContext YP context where the previous search ended. 
+     * Use null if starting search.
+     * @param query RegistryQuery containing the attributes to be matched.
+     * @param callback  CallbackWithContext, callback.setNextContext(object) with
+     * yp server context, callback.invoke(Collection) with lightweight 
+     * ServiceInfo, objects. If no matches, returns empty list. 
+     */
+    public void findServiceAndBinding(final Object lastYPContext, 
+				      final RegistryQuery query,
+				      final CallbackWithContext callback) {
+      
+      // Explicit call for a specific service
+      ypService.nextYPServerContext(lastYPContext, 
+				    new YPService.NextContextCallback() {
+	public void setNextContext(Object context){
+	  callback.setNextContext(context);
+
+	  if (context != null) {
+	    if (log.isDebugEnabled()) {
+	      log.debug("Found next YPServerContext for " + lastYPContext + 
+			" - will continue in " + context);
+	    }
+	    YPProxy proxy = 
+	      makeProxy(context, 
+			YPProxy.SearchMode.SINGLE_COMMUNITY_SEARCH);
+	    
+	    findServiceAndBinding(query, callback, proxy);
+	  } else {
+	    if (log.isDebugEnabled()) {
+	      log.debug("No subsequent yp context for " + lastYPContext);
+	    }
+	    callback.invoke(Collections.EMPTY_LIST);
+	  }
+	}
+      });
+    }
+
+
+
+
+    private void findAllServices(final RegistryQuery rq, 
+				 final Callback callback,
+				 YPProxy proxy) {
+      class State {
+        Collection services = new ArrayList();
+        CategoryBag bag = null;
+        FindQualifiers fq = null;
+        Vector serviceNames = null;
+        ServiceList serviceList = null;
+        Callback step1,step2,step3,step4;
+	YPProxy proxy;
+	Object finalYPContext;
       }
-      try {
-        ServiceList serviceList = (ServiceList) ypService.submit(proxy.find_service(null, serviceNames,
-                                                                                    bag, null, fq, maxRows)).get();
-        Enumeration serviceInfos = serviceList.getServiceInfos().getServiceInfoVector().elements();
+      final State state = new State();
+
+      state.proxy = proxy;
+
+      // step1 create category bag 
+      state.step1 = new CallbackDelegate(callback) { 
+	public void invoke(Object result) {
+        if (rq.getServiceClassifications() != null) {
+          createCategoryBag(rq.getServiceClassifications(), state.step2, 
+			    state.proxy);
+        } else {
+          state.step2.invoke(null);
+        }
+      }};
+
+
+      // consume cb, set up fq, names.  invoke findService
+      state.step2 = new CallbackDelegate(callback) { 
+	public void invoke(Object result) {
+        state.bag = (CategoryBag) result;
+
+        if (rq.getFindQualifiers() != null) {
+          state.fq = new FindQualifiers();
+          // BUG: original version just took the first one
+          for (Iterator it = rq.getFindQualifiers().iterator(); it.hasNext(); ) {
+            String qualifier = (String) it.next();
+            state.fq.getFindQualifierVector().add(new FindQualifier(qualifier));
+          }
+        }
+        
+        if (rq.getServiceName() != null) {
+          state.serviceNames = new Vector(1);
+          state.serviceNames.add(new Name(rq.getServiceName()));
+        }
+
+        findService(state.proxy, null, state.serviceNames, state.bag, null, state.fq, maxRows, state.step3);
+      }};
+
+      state.step3 = new CallbackDelegate(callback) { 
+	public void invoke(Object result) {
+        state.serviceList = (ServiceList) result;
+
         Vector serviceKeys = new Vector();
-        while (serviceInfos.hasMoreElements()) {
-          org.uddi4j.response.ServiceInfo si = (org.uddi4j.response.ServiceInfo) serviceInfos.nextElement();
+        for (Iterator it = state.serviceList.getServiceInfos().getServiceInfoVector().iterator(); it.hasNext(); ) {
+          org.uddi4j.response.ServiceInfo si = (org.uddi4j.response.ServiceInfo) it.next();
           serviceKeys.add(si.getServiceKey());
           if (log.isDebugEnabled()) {
             log.debug("[findAllServices]ServiceName : " + si.getNameString());
           }
         }
+
         if (!serviceKeys.isEmpty()) {
-          services = createServiceInfos(serviceKeys);
+          createServiceInfos(serviceKeys, state.step4, state.proxy);
         } else {
           if (log.isDebugEnabled()) {
             log.debug("No services were found ");
           }
-          return Collections.EMPTY_LIST;
-        }
-      } catch (UDDIException e) {
-        if (log.isErrorEnabled()) {
-          DispositionReport dr = e.getDispositionReport();
-          log.error("UDDIException faultCode:" + e.getFaultCode() +
-                    "\n operator:" + dr.getOperator() +
-                    "\n generic:"  + dr.getGeneric() +
-                    "\n errno:"    + dr.getErrno() +
-                    "\n errCode:"  + dr.getErrCode() +
-                    "\n errInfoText:" + dr.getErrInfoText(), e);
-        }
-        /*
-      } catch (TransportException e) {
-        if (log.isErrorEnabled()) {
-          log.error("Exception", e);
-        }
-        */
-      }
-      return services;
+          state.step4.invoke(Collections.EMPTY_LIST);
+        }}};
+
+      state.step4 = new CallbackDelegate(callback) { 
+	public void invoke(Object result) {
+        super.invoke(result);
+      }};
+      
+      state.step1.invoke(null);
     }
 
-    private Collection findAllProviders(RegistryQuery rq) {
-      Collection providers = null;
-
-      CategoryBag bag = null;
-      if (rq.getBusinessClassifications() != null) {
-        bag = createCategoryBag(rq.getBusinessClassifications());
+    private void findAllProviders(final RegistryQuery rq, Callback callback,
+				  final YPProxy proxy) {
+      class State {
+        CategoryBag bag = null;
+        FindQualifiers fq = null;
+        Vector providerNames = null;
+        BusinessList bzList;
+        Callback step1,step2,step3,step4;
+	YPProxy proxy;
+	Object finalYPContext;
       }
+      final State state = new State();
 
-      FindQualifiers fq = null;
-      if (rq.getFindQualifiers() != null) {
-        String qualifier = (String) rq.getFindQualifiers().iterator().next();
-        fq = new FindQualifiers();
-        fq.getFindQualifierVector().add(new FindQualifier(qualifier));
-      }
+      state.proxy = proxy;
 
-      Vector providerNames = null;
-      if (rq.getProviderName() != null) {
-        providerNames = new Vector();
-        providerNames.add( new Name(rq.getProviderName()));
-      }
+      // step1 create category bag 
+      state.step1 = new CallbackDelegate(callback) { 
+	public void invoke(Object result) {
+        if (rq.getBusinessClassifications() != null) {
+          createCategoryBag(rq.getBusinessClassifications(), state.step2,
+			    state.proxy);
+        } else {
+          state.step2.invoke(null);
+        }
+      }};
 
-      try {
-        BusinessList bzList  = (BusinessList) ypService.submit(proxy.find_business(providerNames, null, null, bag, null, fq, maxRows)).get();
-        Enumeration businessInfos = bzList.getBusinessInfos().getBusinessInfoVector().elements();
+      // step2: consume category bag, do FQ and providernames, launch findBusiness
+      state.step2 = new CallbackDelegate(callback) { 
+	public void invoke(Object result) {
+        state.bag = (CategoryBag) result;
+
+        if (rq.getFindQualifiers() != null) {
+          state.fq = new FindQualifiers();
+          // BUG: original version just took the first one
+          for (Iterator it = rq.getFindQualifiers().iterator(); it.hasNext(); ) {
+            String qualifier = (String) it.next();
+            state.fq.getFindQualifierVector().add(new FindQualifier(qualifier));
+          }
+        }
+
+        if (rq.getProviderName() != null) {
+          state.providerNames = new Vector(1);
+          state.providerNames.add(new Name(rq.getProviderName()));
+        }
+        
+        findBusiness(state.proxy, state.providerNames, null, null, state.bag, null, state.fq, maxRows, state.step3);
+      }};
+
+      // step3: consume businesses, createProviderInfos
+      state.step3 = new CallbackDelegate(callback) { 
+	public void invoke(Object result) {
+        state.bzList = (BusinessList) result;
         Vector businessKeys = new Vector();
-        String serviceKey = null;
-        while (businessInfos.hasMoreElements()) {
-          org.uddi4j.response.BusinessInfo bi = (org.uddi4j.response.BusinessInfo) businessInfos.nextElement();
+        String serviceKey = null; // serviceKey never gets set to something real - is this ok?
+
+        for (Iterator it = state.bzList.getBusinessInfos().getBusinessInfoVector().iterator(); it.hasNext(); ) {
+          org.uddi4j.response.BusinessInfo bi = (org.uddi4j.response.BusinessInfo) it.next();
           businessKeys.add(bi.getBusinessKey());
           if (log.isDebugEnabled()) {
             log.debug("[findAllProviders] Provider name: " + bi.getNameString());
           }
         }
-        providers = createProviderInfos(businessKeys, serviceKey);
-      } catch (UDDIException e) {
-        if (log.isErrorEnabled()) {
-          DispositionReport dr = e.getDispositionReport();
-          log.error("UDDIException faultCode:" + e.getFaultCode() +
-                    "\n operator:" + dr.getOperator() +
-                    "\n generic:"  + dr.getGeneric() +
-                    "\n errno:"    + dr.getErrno() +
-                    "\n errCode:"  + dr.getErrCode() +
-                    "\n errInfoText:" + dr.getErrInfoText(), e);
-        }
-        /*
-      } catch (TransportException e) {
-        if (log.isErrorEnabled()) {
-          log.error("Exception", e);
-        }
-        */
-      }
-      return providers;
+        createProviderInfos(businessKeys, serviceKey, state.step4, 
+			    state.proxy);
+      }};
+
+      // step4: consume and result providers
+      state.step4 = new CallbackDelegate(callback) { 
+	public void invoke(Object result) {
+        super.invoke(result);
+      }};
+
+      state.step1.invoke(null);
     }
 
-    private Collection findServiceByNames(RegistryQuery rq) {
-
-      Collection providers = new ArrayList();
-
-      CategoryBag bag = null;
-      if (rq.getBusinessClassifications() != null) {
-        bag = createCategoryBag(rq.getBusinessClassifications());
-      }
-
-      FindQualifiers fq = null;
-      if (rq.getFindQualifiers() != null) {
-        String qualifier = (String) rq.getFindQualifiers().iterator().next();
-        fq = new FindQualifiers();
-        fq.getFindQualifierVector().add(new FindQualifier(qualifier));
-      }
-
-      Vector providerNames = null;
-      if (rq.getProviderName() != null) {
-        providerNames = new Vector();
-        providerNames.add( new Name(rq.getProviderName()));
-      }
-
-      try {
-        BusinessList bzList  = (BusinessList) ypService.submit(proxy.find_business(providerNames, null, null, bag, null, fq, maxRows)).get();
-        Enumeration businessInfos = bzList.getBusinessInfos().getBusinessInfoVector().elements();
+    /** @note Callback.invoke(Collection) **/
+    private void findServiceByNames(final RegistryQuery rq, Callback callback,
+				    YPProxy proxy) {
+      class State { 
+        Collection providers = new ArrayList();
+        CategoryBag bag = null;
+        FindQualifiers fq = null;
+        Vector providerNames = null;
+        BusinessList bzList;
         Vector businessKeys = new Vector();
-        while (businessInfos.hasMoreElements()) {
-          org.uddi4j.response.BusinessInfo bi = (org.uddi4j.response.BusinessInfo) businessInfos.nextElement();
-          businessKeys.add(bi.getBusinessKey());
+        Callback step1,step2,step3,step4;
+	YPProxy proxy;
+      }
+      final State state = new State();
+      
+      state.proxy = proxy;
+      
+      // step1 create category bag 
+      state.step1 = new CallbackDelegate(callback) { 
+	public void invoke(Object result) {
+        if (rq.getBusinessClassifications() != null) {
+          createCategoryBag(rq.getBusinessClassifications(), state.step2,
+			    state.proxy);
+        } else {
+          state.step2.invoke(null);
+        }
+      }};
+
+      // step2: consume category bag, do FQ and providernames, launch findBusiness
+      state.step2 = new CallbackDelegate(callback) { 
+	public void invoke(Object result) {
+        state.bag = (CategoryBag) result;
+
+        if (rq.getFindQualifiers() != null) {
+          String qualifier = (String) rq.getFindQualifiers().iterator().next();
+          state.fq = new FindQualifiers();
+          state.fq.getFindQualifierVector().add(new FindQualifier(qualifier));
+        }
+
+        if (rq.getProviderName() != null) {
+          state.providerNames = new Vector();
+          state.providerNames.add( new Name(rq.getProviderName()));
+        }
+
+        findBusiness(state.proxy, state.providerNames, null, null, state.bag, null, state.fq, maxRows, state.step3);
+      }};
+
+      // step3: consume findBusiness, invoke createProviderInfos
+      state.step3 = new CallbackDelegate(callback) { 
+	public void invoke(Object result) {
+        state.bzList  = (BusinessList) result;
+        for (Iterator it = state.bzList.getBusinessInfos().getBusinessInfoVector().iterator(); it.hasNext(); ) {
+          org.uddi4j.response.BusinessInfo bi = (org.uddi4j.response.BusinessInfo) it.next();
+          state.businessKeys.add(bi.getBusinessKey());
           if (log.isDebugEnabled()) {
             log.debug("[findAllProviders] Provider name: " + bi.getNameString());
             log.debug("[findServiceByName] Service name: " + rq.getServiceName());
           }
         }
-        if (!businessKeys.isEmpty()) {
-          providers = createProviderInfos(businessKeys, rq.getServiceName());
+        if (!state.businessKeys.isEmpty()) {
+          createProviderInfos(state.businessKeys, rq.getServiceName(), 
+			      state.step4, state.proxy);
         } else {
           if (log.isDebugEnabled()) {
             log.debug("No providers of that service were found ");
           }
-          return Collections.EMPTY_LIST;
-        }
-      } catch (UDDIException e) {
-        if (log.isErrorEnabled()) {
-          DispositionReport dr = e.getDispositionReport();
-          log.error("UDDIException faultCode:" + e.getFaultCode() +
-                    "\n operator:" + dr.getOperator() +
-                    "\n generic:"  + dr.getGeneric() +
-                    "\n errno:"    + dr.getErrno() +
-                    "\n errCode:"  + dr.getErrCode() +
-                    "\n errInfoText:" + dr.getErrInfoText(), e);
-        }
-        /*
-      } catch (TransportException e) {
-        if (log.isErrorEnabled()) {
-          log.error("Exception", e);
-        }
-        */
-      }
-      return providers;
+          state.step4.invoke(Collections.EMPTY_LIST);
+        }}};
+
+      state.step4 = new CallbackDelegate(callback) { 
+	public void invoke(Object result) {
+        super.invoke(result);
+      }};
+      state.step1.invoke(null);
     }
 
-    public Collection findServiceAndBinding(RegistryQuery query) {
-      if (!makeConnection()) {
-        if (log.isErrorEnabled()) {
-          log.error("findServiceAndBinding: make connection failed ");
-          return Collections.EMPTY_LIST;
-        }
-      }
-      Collection services = new ArrayList();
-      CategoryBag bag = null;
-      if (query.getServiceClassifications() != null) {
-        bag = createCategoryBag(query.getServiceClassifications());
-      }
+    /**
+     * Returns all services matching the attributes in the RegistryQuery object.
+     * @param query RegistryQuery containing the attributes to be matched.
+     * @note callback.invoke(Collection) of lightweight ServiceInfo objects.
+     * If no matches, returns empty list.
+     */
+    private void findServiceAndBinding(final RegistryQuery query, final Callback callback, YPProxy proxy) {
 
-      FindQualifiers fq = null;
-      if (query.getFindQualifiers() != null) {
-        String qualifier = (String) query.getFindQualifiers().iterator().next();
-        fq = new FindQualifiers();
-        fq.getFindQualifierVector().add(new FindQualifier(qualifier));
-      }
-
-      Vector serviceNames = null;
-      if (query.getServiceName() != null) {
-        serviceNames = new Vector();
-        serviceNames.add( new Name(query.getServiceName()));
-      }
-      try {
-        ServiceList serviceList = (ServiceList) ypService.submit(proxy.find_service(null, serviceNames,
-                                                                                    bag, null, fq, maxRows)).get();
-
-        Enumeration serviceInfos = serviceList.getServiceInfos().getServiceInfoVector().elements();
+      class State { 
+        Collection services = new ArrayList();
+        CategoryBag bag = null;
+        FindQualifiers fq = null;
+        Vector serviceNames = null;
         Vector serviceKeys = new Vector();
-        while (serviceInfos.hasMoreElements()) {
-          org.uddi4j.response.ServiceInfo si = (org.uddi4j.response.ServiceInfo) serviceInfos.nextElement();
-          serviceKeys.add(si.getServiceKey());
-          if (log.isDebugEnabled()) {
-            log.debug("[findServiceAndBinding]ServiceName : " + si.getNameString());
+        Callback step1,step2,step3,sub1,step4,step5;
+	YPProxy proxy;
+      }
+      final State state = new State();
+
+      state.proxy = proxy;
+      // step 1
+      state.step1 = new CallbackDelegate(callback) { 
+	public void invoke(Object result) {
+        Collection scs = query.getServiceClassifications();
+        if (scs != null) {
+          createCategoryBag(scs, state.step2, state.proxy);
+        } else {
+          state.step2.invoke(null);
+        }
+      }};
+
+      // step 2: consume CategoryBag, start FQ
+      state.step2 = new CallbackDelegate(callback) { 
+	public void invoke(Object result) {
+        state.bag = (CategoryBag) result;
+
+        if (query.getFindQualifiers() != null) {
+          state.fq = new FindQualifiers();
+          for (Iterator it = query.getFindQualifiers().iterator(); it.hasNext(); ) {
+            String qualifier = (String) it.next();
+            state.fq.getFindQualifierVector().add(new FindQualifier(qualifier));
           }
         }
-        if (!serviceKeys.isEmpty()) {
-          services = createSimpleServiceInfos(serviceKeys);
+
+        if (query.getServiceName() != null) {
+          state.serviceNames = new Vector();
+          state.serviceNames.add( new Name(query.getServiceName()));
+        }
+
+        findService(state.proxy, null, state.serviceNames, state.bag, null, state.fq, maxRows, state.step3);
+      }};
+
+      // step 3: consume service
+      state.step3 = new CallbackDelegate(callback) { 
+	public void invoke(Object result) {
+	  ServiceList serviceList = (ServiceList) result;
+	  Enumeration serviceInfos = serviceList.getServiceInfos().getServiceInfoVector().elements();
+	  loop(serviceList.getServiceInfos().getServiceInfoVector(),
+	       state.sub1,
+	       state.step4);
+	}
+      };
+
+      state.sub1 = new CallbackDelegate(callback) { 
+	public void invoke(Object args) {
+        Object result = ((Object[])args)[0];
+        Callback next = (Callback) ((Object[])args)[1];
+        org.uddi4j.response.ServiceInfo si = (org.uddi4j.response.ServiceInfo) result;
+        state.serviceKeys.add(si.getServiceKey());
+        if (log.isDebugEnabled()) {
+          log.debug("[findServiceAndBinding]ServiceName : " + si.getNameString());
+        }
+        next.invoke(null);      // pop back up
+      }};
+
+      state.step4 = new CallbackDelegate(callback) { 
+	public void invoke(Object result) {
+        if (!state.serviceKeys.isEmpty()) {
+          createSimpleServiceInfos(state.serviceKeys, state.step5, 
+				   state.proxy);
         } else {
           if (log.isDebugEnabled()) {
             log.debug("No services were found ");
           }
-          return Collections.EMPTY_LIST;
+          super.invoke(Collections.EMPTY_LIST);
         }
-      } catch (UDDIException e) {
-        if (log.isErrorEnabled()) {
-          DispositionReport dr = e.getDispositionReport();
-          log.error("UDDIException faultCode:" + e.getFaultCode() +
-                    "\n operator:" + dr.getOperator() +
-                    "\n generic:"  + dr.getGeneric() +
-                    "\n errno:"    + dr.getErrno() +
-                    "\n errCode:"  + dr.getErrCode() +
-                    "\n errInfoText:" + dr.getErrInfoText(), e);
-        }
-        /*
-      } catch (TransportException e) {
-        if (log.isErrorEnabled()) {
-          log.error("Exception", e);
-        }
-        */
-      }
-      return services;
+      }};
+
+      state.step5 = new CallbackDelegate(callback) { 
+	public void invoke(Object result) {
+        super.invoke((Collection) result);
+      }};
+
+      state.step1.invoke(null);
     }
 
-    private Collection createProviderInfos(Vector businessKeys, String serviceName) {
-      Collection providers = new ArrayList();
-      try {
-        BusinessDetail bd = (BusinessDetail) ypService.submit(proxy.get_businessDetail(businessKeys)).get();
-        Enumeration enum = bd.getBusinessEntityVector().elements();
-        while(enum.hasMoreElements()) {
-          BusinessEntity be = (BusinessEntity) enum.nextElement();
-          ProviderInfo providerInfo = new ProviderInfo();
-          providerInfo.setProviderName(be.getDefaultNameString());
-          Collection bzClass = getBusinessClassifications(be.getCategoryBag());
-          providerInfo.setBusinessClassifications(bzClass);
-          // only retrieve the specified service
-          Collection serviceInfos = new ArrayList();
-          if (serviceName != null) {
-            BusinessService bs = getBusinessService(be.getBusinessServices().getBusinessServiceVector(),
-                                                    serviceName);
 
-            ServiceInfo si = new ServiceInfo(bs.getDefaultNameString(), bs.getServiceKey(),
-                                             getServiceClassifications(bs.getCategoryBag()),
-                                             getServiceBindings(bs.getBindingTemplates()),
-                                             be.getDefaultNameString(),
-                                             bzClass);
-            serviceInfos.add(si);
-          } else {
-            // Get all the services
-            if (be.getBusinessServices() != null) {
-              serviceInfos = createServiceInfos(be.getBusinessServices(), be.getDefaultNameString(), bzClass);
-            } else {
-              if (log.isDebugEnabled()) {
-                log.debug("No services registered with provider " + be.getDefaultNameString());
-              }
-              serviceInfos = Collections.EMPTY_LIST;
-            }
-            providers.add(new ProviderInfo(be.getDefaultNameString(), bzClass, serviceInfos));
-          }
-        }
-      } catch (UDDIException e) {
-        if (log.isErrorEnabled()) {
-          DispositionReport dr = e.getDispositionReport();
-          log.error("UDDIException faultCode:" + e.getFaultCode() +
-                    "\n operator:" + dr.getOperator() +
-                    "\n generic:"  + dr.getGeneric() +
-                    "\n errno:"    + dr.getErrno() +
-                    "\n errCode:"  + dr.getErrCode() +
-                    "\n errInfoText:" + dr.getErrInfoText(), e);
-        }
-        /*
-      } catch (TransportException e) {
-        if (log.isErrorEnabled()) {
-          log.error("Exception", e);
-        }
-        */
+    /** @note Callback.invoke(Collection) **/
+    private void createProviderInfos(Vector businessKeys, 
+				     final String serviceName, 
+				     Callback callback, 
+				     YPProxy proxy) {
+      final Collection providers = new ArrayList();
+
+      class State { 
+	Callback step2,step3,sub1,sub2; 
+	Callback jump; 
+	YPProxy proxy;
+      };
+      
+      final State state = new State();
+
+      state.proxy = proxy;
+      // step 1 at end...
+
+      // step 2 consumes the business detail and then loops, ending in step 3
+      state.step2 = new CallbackDelegate(callback) { 
+	public void invoke(Object result) {
+	  BusinessDetail bd = (BusinessDetail) result;
+	  loop(bd.getBusinessEntityVector(), state.sub1, state.step3);
+	}};
+
+      // nesting for documentation purposes...
+      {
+        state.sub1 = new CallbackDelegate(callback) { 
+	  public void invoke(Object args) {
+	    Object result = ((Object[])args)[0];
+	    state.jump = (Callback) ((Object[])args)[1];
+
+	    BusinessEntity be = (BusinessEntity) result;
+	    createProviderInfo1(be, serviceName, state.sub2, state.proxy);
+	  }};
+
+        state.sub2 = new CallbackDelegate(callback) { 
+	  public void invoke(Object result) {
+	    ProviderInfo pi = (ProviderInfo) result;
+	    providers.add(pi);
+	    // return back up...
+	    state.jump.invoke(null);
+	  }};
       }
-      return providers;
+      
+      state.step3 = new CallbackDelegate(callback) { 
+	public void invoke(Object result) {
+	  // result==step1
+	  super.invoke(providers);
+	}};
+      
+      
+      // step 1
+      getBusinessDetail(state.proxy, businessKeys, state.step2);
     }
 
+    private void createProviderInfo1(final BusinessEntity be, final String serviceName, Callback callback, YPProxy proxy) {
+      class State { 
+	Collection bzClass; 
+	BusinessService bs; 
+	Callback step2,step3,step4,step5,stepA; 
+	Collection scs;
+	YPProxy proxy;
+      };
+      final State state = new State();
+      state.proxy = proxy;
+      // step 1 below
+      
+      state.step2 = new CallbackDelegate(callback) { 
+	public void invoke(Object result) {
+	  if (serviceName != null) {
+	    // only retrieve the specified service (darn - I thought it needed a callback)
+	    state.step3.invoke(getBusinessService(be.getBusinessServices().getBusinessServiceVector(), serviceName));
+	  } else {
+	    // get them all
+	    if (be.getBusinessServices() != null) {
+	      createServiceInfos(be.getBusinessServices(), 
+				 be.getDefaultNameString(), 
+				 state.bzClass, 
+				 state.stepA, 
+				 state.proxy);
+	    } else {
+	      if (log.isDebugEnabled()) {
+		log.debug("No services registered with provider " + be.getDefaultNameString());
+	      }
+	      state.stepA.invoke(Collections.EMPTY_LIST);
+	    }
+	  }
+	}};
+      
+      // step3 consumes the business service and gets the SCs (to step4)n
+      state.step3 = new CallbackDelegate(callback) { 
+	public void invoke(Object result) {
+	  state.bs = (BusinessService) result;
+	  getServiceClassifications(state.bs.getCategoryBag(), state.step4,
+				    state.proxy);
+	}};
+      state.step4 = new CallbackDelegate(callback) { 
+	public void invoke(Object result) {
+	  state.scs = (Collection) result;
+	  getServiceBindings(state.bs.getBindingTemplates(), state.step5,
+			     state.proxy);
+	}};
+      state.step5 = new CallbackDelegate(callback) { 
+	public void invoke(Object result) {
+	  Collection sbs = (Collection) result;
+	  ServiceInfo si = new ServiceInfo(state.bs.getDefaultNameString(), 
+					   state.bs.getServiceKey(),
+					   state.scs,
+					   sbs,
+					   be.getDefaultNameString(),
+					   state.bzClass);
+	  ArrayList l = new ArrayList(1);
+	  l.add(si);
+	  state.stepA.invoke(l);
+      }};
+      
+      // this had nested incorrectly.
+      state.stepA = new CallbackDelegate(callback) { 
+	public void invoke(Object result) {
+	  Collection serviceInfos = (Collection) result;
+	  super.invoke(new ProviderInfo(be.getDefaultNameString(), state.bzClass, serviceInfos));
+	}};
+      
+      // step 1
+      getBusinessClassifications(be.getCategoryBag(), state.step2, state.proxy);
+    }
+    
+    /** find the service in the vector with the correct name **/
     private BusinessService getBusinessService(Vector services, String serviceName) {
       Enumeration enum = services.elements();
       BusinessService businessService = null;
@@ -541,273 +788,403 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
       return businessService;
     }
 
-    private Collection createServiceInfos(Vector serviceKeys) {
-      Collection serviceInfos = new ArrayList();
+    /** @note Callback.invoke(Collection) **/
+    private void createServiceInfos(Vector serviceKeys, Callback callback,
+				    YPProxy proxy) {
 
-      try {
-        ServiceDetail sd = (ServiceDetail) ypService.submit(proxy.get_serviceDetail(serviceKeys)).get();
-        Enumeration serviceEnum = sd.getBusinessServiceVector().elements();
-        while(serviceEnum.hasMoreElements()) {
-          BusinessService bs = (BusinessService) serviceEnum.nextElement();
-          ServiceInfo serviceInfo = new ServiceInfo();
-          serviceInfo.setServiceId(bs.getServiceKey());
-          serviceInfo.setServiceName(bs.getDefaultNameString());
-          serviceInfo.setServiceClassifications(getServiceClassifications(bs.getCategoryBag()));
-          serviceInfo.setServiceBindings(getServiceBindings(bs.getBindingTemplates()));
-          BusinessDetail bd = (BusinessDetail) ypService.submit(proxy.get_businessDetail(bs.getBusinessKey())).get();
-          Enumeration businessEnum = bd.getBusinessEntityVector().elements();
-          while (businessEnum.hasMoreElements()) {
-            BusinessEntity be = (BusinessEntity) businessEnum.nextElement();
-            serviceInfo.setProviderName(be.getDefaultNameString());
-            serviceInfo.setBusinessClassifications(getBusinessClassifications(be.getCategoryBag()));
-          }
-          if (log.isDebugEnabled()) {
-            log.debug("Creating ServiceInfo " + serviceInfo.getProviderName());
-          }
+      final Collection serviceInfos = new ArrayList();
+      class State { 
+	Enumeration enum; 
+	Callback step2, step3, step4, step5, step6; 
+	ServiceInfo serviceInfo; 
+	BusinessService bs;
+	YPProxy proxy;
+      };
+      final State state = new State();
+      
+      state.proxy = proxy;
+      // step1 is below
 
-          serviceInfos.add(serviceInfo);
-        }
-      } catch (UDDIException e) {
-        if (log.isErrorEnabled()) {
-          DispositionReport dr = e.getDispositionReport();
-          log.error("UDDIException faultCode:" + e.getFaultCode() +
-                    "\n operator:" + dr.getOperator() +
-                    "\n generic:"  + dr.getGeneric() +
-                    "\n errno:"    + dr.getErrno() +
-                    "\n errCode:"  + dr.getErrCode() +
-                    "\n errInfoText:" + dr.getErrInfoText(), e);
-        }
-        /*
-      } catch (TransportException e) {
-        if (log.isErrorEnabled()) {
-          log.error("Exception", e);
-        }
-        */
-      }
-      return serviceInfos;
+      // step2 catches the ServiceDetail and invokes the loop
+      state.step2 = new CallbackDelegate(callback) {
+          public void invoke(Object result) {
+            ServiceDetail sd = (ServiceDetail) result;
+            state.enum = sd.getBusinessServiceVector().elements();
+            state.step3.invoke(null);
+          }};
+
+
+      // step 3 starts the loop.
+      state.step3 = new CallbackDelegate(callback) {
+          public void invoke(Object result) {
+            if (result != null) {
+              Collection sbs = (Collection) result;
+              state.serviceInfo.setServiceBindings(sbs);
+              serviceInfos.add(state.serviceInfo);
+            }
+            if (state.enum.hasMoreElements()) {
+              state.bs = (BusinessService) state.enum.nextElement();
+              state.serviceInfo = new ServiceInfo();
+              state.serviceInfo.setServiceId(state.bs.getServiceKey());
+              state.serviceInfo.setServiceName(state.bs.getDefaultNameString());
+              getServiceClassifications(state.bs.getCategoryBag(), 
+					state.step4, state.proxy);
+            } else {
+              super.invoke(serviceInfos);
+            }}};
+
+      // step 4 consumes ServiceClassifications and gets the BusinessDetails
+      state.step4 = new CallbackDelegate(callback) {
+          public void invoke(Object result) {
+            state.serviceInfo.setServiceClassifications((Collection) result);
+            getBusinessDetail(state.proxy, state.bs.getBusinessKey(), state.step5);
+          }};
+      // step 5 consumes the BusinessDetail and fills it out, ending in step6
+      state.step5 = new CallbackDelegate(callback) { 
+	public void invoke(Object result) {
+	  BusinessDetail bd = (BusinessDetail) result;
+	  addBusinessDetail(state.serviceInfo, bd, state.step6, state.proxy);
+	}};
+      
+      // step 6 adds the SCs
+      state.step6 = new CallbackDelegate(callback) {
+          public void invoke(Object result) {
+            //consumes ???
+            getServiceBindings(state.bs.getBindingTemplates(), state.step3,
+			       state.proxy);
+          }};
+      
+      getServiceDetail(state.proxy, serviceKeys, state.step2); // step1
     }
 
-    private Collection createSimpleServiceInfos(Vector serviceKeys) {
-      Collection serviceInfos = new ArrayList();
 
-      try {
-	log.debug("[createSimpleServiceInfo]calling get_serviceDetail()");
-        ServiceDetail sd = (ServiceDetail) ypService.submit(proxy.get_serviceDetail(serviceKeys)).get();
-	log.debug("[createSimpleServiceInfo]returned get_serviceDetail() - sd = " +
-		  sd);
-	Vector serviceVector = sd.getBusinessServiceVector();
-	log.debug("[createSimpleServiceInfo]returned from get_serviceDetail() "+ 
-		 " size = " + serviceVector.size());
+    private void addBusinessDetail(final ServiceInfo serviceInfo, BusinessDetail bd, Callback callback, final YPProxy proxy) {
+      final Enumeration businessEnum = bd.getBusinessEntityVector().elements();
+      BusinessEntity be = null;
+      while (businessEnum.hasMoreElements()) {
+        // Ugh!  Just duplicating the logic here, but this looks wrong to me!
+        be = (BusinessEntity) businessEnum.nextElement();
+      }
 
-	for (Enumeration serviceEnum = serviceVector.elements();
-	     serviceEnum.hasMoreElements();) {
-          BusinessService bs = (BusinessService) serviceEnum.nextElement();
-	  log.debug("[createSimpleServiceInfo]BusinessService - " + bs);
-          ServiceInfo serviceInfo = new ServiceInfo();
-          serviceInfo.setServiceId(bs.getServiceKey());
-	  log.debug("[createSimpleServiceInfo]BusinessService key " + bs.getServiceKey());
-          serviceInfo.setServiceName(bs.getDefaultNameString());
-	  log.debug("[createSimpleServiceInfo]BusinessService name " + bs.getDefaultNameString());
-          serviceInfo.setServiceClassifications(getServiceClassifications(bs.getCategoryBag()));
-          serviceInfo.setServiceBindings(getServiceBindings(bs.getBindingTemplates()));
-          serviceInfos.add(serviceInfo);
 
-          if (log.isDebugEnabled()) {
-            log.debug("[createSimpleServiceInfo]serviceInfo : " + serviceInfo);
+      if (be == null) {
+        callback.invoke(serviceInfo);
+      } else {
+        serviceInfo.setProviderName(be.getDefaultNameString());
+        getBusinessClassifications(be.getCategoryBag(), 
+				   new CallbackDelegate(callback) {
+	  public void invoke(Object result) {
+	    serviceInfo.setBusinessClassifications((Collection) result);
+	    super.invoke(serviceInfo);
+	  }},
+	  proxy);
+      }
+    }
+
+
+    /** @note Callback.invoke(Collection) **/
+    private void createSimpleServiceInfos(Vector serviceKeys, 
+					  Callback callback, 
+					  YPProxy proxy) {
+      final Collection serviceInfos = new ArrayList();
+      class State {
+	Enumeration enum; 
+	Callback step2, step3, step4; 
+	ServiceInfo serviceInfo; 
+	BusinessService bs;
+	YPProxy proxy;
+      };
+
+      final State state = new State();
+      state.proxy = proxy;
+      // step1 is below
+
+      // step2 catches the ServiceDetail and invokes the loop
+      state.step2 = new CallbackDelegate(callback) {
+	public void invoke(Object result) {
+	  ServiceDetail sd = (ServiceDetail) result;
+	  state.enum = sd.getBusinessServiceVector().elements();
+	  state.step3.invoke(null);
+	}};
+
+      // step 3 starts the loop.
+      state.step3 = new CallbackDelegate(callback) {
+	public void invoke(Object result) {
+	  if (result != null) {
+	    Collection sbs = (Collection) result;
+	    state.serviceInfo.setServiceBindings(sbs);
+	    serviceInfos.add(state.serviceInfo);
+	  }
+	  if (state.enum.hasMoreElements()) {
+	    state.bs = (BusinessService) state.enum.nextElement();
+	    state.serviceInfo = new ServiceInfo();
+	    state.serviceInfo.setServiceId(state.bs.getServiceKey());
+	    state.serviceInfo.setServiceName(state.bs.getDefaultNameString());
+	    getServiceClassifications(state.bs.getCategoryBag(), 
+				      state.step4, state.proxy);
+	  } else {
+	    super.invoke(serviceInfos);
+	  }}};
+
+      // step 4 adds the SCs
+      state.step4 = new CallbackDelegate(callback) {
+          public void invoke(Object result) {
+            state.serviceInfo.setServiceClassifications((Collection) result);
+            getServiceBindings(state.bs.getBindingTemplates(), state.step3,
+			       state.proxy);
+          }};
+      
+      
+      getServiceDetail(state.proxy, serviceKeys, state.step2); // step1
+
+    }
+
+
+    /** @note Callback.invoke(Collection) **/
+    private void createServiceInfos(BusinessServices bs, 
+				    final String providerName, 
+				    final Collection bzClass, 
+				    Callback callback,
+				    YPProxy proxy)  {
+      final Enumeration enum = bs.getBusinessServiceVector().elements();
+      final Collection serviceInfos = new ArrayList();
+      class State {
+	BusinessService svc;
+	Collection scs;
+	Callback chain1; 
+	Callback chain2;
+	YPProxy proxy;
+      };
+      final State state = new State();
+
+      state.proxy = proxy;
+
+      // two-step iteration.  ugh.
+      state.chain1 = new CallbackDelegate(callback) {
+          public void invoke(Object result) {
+            if (result != null) {
+              // called from getServiceBindings
+              Collection sbs = (Collection) result;
+              BusinessService svc = state.svc;
+              ServiceInfo serviceInfo = new ServiceInfo(svc.getDefaultNameString(), 
+                                                        svc.getServiceKey(),
+                                                        state.scs,
+                                                        sbs,
+                                                        providerName, 
+                                                        bzClass);
+              serviceInfos.add(serviceInfo);
+            } // else first time through - nothing to do here
+
+            if (enum.hasMoreElements()) {
+              // more work to do - ho hum
+              state.svc = (BusinessService) enum.nextElement(); // grab svc
+              getServiceClassifications(state.svc.getCategoryBag(), 
+					state.chain2, state.proxy); // continue in chain2
+            } else {
+              // done, finish the job
+              super.invoke(serviceInfos);
+            }
+          }};
+
+      state.chain2 = new CallbackDelegate(callback) {
+          public void invoke(Object result) {
+            state.scs = (Collection) result;
+            getServiceBindings(state.svc.getBindingTemplates(), 
+			       state.chain1,
+			       state.proxy);
           }
-
-        }
-      } catch (UDDIException e) {
-        if (log.isErrorEnabled()) {
-          DispositionReport dr = e.getDispositionReport();
-          log.error("UDDIException faultCode:" + e.getFaultCode() +
-                    "\n operator:" + dr.getOperator() +
-                    "\n generic:"  + dr.getGeneric() +
-                    "\n errno:"    + dr.getErrno() +
-                    "\n errCode:"  + dr.getErrCode() +
-                    "\n errInfoText:" + dr.getErrInfoText(), e);
-        }
-        /*
-      } catch (TransportException e) {
-        if (log.isErrorEnabled()) {
-          log.error("Exception", e);
-        }
-        */
-      }
-      return serviceInfos;
+        };
+            
+      state.chain1.invoke(null);
     }
 
-    private Collection createServiceInfos(BusinessServices bs, String providerName, Collection bzClass)  {
-      Enumeration serviceEnum = bs.getBusinessServiceVector().elements();
-      Collection serviceInfos = new ArrayList();
-      while(serviceEnum.hasMoreElements()) {
-        BusinessService svc = (BusinessService) serviceEnum.nextElement();
-        ServiceInfo serviceInfo = new ServiceInfo(svc.getDefaultNameString(), svc.getServiceKey(),
-                                                  getServiceClassifications(svc.getCategoryBag()),
-                                                  getServiceBindings(svc.getBindingTemplates()),
-                                                  providerName, bzClass);
-        serviceInfos.add(serviceInfo);
-      }
-      return serviceInfos;
-    }
 
     /**
      * Have to create a transient scheme in order to query
      * based on a classification
+     * @note Callback.invoke(CategoryBag)
      */
-    private CategoryBag createCategoryBag(Collection classifications) {
-      CategoryBag bag = new CategoryBag();
-      for (Iterator i = classifications.iterator(); i.hasNext();) {
-        Classification rc = (Classification) i.next();
-        bag.getKeyedReferenceVector().add(getKeyedReference(rc.getClassificationSchemeName(),
-                                                            rc.getClassificationName(),
-                                                            rc.getClassificationCode()));
-	
-	if (log.isDebugEnabled()) {
-	  log.debug("createCategoryBag: schemeName: " + 
-		    rc.getClassificationSchemeName() +
-		    " name: " + rc.getClassificationName() +
-		    " code: " + rc.getClassificationCode());
-	}
-      }
-      return bag;
+    private void createCategoryBag(Collection classifications, 
+				   Callback callback, 
+				   final YPProxy proxy) {
+      final CategoryBag bag = new CategoryBag();
+      final Iterator i = classifications.iterator();
+      
+      Callback chain = new CallbackDelegate(callback) {
+          public void invoke(Object result) {
+            if (result != null) {
+              bag.getKeyedReferenceVector().add(result);
+            }
+            if (i.hasNext()) {
+              Classification rc = (Classification) i.next();              
+              getKeyedReference(proxy,
+                                rc.getClassificationSchemeName(),
+                                rc.getClassificationName(),
+                                rc.getClassificationCode(),
+                                this);
+            } else {
+              super.invoke(bag);
+            } 
+          }};
+      chain.invoke(null);
     }
 
-    private KeyedReference getKeyedReference(String tModelName, String attribute, String value) {
-      String key = findTModelKey(tModelName);
-      if (key == null) {
-        return null;
-      }
-      KeyedReference kr = new KeyedReference(attribute, value);
-      kr.setTModelKey(key);
-      return kr;
+
+    //
+    // utilities
+    //
+
+    // Note - we use this chaining callback to iterate for the next few calls.
+    //
+    private void getServiceBindings(BindingTemplates bindingTemplates, 
+				    Callback callback, final YPProxy proxy) {
+      final Collection serviceBindings = new ArrayList();
+      final Enumeration enum = bindingTemplates.getBindingTemplateVector().elements();
+
+      // this iterates via tail-recursion... shouldn't be a problem, but we could unwind it 
+      Callback chain = new CallbackDelegate(callback) {
+          public void invoke(Object result) {
+            if (result != null) { serviceBindings.add(result); } // first call is null to get the loop going
+            if (enum.hasMoreElements()) {
+              BindingTemplate binding = (BindingTemplate) enum.nextElement();
+              getServiceBinding(binding, this, proxy); // (heh heh heh)
+            } else {
+              super.invoke(serviceBindings);
+            }
+          }};
+      chain.invoke(null);
     }
 
-    private String findTModelKey(String tModelName) {
-      if(!tModelKeysCache.containsKey(tModelName)) {
-        TModelList tlist = null;
-        try {
-          tlist = (TModelList) ypService.submit(proxy.find_tModel(tModelName, null, null, null, 1)).get();
-        } catch (Exception e) {
-          if (log.isErrorEnabled()) {
-            log.error("Caught an Exception finding tModel.", e);
+
+    /** @note Callback.invoke(Collection) **/
+    private void getServiceClassifications(CategoryBag bag, 
+					   Callback callback, 
+					   final YPProxy proxy) {
+      final Collection serviceClassifications = new ArrayList();
+      final Enumeration enum = bag.getKeyedReferenceVector().elements();
+      Callback chain = new CallbackDelegate(callback) {
+          public void invoke(Object result) {
+            if (result != null) { serviceClassifications.add(result); }
+            if (enum.hasMoreElements()) {
+              KeyedReference kr = (KeyedReference) enum.nextElement();
+              createClassification( new ServiceClassificationImpl(), kr, 
+				    this, proxy);
+            } else {
+              super.invoke(serviceClassifications);
+            }
           }
-        }
-        TModelInfos infos = tlist.getTModelInfos();
-        Vector tms = infos.getTModelInfoVector();
-        if (tms.size() > 0) {
-          tModelKeysCache.put(tModelName, ((TModelInfo) tms.elementAt(0)).getTModelKey());
-          // cache the key - name pair as well
-          tModelNameCache.put(((TModelInfo) tms.elementAt(0)).getTModelKey(), tModelName);
-        } else {
-          if (log.isDebugEnabled()) {
-            log.debug("Requested TModel was not found in registry " + tModelName);
-            return null;
-          }
-        }
-      }
-      return (String) tModelKeysCache.get(tModelName);
+        };
+      chain.invoke(null);
+    }
+
+    /** @note Callback.invoke(Collection) **/
+    private void getBusinessClassifications(CategoryBag bag, Callback callback,
+					    final YPProxy proxy) {
+      final Collection businessClassifications = new ArrayList();
+      final Enumeration enum = bag.getKeyedReferenceVector().elements();
+
+      Callback chain = new CallbackDelegate(callback) {
+          public void invoke(Object result) {
+            if (result != null) { businessClassifications.add(result); }
+            if (enum.hasMoreElements()) {
+              KeyedReference kr = (KeyedReference) enum.nextElement();
+              createClassification(new BusinessClassificationImpl(), kr, 
+				   this, proxy);
+            } else {
+              super.invoke(businessClassifications);
+            }
+          }};
+      chain.invoke(null);
     }
 
 
-    private String findTModelName(String tModelKey) {
-      if(!tModelNameCache.containsKey(tModelKey)) {
-        TModelDetail tDetail = null;
-        try {
-          tDetail = (TModelDetail) ypService.submit(proxy.get_tModelDetail(tModelKey)).get();
-        } catch (Exception e) {
-          if (log.isErrorEnabled()) {
-            log.error("Caught an Exception finding tModel.", e);
-          }
-        }
-        Vector tList = tDetail.getTModelVector();
-        if (tList.size() > 0) {
-          TModel tm = (TModel) tList.elementAt(0);
-          tModelNameCache.put(tModelKey, tm.getNameString());
-          // cache the key - name pair as well
-          tModelKeysCache.put(tm.getNameString(), tModelKey);
-        } else {
-          if (log.isDebugEnabled()) {
-            log.debug("Requested TModel was not found in registry " + tModelKey);
-            return null;
-          }
-        }
-      }
-      return (String) tModelNameCache.get(tModelKey);
+    /** @note Callback.invoke(Classification) **/
+    private void createClassification(final Classification classification,
+                                      final KeyedReference kr,
+                                      Callback callback,
+				      YPProxy proxy) {
+      findTModelName(proxy,
+                     kr.getTModelKey(),
+                     new CallbackDelegate(callback) {
+                       public void invoke(Object result) {
+                         String tModelName = (String) result;
+                         if (tModelName != null) {
+                           classification.setClassificationCode(kr.getKeyValue());
+                           classification.setClassificationName(kr.getKeyName());
+                           classification.setClassificationSchemeName(tModelName);
+                         } else {
+                           log.error("A serious error occured, tModelName is null for "+kr);
+                         }
+                         super.invoke(classification);
+                       }});
     }
 
-    private Collection getServiceClassifications(CategoryBag bag) {
-      Collection serviceClassifications = new ArrayList();
-      Vector keyedReferenceVector = bag.getKeyedReferenceVector();
 
-      for (Enumeration enum = keyedReferenceVector.elements();
-	   enum.hasMoreElements();) {
-        KeyedReference kr = (KeyedReference) enum.nextElement();
-        serviceClassifications.add(createClassification( new ServiceClassificationImpl(), kr));
-      }
-      return serviceClassifications;
-    }
-
-    private Collection getBusinessClassifications(CategoryBag bag) {
-      Collection businessClassifications = new ArrayList();
-      Enumeration enum = bag.getKeyedReferenceVector().elements();
-      while (enum.hasMoreElements()) {
-        KeyedReference kr = (KeyedReference) enum.nextElement();
-        businessClassifications.add(createClassification( new BusinessClassificationImpl(), kr));
-      }
-      return businessClassifications;
-    }
-
-    private Classification createClassification(Classification classification,
-                                                KeyedReference kr) {
-      String tModelName = findTModelName(kr.getTModelKey());
-      if (tModelName != null) {
-        classification.setClassificationCode(kr.getKeyValue());
-        classification.setClassificationName(kr.getKeyName());
-        classification.setClassificationSchemeName(tModelName);
-      } else {
-        // TODO: handle this more appropriately; mostly like fails due to failed registry response
-        if (log.isErrorEnabled()) {
-          log.error("A serious error occured, tModelName is null, ");
-        }
-      }
-
-      return classification;
-    }
-
-    private Collection getServiceBindings(BindingTemplates bindingTemplates) {
-      Collection serviceBindings = new ArrayList();
-
-      Vector bindingTemplatesVector = bindingTemplates.getBindingTemplateVector();
-      for (Enumeration enum = bindingTemplatesVector.elements();
-	   enum.hasMoreElements();) {
-        BindingTemplate binding = (BindingTemplate) enum.nextElement();
-        serviceBindings.add(getServiceBinding(binding));
-      }
-      return serviceBindings;
-    }
-
-    private ServiceBinding getServiceBinding(BindingTemplate binding) {
+    private void getServiceBinding(final BindingTemplate binding, 
+				   Callback callback, 
+				   YPProxy proxy) {
       Enumeration enum = binding.getTModelInstanceDetails().getTModelInstanceInfoVector().elements();
-      String bindingType = null;
-      InstanceParms ip = null;
-      if (enum.hasMoreElements()) {
-        TModelInstanceInfo tio = (TModelInstanceInfo) enum.nextElement();
-        bindingType = findTModelName(tio.getTModelKey());
-        ip = tio.getInstanceDetails().getInstanceParms();
+      if (!enum.hasMoreElements()) {
+        callback.handle(new RuntimeException("No service binding for "+binding));
+        return;
       }
-      return new org.cougaar.servicediscovery.description.ServiceBinding(binding.getAccessPoint().getText(),
-                                                                         bindingType,
-                                                                         ip.getText());
+
+      final TModelInstanceInfo tio = (TModelInstanceInfo) enum.nextElement();
+      findTModelName(proxy,
+                     tio.getTModelKey(),
+                     new CallbackDelegate(callback) {
+                       public void invoke(Object result) { 
+                         String bindingType = (String) result;
+                         InstanceParms ip = 
+			   tio.getInstanceDetails().getInstanceParms();
+                         ServiceBinding sb = 
+			   new ServiceBinding(binding.getAccessPoint().getText(),
+					      bindingType, ip.getText());
+                         super.invoke(sb);
+                       }});
     }
+
+
   }
+
+
+  private YPProxy makeProxy(Object ypContext) {
+      YPProxy proxy = null;
+
+      if (ypContext == null) {
+	proxy = ypService.getYP();
+      } else if (ypContext instanceof String) {
+	proxy = ypService.getYP((String) ypContext);
+      } else if (ypContext instanceof MessageAddress) {
+	proxy = ypService.getYP((MessageAddress) ypContext);
+      } else if (ypContext instanceof Community) {
+	proxy = ypService.getYP((Community) ypContext, 
+				YPProxy.SearchMode.HIERARCHICAL_COMMUNITY_SEARCH);
+      } else {
+	throw new IllegalArgumentException("Invalid datatype for ypContext - " +
+					   ypContext.getClass() +
+					   " - must be String, MessageAddress, or Community.");
+      }
+
+      return proxy;
+    }
+
+
+  private YPProxy makeProxy(Object ypContext, int searchMode) {
+      YPProxy proxy = null;
+
+      if (ypContext == null) {
+	proxy = ypService.getYP(searchMode);
+      } else if (ypContext instanceof Community) {
+	proxy = ypService.getYP((Community) ypContext, searchMode);
+      } else {
+	throw new IllegalArgumentException("Invalid datatype for ypContext " + 
+					   " with YPProxy.SearchMode - " +
+					   ypContext.getClass() +
+					   " - must be Community");
+      }
+
+      return proxy;
+    }
+
 }
-
-
-
-
-
-
-
-
-

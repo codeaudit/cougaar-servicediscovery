@@ -19,73 +19,66 @@
  *  PERFORMANCE OF THE COUGAAR SOFTWARE.
  * </copyright>
  */
-
-package org.cougaar.servicediscovery.transaction;
+package org.cougaar.servicediscovery.description;
 
 import org.cougaar.core.util.UID;
-import org.cougaar.servicediscovery.description.MMQuery;
+import org.cougaar.planning.ldm.plan.Role;
 import org.cougaar.util.log.Logger;
 import org.cougaar.util.log.Logging;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 
-public class MMQueryRequestImpl implements NewMMQueryRequest, java.io.Serializable {
-  private static Logger myLogger = Logging.getLogger(MMQueryRequestImpl.class);
+/**
+ * Maintains a Role and echelon
+ */
 
-  private MMQuery myQuery;
-  private UID myUID;
-  private Collection myResult;
-  private int myResultCode;
 
-  public MMQueryRequestImpl(MMQuery mmQuery) {
-    myQuery = mmQuery;
+public class ProviderCapabilityImpl implements ProviderCapability {
+  private Role myRole = null;
+  private String myEchelon = null;
+
+
+  public ProviderCapabilityImpl() {
+  }
+
+  public ProviderCapabilityImpl(Role role, String echelon) {
+    setRole(role);
+    setEchelon(echelon);
+  }
+
+  /**
+   * @return the echelon name
+   **/
+  public String getEchelon() {
+    return myEchelon;
+  }
+
+  /**
+   * @param echelon
+   **/
+  public void setEchelon(String echelon) {
+    myEchelon = echelon;
   }
 
 
-  public MMQueryRequestImpl() {
-    super();
+  /**
+   * @return the echelon name
+   **/
+  public Role getRole() {
+    return myRole;
+  }
+
+  /**
+   * @param echelon
+   **/
+  public void setRole(Role role) {
+    myRole = role;
   }
 
 
-  public void setQuery(MMQuery mmQuery) {
-    myQuery = mmQuery;
-  }
-
-  public  MMQuery getQuery() {
-    return myQuery;
-  }
-
-  public void setResult(Collection result) {
-    myResult = result;
-  }
-
-  public Collection getResult() {
-    return myResult;
-  }
+ }
 
 
-  public void setResultCode(int code) {
-    myResultCode = code;
-  }
-
-  public int getResultCode() {
-    return myResultCode;
-  }
-
-
-  public void setUID(UID newUID) {
-    if (myUID != null) {
-      myLogger.error("Attempt to reset UID.");
-      return;
-    } 
-
-    myUID = newUID;
-  }
-
-  public UID getUID() {
-    return myUID;
-  }
-}
 

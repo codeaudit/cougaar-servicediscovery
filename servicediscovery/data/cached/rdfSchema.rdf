@@ -8,7 +8,7 @@
   <rdfs:comment>The most general class</rdfs:comment>
 </rdfs:Class>
 
-<rdf:Property about="http://www.w3.org/1999/02/22-rdf-syntax-ns#type">
+<rdf:Property rdf:about="http://www.w3.org/1999/02/22-rdf-syntax-ns#type">
   <rdfs:label xml:lang="en">type</rdfs:label>
   <rdfs:label xml:lang="fr">type</rdfs:label>
   <rdfs:comment>Indicates membership of a class</rdfs:comment>
@@ -124,14 +124,14 @@
   <rdfs:comment>This represents the set of reified statements.</rdfs:comment>
 </rdfs:Class>
 
-<rdf:Property about="http://www.w3.org/1999/02/22-rdf-syntax-ns#subject">
+<rdf:Property rdf:about="http://www.w3.org/1999/02/22-rdf-syntax-ns#subject">
   <rdfs:label xml:lang="en">subject</rdfs:label>
   <rdfs:label xml:lang="fr">sujet</rdfs:label>
   <rdfs:domain rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Statement"/>
   <rdfs:range rdf:resource="#Resource"/>
 </rdf:Property>
 
-<rdf:Property about="http://www.w3.org/1999/02/22-rdf-syntax-ns#predicate">
+<rdf:Property rdf:about="http://www.w3.org/1999/02/22-rdf-syntax-ns#predicate">
   <rdfs:label xml:lang="en">predicate</rdfs:label>
   <rdfs:label xml:lang="fr">pr&#233;dicat</rdfs:label>
   <rdf:type resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
@@ -139,7 +139,7 @@
   <rdfs:range rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
 </rdf:Property>
 
-<rdf:Property about="http://www.w3.org/1999/02/22-rdf-syntax-ns#object">
+<rdf:Property rdf:about="http://www.w3.org/1999/02/22-rdf-syntax-ns#object">
   <rdfs:label xml:lang="en">object</rdfs:label>
   <rdfs:label xml:lang="fr">objet</rdfs:label>
   <rdfs:domain rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Statement"/>
@@ -180,7 +180,7 @@
   <rdfs:label xml:lang="fr">value</rdfs:label>
 </rdf:Property>
 
-<rdf:Description about="http://www.w3.org/2000/01/rdf-schema#">
+<rdf:Description rdf:about="http://www.w3.org/2000/01/rdf-schema#">
   <rdfs:seeAlso resource="http://www.w3.org/2000/01/rdf-schema-more"/>
 </rdf:Description>
 

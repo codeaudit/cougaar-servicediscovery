@@ -3,11 +3,11 @@
  *  Copyright 2002-2003 BBNT Solutions, LLC
  *  under sponsorship of the Defense Advanced Research Projects Agency (DARPA)
  *  and the Defense Logistics Agency (DLA).
- * 
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the Cougaar Open Source License as published by
  *  DARPA on the Cougaar Open Source Website (www.cougaar.org).
- * 
+ *
  *  THE COUGAAR SOFTWARE AND ANY DERIVATIVE SUPPLIED BY LICENSOR IS
  *  PROVIDED 'AS IS' WITHOUT WARRANTIES OF ANY KIND, WHETHER EXPRESS OR
  *  IMPLIED, INCLUDING (BUT NOT LIMITED TO) ALL IMPLIED WARRANTIES OF
@@ -32,6 +32,13 @@ import org.cougaar.servicediscovery.description.ServiceRequest;
 import org.cougaar.util.log.Logger;
 import org.cougaar.util.log.Logging;
 
+import org.cougaar.planning.ldm.plan.AspectType;
+import org.cougaar.planning.ldm.plan.AspectValue;
+import java.util.Collection;
+import org.cougaar.planning.ldm.plan.Preference;
+import org.cougaar.servicediscovery.SDFactory;
+import org.cougaar.planning.ldm.plan.TimeAspectValue;
+import org.cougaar.planning.ldm.plan.ScoringFunction;
 
 /**
  * Relay used to request command chain lineage
@@ -74,17 +81,64 @@ public class ServiceContractRelay extends RelayAdapter {
   }
 
   /**
-   * Sets the service contract as specified by the provider
+   * Sets the service contract as specified by the provider and
+   * return true, iff the proposed service contract is a subset
+   * of the service request. Otherwise, returns false;
    *
+   * @return boolean true iff the proposed service contract has allowable
+   * values and the service contract of this relay was set to be the
+   * proposed service contract.
    * @param serviceContract ServiceContract as specified by the provider
    */
-  public void setServiceContract(ServiceContract serviceContract) {
-    myServiceContract = serviceContract;
+  public boolean setServiceContract(ServiceContract serviceContract) {
+    ServiceContract compatibleServiceContract;
+    if(!isContractCompatibleWithRequest(serviceContract)) {
+      return false;
+    }
+    else {
+      compatibleServiceContract = serviceContract;
+    }
+    myServiceContract = compatibleServiceContract;
     myToString = null;
+    return true;
   }
 
   /**
-   * Returns the provider asset from the ServiceContract 
+   * Returns true iff the role and preferences of the service contract
+   * are a subset of the service request.
+   *
+   * @param serviceContract the ServiceContract proposed for this relay.
+   * @return boolean true iff the service contract is a subset of the
+   * service request.
+   */
+  private boolean isContractCompatibleWithRequest(ServiceContract serviceContract) {
+    boolean ret = getServiceRequest().getServiceRole().equals(serviceContract.getServiceRole());
+    if(ret) {
+      Collection requestPreferences = getServiceRequest().getServicePreferences();
+      Collection contractPreferences = serviceContract.getServicePreferences();
+      double requestEnd = SDFactory.getPreference(requestPreferences, Preference.END_TIME);
+      double contractEnd = SDFactory.getPreference(contractPreferences, Preference.END_TIME);
+      ret = ret && contractEnd <= requestEnd;
+      if(ret) {
+        double requestStart = SDFactory.getPreference(requestPreferences, Preference.START_TIME);
+        double contractStart = SDFactory.getPreference(contractPreferences, Preference.START_TIME);
+        ret = ret && contractStart >= requestStart;
+      }
+    }
+    return ret;
+  }
+
+  /**
+   * Returns the broadest service contract which is a subset of both
+   * the service request and the proposed service contract.
+   *
+   * @param serviceContract the ServiceContract proposed for this relay.
+   * @return ServiceContract the broadest service contract that is a
+   * subset of both the service request and the proposed service contract.
+   */
+
+  /**
+   * Returns the provider asset from the ServiceContract
    *
    * @return Asset provider asset as specified by the ServiceContract
    * agent.
@@ -118,7 +172,7 @@ public class ServiceContractRelay extends RelayAdapter {
   }
 
   /**
-   * Returns the client asset from the ServiceRequest 
+   * Returns the client asset from the ServiceRequest
    *
    * @return Asset client asset as specified by the ServiceRequest
    * agent.
@@ -136,7 +190,7 @@ public class ServiceContractRelay extends RelayAdapter {
    * @param target the address of the target agent.
    **/
   public void addTarget(MessageAddress target) {
-    if ((myTargetSet != null) && 
+    if ((myTargetSet != null) &&
 	(myTargetSet.size() > 0)) {
       myLogger.error("Attempt to set multiple targets.");
       return;
@@ -153,11 +207,11 @@ public class ServiceContractRelay extends RelayAdapter {
    * or used.
    **/
   public int updateResponse(MessageAddress target, Object response) {
-    ServiceContractRelay serviceContractRelay = 
+    ServiceContractRelay serviceContractRelay =
       (ServiceContractRelay) response;
 
-    setServiceContract(serviceContractRelay.getServiceContract()); 
-    
+    setServiceContract(serviceContractRelay.getServiceContract());
+
     return Relay.RESPONSE_CHANGE;
   }
 
@@ -169,7 +223,7 @@ public class ServiceContractRelay extends RelayAdapter {
 
   public String toString() {
     if (myToString == null) {
-      myToString = getClass() + ": provider=<" + getProviderName() + 
+      myToString = getClass() + ": provider=<" + getProviderName() +
 	">, serviceRequest=<" +
         getServiceRequest() +
 	">, serviceContract=<" +
@@ -180,7 +234,7 @@ public class ServiceContractRelay extends RelayAdapter {
 
     return myToString;
   }
-  
+
 }
 
 

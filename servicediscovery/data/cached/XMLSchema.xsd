@@ -74,8 +74,8 @@
 <schema targetNamespace="http://www.w3.org/2000/10/XMLSchema" blockDefault="#all" elementFormDefault="qualified" version="1.0" xmlns="http://www.w3.org/2000/10/XMLSchema" xmlns:hfp="http://www.w3.org/2000/10/XMLSchema-hasFacetAndProperty">
  <annotation>
   <documentation>
-    Part 1 version: $Id: XMLSchema.xsd,v 1.1 2003-01-20 19:32:22 mthome Exp $
-    Part 2 version: $Id: XMLSchema.xsd,v 1.1 2003-01-20 19:32:22 mthome Exp $
+    Part 1 version: $Id: XMLSchema.xsd,v 1.2 2003-10-22 16:21:58 ahelsing Exp $
+    Part 2 version: $Id: XMLSchema.xsd,v 1.2 2003-10-22 16:21:58 ahelsing Exp $
   </documentation>
  </annotation>
 

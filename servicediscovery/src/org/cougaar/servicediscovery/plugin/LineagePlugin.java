@@ -33,6 +33,7 @@ import org.cougaar.servicediscovery.Constants;
 import org.cougaar.servicediscovery.SDDomain;
 import org.cougaar.servicediscovery.SDFactory;
 import org.cougaar.servicediscovery.description.LineageList;
+import org.cougaar.servicediscovery.description.LineageListWrapper;
 import org.cougaar.servicediscovery.description.SupportLineageList;
 import org.cougaar.servicediscovery.transaction.LineageListRelay;
 import org.cougaar.util.UnaryPredicate;
@@ -50,20 +51,16 @@ public class LineagePlugin extends SimplePlugin
   private IncrementalSubscription myReportForDutySubscription;
   private IncrementalSubscription mySuperiorLineageListRelaySubscription;
   private IncrementalSubscription mySubordinateLineageListRelaySubscription;
-  private IncrementalSubscription myLineageListSubscription;
+  private IncrementalSubscription myLineageListWrapperSubscription;
 
   private String myAgentName;
 
   private LoggingService myLoggingService;
   private SDFactory mySDFactory;
 
-  private UnaryPredicate myLineageListPred = new UnaryPredicate() {
+  private UnaryPredicate myLineageListWrapperPred = new UnaryPredicate() {
     public boolean execute(Object o) {
-      if (o instanceof LineageList) {
-	if (myLoggingService.isDebugEnabled()) {
-	myLoggingService.debug(myAgentName + " lineage list: " + o +
-			       " type: " + o.getClass());
-	}
+      if (o instanceof LineageListWrapper) {
 	return true;
       } else {
 	return false;
@@ -104,24 +101,47 @@ public class LineagePlugin extends SimplePlugin
     }
   };
 
+  public void setLoggingService(LoggingService loggingService) {
+    myLoggingService = loggingService;
+  }
+      
   protected void setupSubscriptions() {
-    myReportForDutySubscription = (IncrementalSubscription) subscribe(myReportForDutyPred);
-    mySubordinateLineageListRelaySubscription = (IncrementalSubscription) subscribe(mySubordinateLineageListRelayPred);
-    mySuperiorLineageListRelaySubscription = (IncrementalSubscription) subscribe(mySuperiorLineageListRelayPred);
-    myLineageListSubscription = (IncrementalSubscription) subscribe(myLineageListPred);
-    myLoggingService =
-      (LoggingService) getBindingSite().getServiceBroker().getService(this,
-								      LoggingService.class,
-								      null);
+    myReportForDutySubscription = 
+      (IncrementalSubscription) subscribe(myReportForDutyPred);
+    mySubordinateLineageListRelaySubscription = 
+      (IncrementalSubscription) subscribe(mySubordinateLineageListRelayPred);
+    mySuperiorLineageListRelaySubscription = 
+      (IncrementalSubscription) subscribe(mySuperiorLineageListRelayPred);
+    myLineageListWrapperSubscription = 
+      (IncrementalSubscription) subscribe(myLineageListWrapperPred);
+
     mySDFactory = (SDFactory) getFactory(SDDomain.SD_NAME);
 
     myAgentName = getBindingSite().getAgentIdentifier().toString();
 
-    // Add initial seed for command lineage
-    LineageList commandLineage =
-      mySDFactory.newLineageList(LineageList.COMMAND);
-    commandLineage.add(myAgentName);
-    publishAdd(commandLineage);
+    // Add initial seed for command lineage?
+    boolean addSeed = true;
+    for (Iterator iterator = myLineageListWrapperSubscription.iterator();
+	 iterator.hasNext();) {
+      LineageListWrapper wrapper = (LineageListWrapper) iterator.next();
+      if (wrapper.getType() == LineageList.COMMAND) {
+	addSeed = false;
+	break;
+      }
+    }
+
+    if (addSeed) {
+      if (myLoggingService.isDebugEnabled()) {
+	myLoggingService.debug(getAgentIdentifier() + 
+			       " publishing initial command lineage.");
+      }
+
+      LineageList list = mySDFactory.newLineageList(LineageList.COMMAND);
+      list.add(myAgentName);
+      LineageListWrapper wrapper =
+	mySDFactory.newLineageListWrapper(list);
+      publishAdd(wrapper);
+    }
   }
 
   public void execute() {
@@ -178,7 +198,7 @@ public class LineagePlugin extends SimplePlugin
       updateSubordinates();
     }
 
-    if (myLineageListSubscription.hasChanged()) {
+    if (myLineageListWrapperSubscription.hasChanged()) {
       if (myLoggingService.isDebugEnabled()) {
 	myLoggingService.debug(myAgentName +
 			       " lineage list subscription has changed.");
@@ -189,9 +209,8 @@ public class LineagePlugin extends SimplePlugin
 
   protected void addSupportLineage(Task rfdTask) {
 
-    SupportLineageList supportLineage =
-      mySDFactory.newSupportLineageList();
-    supportLineage.add(myAgentName);
+    LineageList lineageList = mySDFactory.newLineageList(LineageList.SUPPORT);
+    lineageList.add(myAgentName);
 
     Asset superior =
       (Asset) findIndirectObject(rfdTask, Constants.Preposition.FOR);
@@ -199,15 +218,19 @@ public class LineagePlugin extends SimplePlugin
     // Okay to support oneself but don't add duplicate entries to the
     // lineage
     if (!myAgentName.equals(scaName)) {
-      supportLineage.add(superior.getClusterPG().getMessageAddress().toString());
+      lineageList.add(superior.getClusterPG().getMessageAddress().toString());
     }
 
-    publishAdd(supportLineage);
+    LineageListWrapper wrapper = 
+      mySDFactory.newLineageListWrapper(lineageList);
+    publishAdd(wrapper);
 
     if (myLoggingService.isDebugEnabled()) {
-      myLoggingService.debug("addSupportLineage: publishAdd of " +
-			     supportLineage.getUID());
+      myLoggingService.debug(getAgentIdentifier() + 
+			     "addSupportLineage: publishAdd of " +
+			     wrapper.getUID());
     }
+
   }
 
   protected void querySuperior(Task rfdTask) {
@@ -216,6 +239,12 @@ public class LineagePlugin extends SimplePlugin
     Asset superior = (Asset) findIndirectObject(rfdTask, Constants.Preposition.FOR);
     LineageListRelay relay =
       mySDFactory.newLineageListRelay(superior.getClusterPG().getMessageAddress());
+    if (myLoggingService.isDebugEnabled()) {
+      myLoggingService.debug(getAgentIdentifier() + 
+			     " querySuperior: publishAdd of " +
+			     relay.getUID());
+    }
+
     publishAdd(relay);
   }
 
@@ -223,45 +252,52 @@ public class LineagePlugin extends SimplePlugin
     for (Iterator relayListIterator = relay.getLineageLists().iterator();
 	 relayListIterator.hasNext();) {
       LineageList relayLineage = (LineageList) relayListIterator.next();
-      LineageList localLineage = null;
+      LineageListWrapper localLineageWrapper = null;
 
-      for (Iterator localListIterator = myLineageListSubscription.iterator();
+      for (Iterator localListIterator = myLineageListWrapperSubscription.iterator();
 	   localListIterator.hasNext();) {
-	LineageList lineage = (LineageList) localListIterator.next();
-	if (relayLineage.getType() == lineage.getType()) {
+        LineageListWrapper wrapper = 
+	  (LineageListWrapper) localListIterator.next();
+	if (relayLineage.getType() == wrapper.getType()) {
           if(relayLineage.getType() == LineageList.SUPPORT) {
-            if(lineage.getRoot().equals(relayLineage.getRoot())) {
-              localLineage = lineage;
+            if(wrapper.getRoot().equals(relayLineage.getRoot())) {
+              localLineageWrapper = wrapper;
               break;
             }
-          }
-          else {
-            localLineage = lineage;
+          } else {
+            localLineageWrapper = wrapper;
             break;
           }
 	}
       }
 
-      boolean existingLineage;
 
-      if (localLineage == null) {
-	localLineage =
-	  mySDFactory.newLineageList(relayLineage.getType());
-	existingLineage = false;
-      } else {
-	existingLineage = true;
-      }
-
-      // update localLineage
-      localLineage.clear();
+      LineageList localLineage = 
+	mySDFactory.newLineageList(relayLineage.getType());
       localLineage.add(myAgentName);
       localLineage.addAll(relayLineage);
 
 
-      if (existingLineage) {
-	publishChange(localLineage);
+      if (localLineageWrapper != null) {
+	localLineageWrapper.setLineageList(localLineage);
+
+	if (myLoggingService.isDebugEnabled()) {
+	  myLoggingService.debug(getAgentIdentifier() + 
+				 " updateLineage: publishChange of " +
+				 localLineageWrapper);
+	}
+
+	publishChange(localLineageWrapper);
       } else {
-	publishAdd(localLineage);
+	localLineageWrapper = mySDFactory.newLineageListWrapper(localLineage);
+
+	if (myLoggingService.isDebugEnabled()) {
+	  myLoggingService.debug(getAgentIdentifier() + 
+				 " updateLineage: publishAdd of " +
+				 localLineageWrapper);
+	}
+
+	publishAdd(localLineageWrapper);
       }
     }
   }
@@ -269,19 +305,27 @@ public class LineagePlugin extends SimplePlugin
   protected void updateSubordinate(LineageListRelay relay) {
     ArrayList lineageLists = new ArrayList();
 
-    for (Iterator iterator = myLineageListSubscription.iterator();
+    for (Iterator iterator = myLineageListWrapperSubscription.iterator();
 	 iterator.hasNext();) {
-      LineageList localLineage = (LineageList) iterator.next();
+      LineageList localLineage = 
+	(LineageList) ((LineageListWrapper) iterator.next()).getLineageList();
       lineageLists.add(mySDFactory.copyLineageList(localLineage));
       if (myLoggingService.isDebugEnabled()) {
 	myLoggingService.debug(myAgentName +
-			       ":updateSubordinates localLineage " +
+			       ":updateSubordinate localLineage " +
 			       localLineage +
 			       " type: " + localLineage.getClass());
      }
     }
 
     relay.setLineageLists(lineageLists);
+
+
+    if (myLoggingService.isDebugEnabled()) {
+      myLoggingService.debug(getAgentIdentifier() + 
+			     " updateSubordinate: publishChange of " +
+			     relay.getUID());
+    }
 
     publishChange(relay);
   }

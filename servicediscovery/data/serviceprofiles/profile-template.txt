@@ -7,7 +7,7 @@
   <!ENTITY service "http://www.daml.org/services/daml-s/2001/10/Service.daml">
   <!ENTITY profile "http://www.daml.org/services/daml-s/2001/10/Profile.daml"> 
   <!ENTITY xsd "http://www.w3.org/2000/10/XMLSchema.xsd">
-  <!ENTITY cougaar "%FULL_COUGAAR_DAML_FILEPATH%">
+  <!ENTITY cougaar "http://cougaar.daml">
 ]>
  
 <rdf:RDF
@@ -21,9 +21,9 @@
   xmlns:cougaar= "&cougaar;#">
 
 
-  <daml:Ontology about="">
+  <daml:Ontology rdf:about="">
     <daml:versionInfo>
-      $Id: profile-template.txt,v 1.4 2003-03-25 14:57:37 ngivler Exp $
+      $Id: profile-template.txt,v 1.5 2003-10-22 16:21:56 ahelsing Exp $
     </daml:versionInfo>
     <rdfs:comment>
       DAML-S service profile for %AGENT_NAME%

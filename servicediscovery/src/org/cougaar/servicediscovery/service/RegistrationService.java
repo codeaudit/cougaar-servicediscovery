@@ -23,6 +23,7 @@
 package org.cougaar.servicediscovery.service;
 
 import org.cougaar.core.component.Service;
+
 import org.cougaar.servicediscovery.description.ProviderDescription;
 import org.cougaar.servicediscovery.description.ServiceProfile;
 
@@ -33,27 +34,21 @@ import java.util.Collection;
  * the ability to register agent services with the Service Discovery
  * Mechanism.
  */
-public interface RegistrationService extends Service {
+public interface RegistrationService extends Service, YPServiceAdapter {
 
   /**
    * Registers a Service Provider with the Name Service.
    * @return   True if operation was successful
    */
+  void addProviderDescription(Object ypContext, ProviderDescription pd, Callback callback);
+  void addProviderDescription(Object ypContext, ProviderDescription pd, Collection additionalServiceClassifications, Callback callback);
 
-  boolean addProviderDescription(ProviderDescription pd);
-  boolean addProviderDescription(ProviderDescription pd, Collection additionalServiceClassifications);
-
-  boolean updateProviderDescription(String providerKey, ProviderDescription pd);
-
-  boolean deleteProviderDescription(String providerKey);
-
-  boolean addServiceDescription(String providerKey, ServiceProfile sd);
-
-  boolean updateServiceDescription(String providerName, Collection serviceCategories);
+  void updateServiceDescription(Object ypContext, String providerName, Collection serviceCategories, Callback callback);
 
   //perhaps second parameter should correspond to service name directly?
-  boolean deleteServiceDescription(String providerName, Collection serviceCategories);
-
-  ProviderDescription getProviderDescription(Object key);
+  void deleteServiceDescription(Object ypContext, String providerName, Collection serviceCategories, Callback callback);
 }
+
+
+
 
