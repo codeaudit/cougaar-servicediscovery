@@ -4,9 +4,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 
-import org.cougaar.util.MutableTimeSpan;
-import org.cougaar.util.log.Logger;
-import org.cougaar.util.log.Logging;
+import org.cougaar.util.TimeSpan;
+import org.cougaar.util.TimeSpans;
 
 /**
  * <p>Title: </p>
@@ -15,16 +14,17 @@ import org.cougaar.util.log.Logging;
  * <p>Company: </p>
  */
 
-public class TimeInterval extends MutableTimeSpan {
-  private static Logger logger = Logging.getLogger(TimeInterval.class);
+/** Collection of utility methods for manipulation and 
+ * construction of TimeSpan objects.
+ **/
+public abstract class TimeInterval {
 
-  public TimeInterval(long start, long end) {
-    super();
-    setTimeSpan(start, end);
-  }
+  /** make uninstantiable **/
+  private TimeInterval() {}
   
-  
-  public static Collection removeInterval(TimeInterval interval, Collection desiredCoverageIntervals) {
+  /** Removes specified TimeSpan interval from a Collection of TimeSpans **/
+  public static Collection removeInterval(TimeSpan interval, 
+					  Collection desiredCoverageIntervals) {
 
     if (interval == null) {
       return desiredCoverageIntervals;
@@ -33,37 +33,38 @@ public class TimeInterval extends MutableTimeSpan {
     ArrayList ret = new ArrayList();
     for (Iterator it = desiredCoverageIntervals.iterator(); 
 	 it.hasNext();) {
-      TimeInterval current = (TimeInterval) it.next();
-      ret.addAll(current.subtractInterval(interval));
+      TimeSpan current = (TimeSpan) it.next();
+      ret.addAll(removeInterval(interval, current));
     }
     return ret;
   }
   
-  public Collection subtractInterval(TimeInterval interval) {
+  /** Removes specified TimeSpan interval from a TimeSpan **/
+  public static Collection removeInterval(TimeSpan interval, TimeSpan current) {
     ArrayList ret = new ArrayList();
 
     if (interval == null) {
-      ret.add(this);
+      ret.add(current);
       return ret;
     }
 
     //intervals are not overlapping
     //this      ******
     //interval           *****
-    if(this.getStartTime() < interval.getStartTime() &&
-       this.getEndTime() < interval.getEndTime() &&
-       this.getEndTime() <= interval.getStartTime()) {
-      ret.add(this);
+    if(current.getStartTime() < interval.getStartTime() &&
+       current.getEndTime() < interval.getEndTime() &&
+       current.getEndTime() <= interval.getStartTime()) {
+      ret.add(current);
       return ret;
     }
 
     //intervals are not overlapping
     //this             ******
     //interval *****
-    if(interval.getStartTime() < this.getStartTime() &&
-       interval.getEndTime() < this.getEndTime() &&
-       interval.getEndTime() <= this.getStartTime()) {
-      ret.add(this);
+    if(interval.getStartTime() < current.getStartTime() &&
+       interval.getEndTime() < current.getEndTime() &&
+       interval.getEndTime() <= current.getStartTime()) {
+      ret.add(current);
       return ret;
     }
     
@@ -71,8 +72,8 @@ public class TimeInterval extends MutableTimeSpan {
     //return empty
     //this       ****
     //interval  *******
-    if(interval.getStartTime() <= this.getStartTime() &&
-	    interval.getEndTime() >= this.getEndTime()) {
+    if(interval.getStartTime() <= current.getStartTime() &&
+	    interval.getEndTime() >= current.getEndTime()) {
       return ret;
     }
     
@@ -80,14 +81,14 @@ public class TimeInterval extends MutableTimeSpan {
     //return 0 or 1 or 2 time intervals
     //this     *********
     //interval    ****
-    if(this.getStartTime() <= interval.getStartTime() &&
-       this.getEndTime() >= interval.getEndTime()) {
+    if(current.getStartTime() <= interval.getStartTime() &&
+       current.getEndTime() >= interval.getEndTime()) {
       
-      if(this.getStartTime() < interval.getStartTime()) {
-	ret.add(new TimeInterval(this.getStartTime(), interval.getStartTime()));
+      if(current.getStartTime() < interval.getStartTime()) {
+	ret.add(TimeSpans.getSpan(current.getStartTime(), interval.getStartTime()));
       }
-      if(this.getEndTime() > interval.getEndTime()) {
-	ret.add(new TimeInterval(interval.getEndTime(), this.getEndTime()));
+      if(current.getEndTime() > interval.getEndTime()) {
+	ret.add(TimeSpans.getSpan(interval.getEndTime(), current.getEndTime()));
       }
       return ret;
     }
@@ -96,10 +97,10 @@ public class TimeInterval extends MutableTimeSpan {
     //return 1 time interval
     //this   ******
     //inteval    *****
-    if(this.getStartTime() <= interval.getStartTime() &&
-       this.getEndTime() <= interval.getEndTime() &&
-       interval.getStartTime() < this.getEndTime()) {
-      ret.add(new TimeInterval(this.getStartTime(), interval.getStartTime()));
+    if(current.getStartTime() <= interval.getStartTime() &&
+       current.getEndTime() <= interval.getEndTime() &&
+       interval.getStartTime() < current.getEndTime()) {
+      ret.add(TimeSpans.getSpan(current.getStartTime(), interval.getStartTime()));
       return ret;
     }
 
@@ -107,18 +108,13 @@ public class TimeInterval extends MutableTimeSpan {
     //return 1 time interval
     //this       ******
     //inteval  *****
-    if(interval.getStartTime() <= this.getStartTime() &&
-       interval.getEndTime() <= this.getEndTime() &&
-       this.getStartTime() < interval.getEndTime()) {
-      ret.add(new TimeInterval(interval.getEndTime(), this.getEndTime()));
+    if(interval.getStartTime() <= current.getStartTime() &&
+       interval.getEndTime() <= current.getEndTime() &&
+       current.getStartTime() < interval.getEndTime()) {
+      ret.add(TimeSpans.getSpan(interval.getEndTime(), current.getEndTime()));
       return ret;
     }
 
-    logger.warn("subtractInterval: unable to subtract Start:" + 
-		interval.getStartTime() + " - End:" +
-		interval.getEndTime() + 
-		" from Start:" + this.getStartTime() +
-		" - End:" + this.getEndTime());
     return null;
   }
 }

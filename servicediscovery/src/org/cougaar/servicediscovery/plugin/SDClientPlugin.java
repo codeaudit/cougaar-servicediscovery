@@ -71,7 +71,6 @@ import org.cougaar.servicediscovery.description.ServiceDescription;
 import org.cougaar.servicediscovery.description.ServiceInfoScorer;
 import org.cougaar.servicediscovery.description.ServiceRequest;
 import org.cougaar.servicediscovery.description.ServiceRequestImpl;
-import org.cougaar.servicediscovery.description.TimeInterval;
 import org.cougaar.servicediscovery.transaction.MMQueryRequest;
 import org.cougaar.servicediscovery.transaction.ServiceContractRelay;
 import org.cougaar.servicediscovery.util.UDDIConstants;
@@ -80,6 +79,7 @@ import org.cougaar.util.MutableTimeSpan;
 import org.cougaar.util.NonOverlappingTimeSpanSet;
 import org.cougaar.util.PropertyParser;
 import org.cougaar.util.TimeSpan;
+import org.cougaar.util.TimeSpans;
 import org.cougaar.util.TimeSpanSet;
 import org.cougaar.util.UnaryPredicate;
 
@@ -97,10 +97,10 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
     "org.cougaar.servicediscovery.plugin.ClientGracePeriod"; 
   private long myWarningCutoffTime = -1;
 
-  private static MutableTimeSpan DEFAULT_TIME_SPAN = new MutableTimeSpan();
+  private static TimeSpan DEFAULT_TIME_SPAN;
   static {
-    DEFAULT_TIME_SPAN.setTimeSpan(SDFactory.DEFAULT_START_TIME,
-				  SDFactory.DEFAULT_END_TIME);
+    DEFAULT_TIME_SPAN = TimeSpans.getSpan(SDFactory.DEFAULT_START_TIME,
+					  SDFactory.DEFAULT_END_TIME);
   }
 
 
@@ -317,7 +317,7 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
    * serviceDescription for the specified time interval.
    */
   protected void requestServiceContract(ServiceDescription serviceDescription,
-                                        TimeInterval interval) {
+                                        TimeSpan interval) {
     Role role = getRole(serviceDescription);
     if (role == null) {
       if (myLoggingService.isWarnEnabled()) {
@@ -413,9 +413,9 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
   protected TimeSpan getOPCONTimeSpan() {
     if ((getOPCONSchedule().first() != null) &&
 	(getOPCONSchedule().last() != null)) {
-      MutableTimeSpan opconTimeSpan = new MutableTimeSpan();
-      opconTimeSpan.setTimeSpan(((TimeSpan) getOPCONSchedule().first()).getStartTime(),
-				((TimeSpan) getOPCONSchedule().last()).getEndTime());
+      TimeSpan opconTimeSpan = 
+	TimeSpans.getSpan(((TimeSpan) getOPCONSchedule().first()).getStartTime(),
+			  ((TimeSpan) getOPCONSchedule().last()).getEndTime());
       return opconTimeSpan;
     } else {
       return DEFAULT_TIME_SPAN;
@@ -661,7 +661,7 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
 	//request a contract
 	for (Iterator neededIntervals = intervals.iterator();
 	     neededIntervals.hasNext();) {
-	  TimeInterval currentInterval = (TimeInterval) neededIntervals.next();
+	  TimeSpan currentInterval = (TimeSpan) neededIntervals.next();
 	  
 	  boolean madeNewRequest = false;
 	  int numProviderFound = 0;
@@ -723,7 +723,7 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
    */
   protected boolean alreadyAskedForContractWithProvider(Role role, 
                                                         String providerName,
-                                                        TimeInterval timeInterval) {
+                                                        TimeSpan timeSpan) {
     for (Iterator relayIterator = myServiceContractRelaySubscription.iterator();
          relayIterator.hasNext();) {
       ServiceContractRelay relay =
@@ -734,7 +734,7 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
 	// Did we ask for the same time period?
 	TimeSpan requestedTimeSpan = 
 	  mySDFactory.getTimeSpanFromPreferences(relay.getServiceRequest().getServicePreferences());
-	return (requestedTimeSpan.equals(timeInterval));
+	return (requestedTimeSpan.equals(timeSpan));
       }
     }
     return false;
@@ -743,7 +743,8 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
   /**
    * Log a warning that you couldn't find a provider for this option
    */
-  protected void handleRequestWithNoRemainingProviderOption(Role role, TimeInterval currentInterval) {
+  protected void handleRequestWithNoRemainingProviderOption(Role role, 
+							    TimeSpan currentInterval) {
     //this means you have a time interval where you have exhausted all possible
     //providers. Log a warning.
     if (myLoggingService.isWarnEnabled()) {
@@ -764,9 +765,9 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
       long desiredStart, long desiredEnd, Role role) {
 
     ArrayList ret = new ArrayList();
-    TimeInterval timeInterval = new TimeInterval(desiredStart, desiredEnd);
-    if (!checkProviderCompletelyRequested(role, timeInterval)) {
-      ret.add(timeInterval);
+    TimeSpan timeSpan = TimeSpans.getSpan(desiredStart, desiredEnd);
+    if (!checkProviderCompletelyRequested(role, timeSpan)) {
+      ret.add(timeSpan);
     }
     return ret;
   }
@@ -1431,7 +1432,7 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
 	
 	
 	Collection timeSpanPreferences = null;
-	MutableTimeSpan newRequestTimeSpan = null;
+	TimeSpan newRequestTimeSpan = null;
 	
 	long currentLatest = TimeSpan.MAX_VALUE;
 	
@@ -1454,9 +1455,8 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
 	    }
 	    
 	    //change pref/, end time = currentTimeSpan.getStartTime();
-	    newRequestTimeSpan = new MutableTimeSpan();
-	    newRequestTimeSpan.setTimeSpan(requestTimeSpan.getStartTime(),
-					   currentLatest);
+	    newRequestTimeSpan = TimeSpans.getSpan(requestTimeSpan.getStartTime(),
+						   currentLatest);
 	    timeSpanPreferences = 
 	      mySDFactory.createTimeSpanPreferences(newRequestTimeSpan);
 	    break;
@@ -1476,9 +1476,8 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
 	      }
 	      
 	      //change pref/, end time = currentTimeSpan.getStartTime();
-	      newRequestTimeSpan = new MutableTimeSpan();
-	      newRequestTimeSpan.setTimeSpan(requestTimeSpan.getStartTime(),
-					     currentTimeSpan.getStartTime());
+	      newRequestTimeSpan = TimeSpans.getSpan(requestTimeSpan.getStartTime(),
+						     currentTimeSpan.getStartTime());
 
 		timeSpanPreferences = 
 		  mySDFactory.createTimeSpanPreferences(newRequestTimeSpan);
