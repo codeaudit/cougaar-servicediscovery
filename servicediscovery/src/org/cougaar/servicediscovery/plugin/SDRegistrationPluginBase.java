@@ -380,6 +380,16 @@ public abstract class SDRegistrationPluginBase extends ComponentPlugin {
 
   private boolean quiescentState = false;
 
+  private boolean reregistrationKludgeNeeded(Task task) {
+    PlanElement pe = task.getPlanElement();
+    // BOZO - special rehydration kludge for quiesence monitor.
+    // Plugin will reregister because it doesn't know whether the previous
+    // registration exists but we don't want to perturb quiescence.
+    return ((rehydrated) && 
+	    (pe != null) &&
+	    (pe.getEstimatedResult().getConfidenceRating() == 1.0));
+  }
+
   protected void updateQuiescenceService() {
     if (quiescenceReportService != null) {
       if (registrationComplete()) {
@@ -390,14 +400,34 @@ public abstract class SDRegistrationPluginBase extends ComponentPlugin {
 	  quiescentState = true;
 	}
       } else {
-	// May be waiting on a callback or a community or an SCA. Say not Q
-	quiescenceReportService.clearQuiescentState();
-	if (log.isInfoEnabled()) {
-	  if (quiescentState == true) {
-	    log.info(getAgentIdentifier() + " toggling quiescent state from true to false.");
-	    quiescentState = false;
+	for (Iterator iterator = registerTaskSubscription.iterator();
+	     iterator.hasNext();) {
+	  Task task = (Task) iterator.next();
+
+	  if (!reregistrationKludgeNeeded(task)) {
+	    // May be waiting on a callback or a community or an SCA. Say not Q
+	    quiescenceReportService.clearQuiescentState();
+	    if (log.isInfoEnabled()) {
+	      if (quiescentState == true) {
+		log.info(getAgentIdentifier() + " toggling quiescent state from true to false.");
+		quiescentState = false;
+	      }
+	      log.info(getAgentIdentifier() + " waiting to complete registration - not quiescent.");
+	    }
+	    return;
 	  }
-	  log.info(getAgentIdentifier() + " waiting to complete registration - not quiescent.");
+	}
+	
+	// Getting here means that all the registerTasks require the 
+	// reregistation kludge -  special 'fix' for quiesence
+	// monitor. Plugin will reregister on rehydration because it doesn't
+	// know whether the previous registration still exists but we don't 
+	// want to perturb quiescence state.
+	if (log.isInfoEnabled()) {
+	    log.info(getAgentIdentifier() + 
+		     ": updateQuiescenceService() " +
+		     " setting quiescent state even though reregistration " +
+		     " after rehydration is not complete.");
 	}
       }
     }
@@ -413,21 +443,18 @@ public abstract class SDRegistrationPluginBase extends ComponentPlugin {
       Task task = (Task) iterator.next();
       PlanElement pe = task.getPlanElement();
       double conf;
-      if (isProvider() && !registrationComplete()) {
+      if (!registrationComplete()) {
 	// BOZO - special rehydration kludge for quiesence monitor.
 	// Plugin will reregister because it doesn't know whether the previous
 	// registration exists but does not downgrade the confidence as the  
 	// change would propagate via GLSExpander back to NCA. 
-	if ((rehydrated) && 
-	    (pe != null) &&
-	    (pe.getEstimatedResult().getConfidenceRating() == 1.0)) {
+	if (reregistrationKludgeNeeded(task)) {
 	  if (log.isWarnEnabled()) {
 	    log.warn(getAgentIdentifier() + 
 		     ": updateRegisterTaskDisposition() " +
 		     "leaving confidence at 1.0 after rehydration even though " +
 		     "reregistration is not complete.");
 	  }
-
 	  conf = 1.0;
 	} else {
 	  if ((pe != null) &&
