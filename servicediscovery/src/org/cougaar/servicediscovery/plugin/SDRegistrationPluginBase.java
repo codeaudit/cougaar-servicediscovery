@@ -264,7 +264,7 @@ public abstract class SDRegistrationPluginBase extends ComponentPlugin {
   /* Returns null if unable to parse the provider description */
   protected  ProviderDescription getPD() {
     if (provD == null) {
-      ProviderDescription pd = new ProviderDescriptionImpl(log);
+      ProviderDescription pd = new ProviderDescriptionImpl();
       try {
 	boolean ok = pd.parseDAML(getAgentIdentifier() + DAML_IDENTIFIER);
 
