@@ -77,19 +77,19 @@ import org.uddi4j.util.KeyedReference;
  *
  * @see RegistrationService
  */
-
-// why is this a plugin?? it doesn't use the blackboard!
 public final class UDDI4JRegistrationServiceComponent
   extends ComponentPlugin
 {
+  // why is this a plugin?? it doesn't use the blackboard!
+
   private static Logger staticLogger = 
-        Logging.getLogger(UDDI4JRegistrationServiceComponent.class);
+    Logging.getLogger(UDDI4JRegistrationServiceComponent.class);
 
 
   /**  Cougaar service used for logging **/
-  private LoggingService log;
+  private LoggingService ursclog;
   public void setLoggingService(LoggingService ls) {
-    log = ((ls==null)?LoggingService.NULL:ls); 
+    ursclog = ((ls==null)?LoggingService.NULL:ls); 
   }
 
   private YPService ypService;
@@ -153,12 +153,19 @@ public final class UDDI4JRegistrationServiceComponent
 
   private class RegistrationServiceImpl extends UDDI4JUtility implements RegistrationService {
 
+    public RegistrationServiceImpl() { 
+      super(UDDI4JRegistrationServiceComponent.this.ursclog, 
+            UDDI4JRegistrationServiceComponent.this.ypService,
+            UDDI4JRegistrationServiceComponent.this.threads);
+    }
+
     private YPProxy makeProxy(Object ypContext) {
       YPProxy proxy = null;
 
       if (ypContext == null) {
 	proxy = ypService.getYP();
       } else if (ypContext instanceof String) {
+	// Treat this as the name of an Agent.
 	proxy = ypService.getYP((String) ypContext);
       } else if (ypContext instanceof MessageAddress) {
 	proxy = ypService.getYP((MessageAddress) ypContext);
@@ -173,12 +180,6 @@ public final class UDDI4JRegistrationServiceComponent
       return proxy;
     }
 
-    public RegistrationServiceImpl() { 
-      super(UDDI4JRegistrationServiceComponent.this.log, 
-            UDDI4JRegistrationServiceComponent.this.ypService,
-            UDDI4JRegistrationServiceComponent.this.threads);
-    }
-
     //
     // Implement the registrationservice api
     //
@@ -191,16 +192,19 @@ public final class UDDI4JRegistrationServiceComponent
 			     callback);
     }
 
+    ////// inner-classes follow
+    // Before each one is the single method (of RegistrationServiceImpl) that uses the inner class
 
+    // This is the base for all the other inner classes
     private class SMBase extends YPStateMachine {
       protected final Object ypContext;
       protected final Callback callback;
 
       public SMBase(Object ypContext, Callback callback) {
         super(
-          ypService,
-          makeProxy(ypContext),
-          UDDI4JRegistrationServiceComponent.this.threads);
+	      ypService,
+	      makeProxy(ypContext),
+	      UDDI4JRegistrationServiceComponent.this.threads);
 	this.ypContext = ypContext;
         this.callback = callback;
       }
@@ -226,7 +230,7 @@ public final class UDDI4JRegistrationServiceComponent
 	Frame f = super.popFrame();
 	if (staticLogger.isInfoEnabled()) {
 	  staticLogger.info(this.toString()+
-		      " StateMachine pop("+stackSize()+") backto "+
+			    " StateMachine pop("+stackSize()+") backto "+
                             f.getReturnTag() /*, new Throwable()*/ );
 	}
 	return f;
@@ -250,7 +254,7 @@ public final class UDDI4JRegistrationServiceComponent
 	State s2 = getState();
 	if (staticLogger.isInfoEnabled()) {
 	  staticLogger.info(this.toString()+" StateMachine stepped from "+s1+" to "+s2+
-		   " progress="+b );
+			    " progress="+b );
 	}
 	return b;
       }
@@ -262,7 +266,7 @@ public final class UDDI4JRegistrationServiceComponent
 ));
 	}
       }
-    }
+    } // end of SMBase
     
 
     /**
@@ -306,19 +310,19 @@ public final class UDDI4JRegistrationServiceComponent
         super.init();
 
 
-      addLink("YPError", "handleYPError");
-      add(new SState("handleYPError") {
-	public void invoke() {
-	  callback.handle((Exception) getVar("YPErrorException"));
-	}
-      });
+	addLink("YPError", "handleYPError");
+	add(new SState("handleYPError") {
+	    public void invoke() {
+	      callback.handle((Exception) getVar("YPErrorException"));
+	    }
+	  });
 
         addLink("START", "getToken");
         add(new SState("getToken") {
             public void invoke() { 
 	      call("getAuthToken", null, "gotToken");
 	    }
-	});
+	  });
 
         addLink("gotToken","initBag");
 
@@ -333,19 +337,19 @@ public final class UDDI4JRegistrationServiceComponent
         add(new SState("initBag.Loop") { public void invoke() {
           final BusinessCategory bc = (BusinessCategory) getArgument();
           Callback cb = new Callback() {
-            public void invoke(Object o) {
-              KeyedReference kr = (KeyedReference) o;
-              bzBag.getKeyedReferenceVector().add(kr);
-              callReturn(null);
-              kick();
-            }
-            public void handle(Exception e) {
-              log.error("initBag.Loop.getKeyedReference(" + bc + ")",
-                e);
-              //transit("ERROR");
-              callback.handle(e);
-            }
-          };
+	      public void invoke(Object o) {
+		KeyedReference kr = (KeyedReference) o;
+		bzBag.getKeyedReferenceVector().add(kr);
+		callReturn(null);
+		kick();
+	      }
+	      public void handle(Exception e) {
+		log.error("initBag.Loop.getKeyedReference(" + bc + ")",
+			  e);
+		//transit("ERROR");
+		callback.handle(e);
+	      }
+	    };
           getKeyedReference(getYPProxy(),
 			    bc.getCategorySchemeName(),
                             bc.getCategoryName(), 
@@ -382,19 +386,19 @@ public final class UDDI4JRegistrationServiceComponent
           setVar("sc", sc);
           final CategoryBag categoryBag = (CategoryBag) getVar("categoryBag");
           Callback cb = new Callback() {
-            public void invoke(Object o) {
-              KeyedReference kr = (KeyedReference) o;
-              categoryBag.getKeyedReferenceVector().add(kr);
-              transit("ibsl_sub1a");
-              kick();
-            }
-            public void handle(Exception e) {
-              log.error("ibsl_sub1.getKeyedReference(" + sc + ")",
-                e);
-              //transit("ERROR");
-              callback.handle(e);
-            }
-          };
+	      public void invoke(Object o) {
+		KeyedReference kr = (KeyedReference) o;
+		categoryBag.getKeyedReferenceVector().add(kr);
+		transit("ibsl_sub1a");
+		kick();
+	      }
+	      public void handle(Exception e) {
+		log.error("ibsl_sub1.getKeyedReference(" + sc + ")",
+			  e);
+		//transit("ERROR");
+		callback.handle(e);
+	      }
+	    };
           getKeyedReference(getYPProxy(),
 			    sc.getCategorySchemeName(), 
                             sc.getCategoryName(),
@@ -413,17 +417,17 @@ public final class UDDI4JRegistrationServiceComponent
           final ServiceCategory sc = (ServiceCategory) getVar("sc");
           final CategoryBag categoryBag = (CategoryBag) getVar("categoryBag");
           Callback cb = new Callback() {
-                              public void invoke(Object o) {
-                                KeyedReference kr = (KeyedReference) o;
-                                categoryBag.getKeyedReferenceVector().add(kr);
-                                callReturn(null);
-                                kick();
-                              }
-                              public void handle(Exception e) {
-                                log.error("ibsl_sub2.getKeyedReference("+sc+")", e);
+	      public void invoke(Object o) {
+		KeyedReference kr = (KeyedReference) o;
+		categoryBag.getKeyedReferenceVector().add(kr);
+		callReturn(null);
+		kick();
+	      }
+	      public void handle(Exception e) {
+		log.error("ibsl_sub2.getKeyedReference("+sc+")", e);
                                 //transit("ERROR");
-                                callback.handle(e);
-                              }};
+		callback.handle(e);
+	      }};
           getKeyedReference(getYPProxy(),
 			    sc.getCategorySchemeName(),
                             aqr.getQualificationName(),
@@ -447,18 +451,18 @@ public final class UDDI4JRegistrationServiceComponent
           final ServiceClassification sc = (ServiceClassification) getArgument();
           final CategoryBag categoryBag = (CategoryBag) getVar("categoryBag");
           Callback cb = new Callback() {
-            public void invoke(Object o) {
-              KeyedReference kr = (KeyedReference) o;
-              categoryBag.getKeyedReferenceVector().add(kr);
-              callReturn(null);
-              kick();
-            }
-            public void handle(Exception e) {
-              log.error("ibsl_sub3.getKeyedReference(" + sc + ")", e);
-              //transit("ERROR");
-              callback.handle(e);
-            }
-          };
+	      public void invoke(Object o) {
+		KeyedReference kr = (KeyedReference) o;
+		categoryBag.getKeyedReferenceVector().add(kr);
+		callReturn(null);
+		kick();
+	      }
+	      public void handle(Exception e) {
+		log.error("ibsl_sub3.getKeyedReference(" + sc + ")", e);
+		//transit("ERROR");
+		callback.handle(e);
+	      }
+	    };
           getKeyedReference(getYPProxy(),
 			    sc.getClassificationSchemeName(),
                             sc.getClassificationName(),
@@ -478,24 +482,24 @@ public final class UDDI4JRegistrationServiceComponent
             bSvc.setDefaultDescriptionString(sd.getTextDescription());
           }
           Callback cb = new Callback() {
-            public void invoke(Object o) {
-              TModelInstanceDetails tModelInstanceDetails =
-                (TModelInstanceDetails) o;
-              BindingTemplates bindings =
-                createBindingTemplates(
-                  sd.getServiceGroundingURI(),
-                  tModelInstanceDetails);
-              bSvc.setBindingTemplates(bindings);
-              services.add(bSvc);
-              callReturn(null); // return back to initBS
-              kick();
-            }
-            public void handle(Exception e) {
-              log.error("ibsl_1c.createTModelInstance", e);
-              //transit("ERROR");
-              callback.handle(e);
-            }
-          };
+	      public void invoke(Object o) {
+		TModelInstanceDetails tModelInstanceDetails =
+		  (TModelInstanceDetails) o;
+		BindingTemplates bindings =
+		  createBindingTemplates(
+					 sd.getServiceGroundingURI(),
+					 tModelInstanceDetails);
+		bSvc.setBindingTemplates(bindings);
+		services.add(bSvc);
+		callReturn(null); // return back to initBS
+		kick();
+	      }
+	      public void handle(Exception e) {
+		log.error("ibsl_1c.createTModelInstance", e);
+		//transit("ERROR");
+		callback.handle(e);
+	      }
+	    };
           createTModelInstance(getYPProxy(),
 			       sd.getServiceGroundingBindingType(),
                                pd.getProviderName(),
@@ -532,7 +536,7 @@ public final class UDDI4JRegistrationServiceComponent
             }
           });
       }
-    }
+    } // end of PublishSM definition
 
 
     /**
@@ -547,6 +551,7 @@ public final class UDDI4JRegistrationServiceComponent
 		    serviceCategories, 
 		    callback)).start();
     }
+
     private class UpdateSM extends SMBase {
       final String providerName;
       final Collection serviceCategories;
@@ -628,18 +633,18 @@ public final class UDDI4JRegistrationServiceComponent
               if (iter.hasNext()) {
                 final ServiceClassification sc = (ServiceClassification) iter.next();
                 Callback cb = new Callback() {
-                  public void invoke(Object o) {
-                    KeyedReference kr = (KeyedReference) o;
-                    updateBag.getKeyedReferenceVector().add(kr);
-                    transit("initBagLoop");
-                    kick();
-                  }
-                  public void handle(Exception e) {
-                    log.error("initBagLoop.getKeyedReference(" + sc + ")", e);
-                    //transit("ERROR");
-                    callback.handle(e);
-                  }
-                };
+		    public void invoke(Object o) {
+		      KeyedReference kr = (KeyedReference) o;
+		      updateBag.getKeyedReferenceVector().add(kr);
+		      transit("initBagLoop");
+		      kick();
+		    }
+		    public void handle(Exception e) {
+		      log.error("initBagLoop.getKeyedReference(" + sc + ")", e);
+		      //transit("ERROR");
+		      callback.handle(e);
+		    }
+		  };
                 getKeyedReference(getYPProxy(),
 				  sc.getClassificationSchemeName(),
                                   sc.getClassificationName(),
@@ -692,8 +697,8 @@ public final class UDDI4JRegistrationServiceComponent
             }
           });
 
-      }
-    }
+      } // end of init()
+    } // end of UpdateSM definition
 
     /**
      * @param callback Callback.invoke(Boolean) true IFF success.
@@ -749,18 +754,18 @@ public final class UDDI4JRegistrationServiceComponent
               if (iter.hasNext()) {
                 final ServiceClassification sc = (ServiceClassification) iter.next();
                 Callback cb = new Callback() {
-                  public void invoke(Object o) {
-                    KeyedReference kr = (KeyedReference) o;
-                    bag.getKeyedReferenceVector().add(kr);
-                    transit("initBagLoop");
-                    kick();
-                  }
-                  public void handle(Exception e) {
-                    log.error("initBagLoop.getKeyedReference(" + sc + ")", e);
-                    //transit("ERROR");
-                    callback.handle(e);
-                  }
-                };
+		    public void invoke(Object o) {
+		      KeyedReference kr = (KeyedReference) o;
+		      bag.getKeyedReferenceVector().add(kr);
+		      transit("initBagLoop");
+		      kick();
+		    }
+		    public void handle(Exception e) {
+		      log.error("initBagLoop.getKeyedReference(" + sc + ")", e);
+		      //transit("ERROR");
+		      callback.handle(e);
+		    }
+		  };
                 getKeyedReference(getYPProxy(),
 				  sc.getClassificationSchemeName(),
                                   sc.getClassificationName(),
@@ -841,9 +846,9 @@ public final class UDDI4JRegistrationServiceComponent
               call("discardAuthToken", null, "DONE");
             }
           });
-      }
-    }
-  }
+      } // end of init()
+    } // end of DeleteSM defi
+  } // end of RegistrationServiceImpl def
 }
 
 
