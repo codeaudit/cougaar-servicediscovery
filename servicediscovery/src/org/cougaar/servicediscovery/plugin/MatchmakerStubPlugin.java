@@ -57,7 +57,7 @@ import org.cougaar.util.UnaryPredicate;
  * Query the YellowPages for possible service providers
  *
  */
-public final class MatchmakerStubPlugin extends SimplePlugin {
+public class MatchmakerStubPlugin extends SimplePlugin {
   private static int WARNING_SUPPRESSION_INTERVAL = 2;
   private long warningCutoffTime = 0;
   private static final String QUERY_GRACE_PERIOD_PROPERTY = 
