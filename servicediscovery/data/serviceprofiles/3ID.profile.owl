@@ -1,0 +1,80 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<!DOCTYPE uridef[
+  <!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns">
+  <!ENTITY rdfs "http://www.w3.org/2000/01/rdf-schema">
+  <!ENTITY owl "http://www.w3.org/2002/07/owl">
+  <!ENTITY xsd "http://www.w3.org/2000/10/XMLSchema">
+  <!ENTITY service "http://www.daml.org/services/owl-s/1.0/Service.owl">
+  <!ENTITY process "http://www.daml.org/services/owl-s/1.0/Process.owl">
+  <!ENTITY profile "http://www.daml.org/services/owl-s/1.0/Profile.owl">
+  <!ENTITY cougaar "http://cougaar.owl">
+]>
+ 
+<rdf:RDF
+  xmlns:rdf = "&rdf;#"
+  xmlns:rdfs ="&rdfs;#"
+  xmlns:owl = "&owl;#"
+  xmlns:service = "&service;#"
+  xmlns:profile= "&profile;#"
+  xmlns:xsd = "&xsd;#"
+  xmlns:cougaar = "&cougaar;#">
+
+
+  <owl:Ontology rdf:about="">
+    <owl:versionInfo>
+      $Id: 3ID.profile.owl,v 1.1 2004-12-09 19:35:35 ngivler Exp $
+    </owl:versionInfo>
+    <rdfs:comment>
+      OWL service profile for 3ID
+ 
+    </rdfs:comment>
+    <owl:imports rdf:resource="&rdf;" />
+    <owl:imports rdf:resource="&owl;" />
+    <owl:imports rdf:resource="&service;" />
+    <owl:imports rdf:resource="&profile;" />
+    <owl:imports rdf:resource="&cougaar;" />
+  </owl:Ontology>
+
+  <service:Service rdf:ID="A_3ID">
+    <service:presents rdf:resource="#A_3ID_Profile"/>
+    <service:supports rdf:resource="#A_3ID_Grounding"/>
+  </service:Service>
+
+  <cougaar:ServiceProfile rdf:ID="A_3ID_Profile">
+    <service:isPresentedBy rdf:resource="#A_3ID"/>
+    <cougaar:serviceCategory>
+    <cougaar:ServiceCategory>
+      <cougaar:serviceCategoryName>Division</cougaar:serviceCategoryName>
+      <cougaar:serviceCategoryCode>Division</cougaar:serviceCategoryCode>
+      <cougaar:serviceNamingScheme>MilitaryEchelonScheme</cougaar:serviceNamingScheme>
+
+    </cougaar:ServiceCategory>	
+    </cougaar:serviceCategory>
+    <cougaar:serviceCategory>
+    <cougaar:ServiceCategory>
+      <cougaar:serviceCategoryName>StrategicTransportationProvider</cougaar:serviceCategoryName>
+      <cougaar:serviceCategoryCode>StrategicTransportationProvider</cougaar:serviceCategoryCode>
+      <cougaar:serviceNamingScheme>MilitaryServiceScheme</cougaar:serviceNamingScheme>
+
+    </cougaar:ServiceCategory>	
+    </cougaar:serviceCategory>
+
+    <profile:textDescription>Provide strategic transportation. </profile:textDescription>
+
+    <profile:providedBy>
+      <cougaar:MilitaryServiceProvider>
+        <profile:name>3ID</profile:name>
+      </cougaar:MilitaryServiceProvider>
+    </profile:providedBy>
+
+
+
+  </cougaar:ServiceProfile>
+
+  <cougaar:WsdlGrounding rdf:ID="A_3ID_Grounding">
+    <cougaar:wsdlDocument>file:///my/Fake/CougaarInstallPath/servicediscovery/data/servicegroundings/A-3ID.wsdl</cougaar:wsdlDocument>
+    <cougaar:bindingType>COUGAAR</cougaar:bindingType>
+    <service:isSupportedBy rdf:resource="#A_3ID"/> 
+  </cougaar:WsdlGrounding>
+
+</rdf:RDF>
