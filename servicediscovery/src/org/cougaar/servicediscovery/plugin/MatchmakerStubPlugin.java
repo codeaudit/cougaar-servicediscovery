@@ -438,7 +438,7 @@ public class MatchmakerStubPlugin extends SimplePlugin {
 	    }
 	    return lineage;
 	  } else {
-	    myLoggingService.error(myAgentName + 
+	    myLoggingService.warning(myAgentName + 
 				   ": getLineage() requested timeSpan " +
 				   new Date(timeSpan.getStartTime()) + 
 				   " - " +
@@ -536,7 +536,7 @@ public class MatchmakerStubPlugin extends SimplePlugin {
     Lineage adconLineage = getLineage(Lineage.ADCON, r.query.getTimeSpan());
     
     if (myLoggingService.isDebugEnabled()) {
-      myLoggingService.debug(getAgentIdentifier() + ": postRQ() " +
+      myLoggingService.debug(getAgentIdentifier() + ": useYPCommunitySearchPath() " +
 			     " timeSpan = (" +
 			     new Date(r.query.getTimeSpan().getStartTime()) +
 			     ", " + 
@@ -545,7 +545,7 @@ public class MatchmakerStubPlugin extends SimplePlugin {
 			     " opconLineage = " + opconLineage);
       if ((opconLineage != null) && 
 	  (adconLineage != null)) {
-	myLoggingService.debug(getAgentIdentifier() + ": execute() " +
+	myLoggingService.debug(getAgentIdentifier() + ": useYPCommunitySearchPath()() " +
 			       " adconLineage.getList() = " + 
 			       adconLineage.getList() +
 			       " opconLineage.getList() = " + 
@@ -556,20 +556,23 @@ public class MatchmakerStubPlugin extends SimplePlugin {
     }
     
     if ((adconLineage == null) || (opconLineage == null)) {
-      if (adconLineage == null) {
-	r.exception = new IllegalStateException(getAgentIdentifier() + 
-						" no Adminstrative lineage.");
-      } else {
-	r.exception = new IllegalStateException(getAgentIdentifier() + 
-						" no Operation lineage for " +
-						new Date(r.query.getTimeSpan().getStartTime()) +
-						" to " +
-						new Date(r.query.getTimeSpan().getEndTime()));
+      if (myLoggingService.isDebugEnabled()) {
+	myLoggingService.debug(getAgentIdentifier() + 
+			       ": useYPCommunitySearchPath() " + 
+			       " returning false - " + 
+			       "no Administrative or Operational lineage." + 
+			       " ADCON lineage = " + adconLineage +
+			       " OPCON lineage = " + opconLineage + 
+			       " for " 	+	
+				new Date(r.query.getTimeSpan().getStartTime()) +
+			       " to " +
+			       new Date(r.query.getTimeSpan().getEndTime()));
       }
-      pendRQ(r);
+
+      return false;
+    } else {
+      return (opconLineage.getList().equals(adconLineage.getList()));
     }
-    
-    return (opconLineage.getList().equals(adconLineage.getList()));
   }
 
   private void findServiceWithCentralizedYP(final RQ r) {
@@ -658,6 +661,18 @@ public class MatchmakerStubPlugin extends SimplePlugin {
       });
     } else {
       r.ypLineage = getLineage(Lineage.OPCON, r.query.getTimeSpan());
+
+      if (r.ypLineage == null) {
+	String errorMessage = getAgentIdentifier() + 
+	  " no Operation lineage for " +
+	  new Date(r.query.getTimeSpan().getStartTime()) +
+	  " to " +
+	  new Date(r.query.getTimeSpan().getEndTime()));
+	IllegalStateException ise = new IllegalStateException()
+	retryErrorLog(r,errorMessage, ise);
+	return;
+      }
+
       if (myLoggingService.isDebugEnabled()) {
 	myLoggingService.debug(getAgentIdentifier() +
 			       " findServiceWithDistributedYP: " +
