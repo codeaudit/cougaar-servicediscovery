@@ -238,11 +238,8 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
 			      final RegistryQuery query, 
 			      final CallbackWithContext callback) {
       
-      /* Should work for agents which are not YPServers. Unfortunately
-       * CommunityService has stubbed out the necessary support
-       *
       // Explicit call for a specific service
-      ypService.getYPServerContext(agentName, 
+      ypService.getYPServerContext(agentName,
 				   new YPService.NextContextCallback() {
 	public void setNextContext(Object context){
 	  callback.setNextContext(agentName);
@@ -268,16 +265,7 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
 	    callback.invoke(Collections.EMPTY_LIST);
 	  }
 	}
-       }); */
-
-
-      YPProxy proxy = makeProxy(agentName);
-
-      if (query.getServiceName() != null) {
-        findServiceByNames(query, callback, proxy);
-      } else {
-        findAllProviders(query, callback, proxy);
-      }
+      });
     }
 
     /**
