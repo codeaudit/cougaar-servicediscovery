@@ -90,13 +90,13 @@ public class SimpleSDClientPlugin extends ComponentPlugin {
   private DomainService myDomainService;
 
   // Used to create ServiceContractRelay, etc
-  protected SDFactory mySDFactory;
+  private SDFactory mySDFactory;
 
   // Used to create AllocationResults, Dispositions, etc
-  protected PlanningFactory planningFactory;
+  private PlanningFactory myPlanningFactory;
 
   // A pointer to the local (self) entity
-  private Entity selfEntity;
+  private Entity mySelfEntity;
 
   /**
    * Used by the binding utility through reflection to set my DomainService
@@ -113,6 +113,20 @@ public class SimpleSDClientPlugin extends ComponentPlugin {
   }
 
   /**
+   * Get the PlanningFactory
+   */
+  protected PlanningFactory getPlanningFactory() {
+    return myPlanningFactory;
+  }
+
+  /**
+   * Get the SDFactory. Factory for service discovery domain
+   */
+  protected SDFactory getSDFactory() {
+    return mySDFactory;
+  }
+
+  /**
    * Load other services, particularly those not essential to operations. 
    * In this case, use the DomainService to get Factories and release it. 
    * Also get the Logging Service.
@@ -125,19 +139,23 @@ public class SimpleSDClientPlugin extends ComponentPlugin {
       myLoggingService = LoggingService.NULL;
 
     mySDFactory = (SDFactory) getDomainService().getFactory(SDDomain.SD_NAME);
-    planningFactory = (PlanningFactory) getDomainService().getFactory(PlanningDomain.PLANNING_NAME);
-
-    // Once we've gotten the Factories, we don't need the Domain Service.
-    getServiceBroker().releaseService(this, DomainService.class, getDomainService());
-    setDomainService(null);
+    myPlanningFactory = (PlanningFactory) getDomainService().getFactory(PlanningDomain.PLANNING_NAME);
   }
   
-  /** Release any services retrieved during load() -- in this case, the LoggingService. */
+  /** Release any services retrieved during load() -- in this case, the LoggingService and DomainService*/
   public void unload() {
     if (myLoggingService != LoggingService.NULL) {
       getServiceBroker().releaseService(this, LoggingService.class, myLoggingService);
       myLoggingService = LoggingService.NULL;
     }
+
+    if (myDomainService != null) {
+      getServiceBroker().releaseService(this, DomainService.class, myDomainService);
+      setDomainService(null);
+    }
+
+    myPlanningFactory = null;
+    mySDFactory = null;
     super.unload();
   }
 
@@ -303,7 +321,7 @@ public class SimpleSDClientPlugin extends ComponentPlugin {
     // Now create the set of YP / SD structures, publishing the request on the BlackBoard,
     // for the MatchmakerPlugin to pick up
     MMRoleQuery roleQuery = new MMRoleQuery(role, sis);
-    mmRequest = mySDFactory.newMMQueryRequest(roleQuery);
+    mmRequest = getSDFactory().newMMQueryRequest(roleQuery);
     getBlackboardService().publishAdd(mmRequest);
   }// end of queryServices
 
@@ -344,13 +362,15 @@ public class SimpleSDClientPlugin extends ComponentPlugin {
 
       // Create a ServiceRequest from the self Entity, for the given Role,
       // for the specified time period (forever)
-      ServiceRequest request = mySDFactory.newServiceRequest(getLocalEntity(), role,
-                                                             mySDFactory.createTimeSpanPreferences(timeSpan));
+      ServiceRequest request = 
+	getSDFactory().newServiceRequest(getLocalEntity(), 
+					 role,
+					 getSDFactory().createTimeSpanPreferences(timeSpan));
 
       // Send that ServiceRequest in a Relay to the given Provider
       ServiceContractRelay relay = 
-	mySDFactory.newServiceContractRelay(MessageAddress.getMessageAddress(providerName),
-					    request);
+	getSDFactory().newServiceContractRelay(MessageAddress.getMessageAddress(providerName),
+					       request);
       getBlackboardService().publishAdd(relay);
     }
   } // end of requestServiceContract
@@ -382,18 +402,21 @@ public class SimpleSDClientPlugin extends ComponentPlugin {
    * @return the local (self) Entity
    */
   protected Entity getLocalEntity() {
-    if (selfEntity == null) {
+    if (mySelfEntity == null) {
       Collection entities = getBlackboardService().query(new UnaryPredicate() {
-	  public boolean execute(Object o) {
-	    if (o instanceof Entity) {
-	      return ((Entity)o).isLocal();
-	    }
-	    return false;
+	public boolean execute(Object o) {
+	  if (o instanceof Entity) {
+	    return ((Entity)o).isLocal();
 	  }
-	});
-    selfEntity = (Entity)entities.iterator().next();
+	  return false;
+	}
+      });
+      
+      if (!entities.isEmpty()) {
+	mySelfEntity = (Entity)entities.iterator().next();
+      }
     }
-    return selfEntity;
+    return mySelfEntity;
   }
 
   //////////
@@ -438,14 +461,16 @@ public class SimpleSDClientPlugin extends ComponentPlugin {
 
 	      // The estAR is for the findProvidersTask, created by the planningFactory,
 	      // with a confidence of 1.0, success=true
-              AllocationResult estResult = PluginHelper.createEstimatedAllocationResult(findProvidersTask,
-                                                                                        planningFactory, 
-											1.0, true);
+              AllocationResult estResult = 
+		PluginHelper.createEstimatedAllocationResult(findProvidersTask,
+							     getPlanningFactory(), 
+							     1.0, true);
 	      // The disposition should be the same Plan as the Task, for the findProvidersTask,
 	      // and include the new success estimatedResult
-              disposition = planningFactory.createDisposition(findProvidersTask.getPlan(), 
-								findProvidersTask,
-                                                                estResult);
+              disposition = 
+		getPlanningFactory().createDisposition(findProvidersTask.getPlan(), 
+						       findProvidersTask,
+						       estResult);
 
               getBlackboardService().publishAdd(disposition);
             }
@@ -491,3 +516,5 @@ public class SimpleSDClientPlugin extends ComponentPlugin {
       };
   }
 }
+
+
