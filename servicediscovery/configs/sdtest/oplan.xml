@@ -1,0 +1,60 @@
+<!DOCTYPE oplan SYSTEM "oplan.dtd">
+
+<oplan
+	oplanID = "27896"
+	operationName = "Desert Return"
+	priority = "High"
+	cDay = "08/15/2005">
+	<organization
+		OrgId = "3ID">
+		<orgactivity
+			ActivityType = "Deployment"
+			OpTempo = "Low">
+			<timespan
+				startTime = "C+000"
+				thruTime = "C+033">
+			</timespan>
+			<geoloc
+				name = "TAALoc"
+				code = "JVXZ"
+				lat = "28.43333"
+				long = "45.96667">
+			</geoloc>
+		</orgactivity>
+	</organization>
+	<organization
+		OrgId = "1BDE-3ID">
+		<orgactivity
+			ActivityType = "Deployment"
+			OpTempo = "Low">
+			<timespan
+				startTime = "C+000"
+				thruTime = "C+033">
+			</timespan>
+			<geoloc
+				name = "TAALoc"
+				code = "JVXZ"
+				lat = "28.43333"
+				long = "45.96667">
+			</geoloc>
+		</orgactivity>
+	</organization>
+	<organization
+		OrgId = "3-69-ARBN">
+		<orgactivity
+			ActivityType = "Deployment"
+			OpTempo = "Low">
+			<timespan
+				startTime = "C+000"
+				thruTime = "C+033">
+			</timespan>
+			<geoloc
+				name = "TAALoc"
+				code = "JVXZ"
+				lat = "28.43333"
+				long = "45.96667">
+			</geoloc>
+		</orgactivity>
+	</organization>
+</oplan>
+
