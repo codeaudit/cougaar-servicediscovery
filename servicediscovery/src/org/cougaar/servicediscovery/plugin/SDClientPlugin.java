@@ -223,7 +223,22 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
   }
 
   public void execute() {
-    if (needToFindProviders()) {
+    boolean OPCONScheduleChanged = false;
+
+    if (myLineageSubscription.hasChanged()) {
+      // handleChangedLineage calls wake() if there is an OPCON schedule change thereby
+      // guaranteeing another execute() cycle after all of its changes to MMQueryRequests and
+      // ServiceContractRelay have been committed.
+      OPCONScheduleChanged = handleChangedLineage();
+    }
+
+
+    // If OPCONScheduleChanged, defer finding providers since 
+    // myServiceContractRelaySubscription will still contain any relays which were publish
+    // removed in handleChangedLineage(). Wait for the subsequent execute() cycle triggered
+    // by handleChangedLineage() call to wake().
+    if (needToFindProviders() &&
+	!OPCONScheduleChanged) {
       if (myLoggingService.isDebugEnabled()) {
 	myLoggingService.debug(getAgentIdentifier() +
 			       ": execute - needToFindProviders.");
@@ -279,10 +294,6 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
 	  }
 	}
       }
-    }
-
-    if (myLineageSubscription.hasChanged()) {
-      handleChangedLineage();
     }
 
   } // end of execute method
@@ -515,15 +526,17 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
     }
     
     if (!outstandingQuery) {
+      MMQueryRequest mmRequest =
+        mySDFactory.newMMQueryRequest(new MMRoleQuery(role, scorer, timeSpan));
+      publishAdd(mmRequest);
+
       if (myLoggingService.isDebugEnabled()) {
 	myLoggingService.debug(getAgentIdentifier() +
 			       " asking MatchMaker for role : " + role +
 			       " - serviceInfoScorer : " + scorer + 
-			       " - timeSpan : " + timeSpan);
+			       " - timeSpan : " + timeSpan +
+			       " - MMQueryRequest : " + mmRequest.getUID());
       }
-      MMQueryRequest mmRequest =
-        mySDFactory.newMMQueryRequest(new MMRoleQuery(role, scorer, timeSpan));
-      publishAdd(mmRequest);
     }
   }
 
@@ -906,7 +919,7 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
 	    currentLatest >= targetTimeSpan.getEndTime());
   }
 
-  protected void handleChangedLineage() {
+  protected boolean handleChangedLineage() {
     
     NonOverlappingTimeSpanSet currentOPCONSchedule = buildOPCONSchedule();
     
@@ -921,6 +934,8 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
 			       " previous OPCON schedule = " + 
 			       getOPCONSchedule());
       }
+
+      return false;
     } else {
       if (myLoggingService.isDebugEnabled()) {
 	myLoggingService.debug(getAgentIdentifier() + 
@@ -940,6 +955,7 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
       // Ping execute so that we query for missing services
       setNeedToFindProviders(true);
       wake();
+      return true;
     }
   }
 
@@ -1335,7 +1351,9 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
 	
 	if ((currentMatches.isEmpty()) || 
 	    (((TimeSpan) currentMatches.first()).getStartTime() > 
-	     requestTimeSpan.getStartTime())) {
+	     requestTimeSpan.getStartTime()) || 
+	    (((TimeSpan) currentMatches.last()).getEndTime() < 
+	     requestTimeSpan.getEndTime())) {
 	  if (myLoggingService.isDebugEnabled()) {
 	    myLoggingService.debug(getAgentIdentifier() + 
 				   ": verifyOutstandingRequest() " + 
@@ -1371,6 +1389,8 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
 	      
 	      obsolete = true;
 	      break;
+	    } else {
+	      currentLatest = currentTimeSpan.getEndTime();
 	    }
 	    
 	    if (!requestLineage.getList().equals(currentTimeSpan.getLineage().getList())) {
@@ -1394,6 +1414,10 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
       }
 
       if (obsolete) {
+	myLoggingService.debug(getAgentIdentifier() + 
+			       ": verifyOutstandingRequest() " + 
+			       " publish change MMQueryRequest = " + 
+			       request.getUID());
 	query.setObsolete(true);
 	publishChange(request);
       }

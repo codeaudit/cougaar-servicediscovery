@@ -77,13 +77,18 @@ public class MatchmakerStubPlugin extends SimplePlugin {
   private IncrementalSubscription myClientRequestSubscription;
   private IncrementalSubscription myLineageSubscription;
 
-  // outstanding RQ are those which have been issued but have not yet returned
-  private ArrayList myOutstandingRQs = new ArrayList();
+
   // pending RQs are returned RQ which haven't been consumed by the plugin yet
   private ArrayList myPendingRQs = new ArrayList();
 
+
+  // Outstanding RQ are those which have been issued but have not yet returned
+  // used to support quiescence.
+  private ArrayList myOutstandingRQs = new ArrayList();
+
   // Outstanding alarms (any means non-quiescent)
-  private int myOutstandingAlarms = 0; 
+  // used to support quiescence.
+  private ArrayList myOutstandingAlarms = new ArrayList(); 
 
 
   private UnaryPredicate myLineagePredicate =
@@ -191,33 +196,42 @@ public class MatchmakerStubPlugin extends SimplePlugin {
 	   i.hasNext();) {
         MMQueryRequest queryRequest =  (MMQueryRequest) i.next();
         MMRoleQuery query = (MMRoleQuery) queryRequest.getQuery();
-        RegistryQuery rq = new RegistryQueryImpl();
-	RQ r;
 
-        // Find all service providers for specifed Role
-        ServiceClassification roleSC =
+	
+	RegistryQuery rq = new RegistryQueryImpl();
+	RQ r;
+	  
+	// Find all service providers for specifed Role
+	ServiceClassification roleSC =
 	  new ServiceClassificationImpl(query.getRole().toString(),
 					query.getRole().toString(),
 					UDDIConstants.MILITARY_SERVICE_SCHEME);
-        rq.addServiceClassification(roleSC);
-
+	rq.addServiceClassification(roleSC);
+	
 	if (myDistributedYPServers) {
 	  r = new RQ(queryRequest, query, rq);
 	} else {
 	  r = new RQ(queryRequest, query, rq);
 	}
-
-        postRQ(r);
+	  
+	postRQ(r);
       }
     }
 
-
     RQ r;
     while ((r = getPendingRQ()) != null) {
-      if (r.exception != null) {
-	handleException(r);
+      if (!r.query.getObsolete()) {
+	if (r.exception == null) {
+	  handleResponse(r);
+	} else {
+	  handleException(r);
+	}
       } else {
-	handleResponse(r);
+	// Don't bother to process the response to obsolete queries
+	if (myLoggingService.isDebugEnabled()) {
+	  myLoggingService.debug("execute: ignoring obsolete registry query - " +
+				 r);
+	}
       }
     }
 
@@ -225,22 +239,7 @@ public class MatchmakerStubPlugin extends SimplePlugin {
   }
 
   protected void handleException(RQ r) {
-
-    // If we had an error handling a query, but that query is now
-    // marked obsolete by the SDClientPlugin, no need to try again.
-    MMQueryRequest queryRequest = r.queryRequest;
-    MMRoleQuery query = r.query;
-
-    if (query.getObsolete()) {
-      if (myLoggingService.isDebugEnabled()) {
-	myLoggingService.debug(myAgentName + 
-			       " ignoring registry query that had exception for obsolete request - " +
-			       query);
-      }
-      return;
-    }
-
-    // In general however, log the error and try again later
+    // Log the error and try again later
     retryErrorLog(r, getAgentIdentifier() +
       " Exception querying registry for " +
       r.query.getRole().toString() +
@@ -260,11 +259,11 @@ public class MatchmakerStubPlugin extends SimplePlugin {
       new QueryAlarm(r, getAlarmService().currentTimeMillis() + rand);
     getAlarmService().addAlarm(alarm);
     // Alarms silently make us non-quiescent -- so keep track of when we have any
-    myOutstandingAlarms++;
+    myOutstandingAlarms.add(alarm);
 
     if (myLoggingService.isDebugEnabled()) {
       myLoggingService.debug(getAgentIdentifier() + 
-		" adding a QueryAlarm for r.query.getRole()" + 
+		" adding a QueryAlarm for r " + r + 
 		" alarm - " + alarm);
     }
 
@@ -285,17 +284,7 @@ public class MatchmakerStubPlugin extends SimplePlugin {
     MMQueryRequest queryRequest = r.queryRequest;
     MMRoleQuery query = r.query;
 
-    if (query.getObsolete()) {
-      if (myLoggingService.isDebugEnabled()) {
-	myLoggingService.debug(myAgentName + 
-			       " ignoring registry query result for obsolete request - " +
-			       r.query);
-      }
-      return;
-    }
-
     Collection services = r.services;
-
     
     if (myLoggingService.isDebugEnabled()) {
       myLoggingService.debug(myAgentName + 
@@ -377,20 +366,42 @@ public class MatchmakerStubPlugin extends SimplePlugin {
     // if there were exceptions talking to the YP.
 
     if (myQuiescenceReportService != null) {
+
       // Check if done with YP queries in synch blocks
       // since callbacks may be running
-      boolean noOutRQs = false;
+      boolean noOutStandingRQs = false;
       synchronized (myOutstandingRQs) {
-	noOutRQs = myOutstandingRQs.isEmpty();
+
+	// Remove any queries marked as obsolete
+	for (Iterator iterator = myOutstandingRQs.iterator();
+	     iterator.hasNext();) {
+	  RQ outstandingRQ = (RQ) iterator.next();
+	  if (outstandingRQ.query.getObsolete()) {
+	    iterator.remove();
+	    
+	    if (myLoggingService.isDebugEnabled()) {
+	      myLoggingService.debug("handleQuiescenceReport: removing obsolete RQ - " +
+				     outstandingRQ + 
+				     " - from myOutstandingRQs.");
+	    }
+	  }
+	}
+	noOutStandingRQs = myOutstandingRQs.isEmpty();
       }
+
       boolean noPendRQs = false;
       synchronized (myPendingRQs) {
 	noPendRQs = myPendingRQs.isEmpty();
       }
 
-      if (noOutRQs && 
+      boolean noOutstandingAlarms = false;
+      synchronized (myOutstandingAlarms) {
+	noOutstandingAlarms = myOutstandingAlarms.isEmpty();
+      }
+
+      if (noOutStandingRQs && 
 	  noPendRQs && 
-	  myOutstandingAlarms == 0) {
+	  noOutstandingAlarms) {
 	// Nothing on the lists and no outstanding alarms - so we're done
 	myQuiescenceReportService.setQuiescentState();
 	resetWarningCutoffTime();
@@ -411,23 +422,30 @@ public class MatchmakerStubPlugin extends SimplePlugin {
 	if (myLoggingService.isDebugEnabled()) {
 	  // Get the toStrings in synch blocks since callbacks
 	  // may currently be executing
-	  String outRQs = "";
-	  String pendRQs = "";
+	  String outstandingRQs = "";
+	  String pendingRQs = "";
+	  String outstandingAlarms = "";
 	  synchronized (myOutstandingRQs) {
-	    outRQs = myOutstandingRQs.size() + ". " + myOutstandingRQs.toString();
+	    outstandingRQs = myOutstandingRQs.size() + 
+	      ". " + myOutstandingRQs.toString();
 	  }
 	  synchronized (myPendingRQs) {
-	    pendRQs = myPendingRQs.size() + ". " + myPendingRQs.toString();
+	    pendingRQs = myPendingRQs.size() + ". " + myPendingRQs.toString();
+	  }
+
+	  synchronized (myOutstandingAlarms) {
+	    outstandingAlarms = myOutstandingAlarms.size() + ". " + 
+	      myOutstandingAlarms.toString();
 	  }
 
 	  myLoggingService.debug("\tYP questions outstanding: " + 
 				 // AMH: Actually print the outstanding RQs
 				 //				 myOutstandingRQs.size() + 
-				 outRQs + 
+				 outstandingRQs + 
 				 ". YP answers to process: " + 
-				 pendRQs + 
+				 pendingRQs + 
 				 //				 myPendingRQs.size() + 
-				 ". Outstanding alarms: " + myOutstandingAlarms);
+				 ". Outstanding alarms: " + outstandingAlarms);
 	}
       }
     }
@@ -532,10 +550,24 @@ public class MatchmakerStubPlugin extends SimplePlugin {
 
   // issue a async request
   private void postRQ(final RQ r) {
+    // Don't bother to process obsolete queries
+    if (r.query.getObsolete()) {
+      if (myLoggingService.isDebugEnabled()) {
+	myLoggingService.debug("postRQ: ignoring obsolete MMQueryRequest - " +
+			       r.queryRequest);
+      }
+      // Update quiescence
+      handleQuiescenceReport();
+      return;
+    } 
+
     if (myLoggingService.isDebugEnabled()) {
       myLoggingService.debug(getAgentIdentifier() + ": posting " + r + 
 			     " (" + r.rq + ")" );
     }
+
+      
+
     synchronized (myOutstandingRQs) {
       myOutstandingRQs.add(r);
     }
@@ -715,14 +747,15 @@ public class MatchmakerStubPlugin extends SimplePlugin {
 	  new Date(r.query.getTimeSpan().getStartTime()) +
 	  " to " +
 	  new Date(r.query.getTimeSpan().getEndTime());
-	IllegalStateException ise = new IllegalStateException(errorMessage);
+
 	// AMH: Don't retry here. Instead, let the while in execute()
 	// call handleException to do this.
-	r.exception = ise;
+	r.exception = new IllegalStateException(errorMessage);
 	if (myLoggingService.isDebugEnabled())
-	  myLoggingService.debug(getAgentIdentifier() + ": findServiceWithDistributedYP had no Operation Lineage, doing pendRQ with an IllegalStateException for " + r);
+	  myLoggingService.debug("findServiceWithDistributedYP: "  +
+				 " no Operation lineage, doing pendRQ with " +
+				 " an IllegalStateException for " + r);
 	pendRQ(r);
-	//	retryErrorLog(r,errorMessage, ise);
 	return;
       }
 
@@ -800,6 +833,7 @@ public class MatchmakerStubPlugin extends SimplePlugin {
     }
   }
 
+      
   public class QueryAlarm implements Alarm {
     private long expiresAt;
     private boolean expired = false;
@@ -812,10 +846,14 @@ public class MatchmakerStubPlugin extends SimplePlugin {
     public long getExpirationTime() { return expiresAt; }
     public synchronized void expire() {
       if (!expired) {
+	if (myLoggingService.isDebugEnabled()) {
+	  myLoggingService.debug("expire: alarm = " + this + 
+				 " for RQ = " + rq);
+	}
+	myOutstandingAlarms.remove(this);
         expired = true;
 	rq.complete = false;
 	postRQ(rq);
-	--myOutstandingAlarms;
       }
     }
 
@@ -823,7 +861,7 @@ public class MatchmakerStubPlugin extends SimplePlugin {
     public synchronized boolean cancel() {
       boolean was = expired;
       expired = true;
-      --myOutstandingAlarms;
+      myOutstandingAlarms.remove(this);
       return was;
     }
     public String toString() {
