@@ -7,7 +7,7 @@
 cougaarInstallPath=<COUGAAR_INSTALL_PATH> #this is your cougaar install path. Use capital letter for drive.
 profileDirectory=servicediscovery/data/serviceprofiles  #you shouldn't need to change this.
 groundingDirectory=servicediscovery/data/servicegroundings  #you shouldn't need to change this.
-cougaarDAMLSFilename=cougaar.daml #you shouldn't need to change this.
+cougaarOWLFilename=cougaar.owl #you shouldn't need to change this.
 
 [AgentInfo]
 

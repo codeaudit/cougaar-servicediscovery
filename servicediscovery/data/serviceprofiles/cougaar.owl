@@ -1,0 +1,203 @@
+<?xml version='1.0' encoding='ISO-8859-1'?> 
+<!DOCTYPE uridef[
+
+  <!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns">
+  <!ENTITY rdfs "http://www.w3.org/2000/01/rdf-schema">
+  <!ENTITY owl "http://www.w3.org/2002/07/owl">
+  <!ENTITY xsd "http://www.w3.org/2000/10/XMLSchema">
+  <!ENTITY service "http://www.daml.org/services/owl-s/1.0/Service.owl">
+  <!ENTITY process "http://www.daml.org/services/owl-s/1.0/Process.owl">
+  <!ENTITY profile "http://www.daml.org/services/owl-s/1.0/Profile.owl">
+]>
+
+<rdf:RDF
+  xmlns:rdf = "&rdf;#"
+  xmlns:rdfs = "&rdfs;#"
+  xmlns:xsd = "&xsd;#"
+  xmlns:owl = "&owl;#"
+  xmlns:service = "&service;#"
+  xmlns:process = "&process;#"
+  xmlns:profile = "&profile;#">
+
+
+<owl:Ontology rdf:about="">
+  <owl:versionInfo>
+    $Id: cougaar.owl,v 1.1 2004-09-28 18:13:33 ngivler Exp $
+  </owl:versionInfo>
+
+  <rdfs:comment>
+	cougaar name space
+  </rdfs:comment>
+  <owl:imports rdf:resource="&owl;"/>
+  <owl:imports rdf:resource="&service;"/>
+  <owl:imports rdf:resource="&profile;"/>
+</owl:Ontology>
+
+<owl:Class rdf:ID="NSN">
+  <rdfs:subClassOf rdf:resource="&xsd;#string"/>
+</owl:Class>
+
+<owl:Class rdf:ID="Quantity">
+  <rdfs:subClassOf rdf:resource="&xsd;#decimal"/>
+</owl:Class>
+
+<owl:Class rdf:ID="DeliveryDate">
+  <rdfs:subClassOf rdf:resource="&xsd;#decimal"/>
+</owl:Class>
+
+<owl:Class rdf:ID="DeliveryLocation">
+  <rdfs:subClassOf rdf:resource="&xsd;#string"/>
+</owl:Class>
+
+<owl:Class rdf:ID="Customer">
+  <rdfs:subClassOf rdf:resource="&xsd;#string"/>
+</owl:Class>
+
+<owl:Class rdf:ID="Result">
+  <rdfs:subClassOf rdf:resource="&xsd;#boolean"/>
+</owl:Class>
+
+<owl:Class rdf:ID="Confidence">
+  <rdfs:subClassOf rdf:resource="&xsd;#decimal"/>
+</owl:Class>
+
+  <owl:Class rdf:ID="Actor">
+    <owl:label>Actor</owl:label> 
+    <owl:subClassOf rdf:resource="&profile;#Actor" /> 
+    <owl:comment>
+      Cougaar agent actor.
+    </owl:comment>
+  </owl:Class>
+
+  <owl:Class rdf:ID="ServiceRequester">
+    <owl:label>ServiceRequester</owl:label> 
+    <owl:subClassOf rdf:resource="&profile;#ServiceRequester" /> 
+    <owl:subClassOf rdf:resource="#Actor" /> 
+    <owl:comment>
+      ServiceRequester is extended to hold Agent type information.
+    </owl:comment>
+  </owl:Class>
+
+  <owl:Class rdf:ID="WsdlGrounding">
+    <owl:label>WsdlGrounding</owl:label>
+    <owl:subClassOf rdf:resource="&service;#ServiceGrounding" />
+    <owl:comment>
+       ServiceGrounding is extended to have the wsdlDocument property.
+    </owl:comment>
+  </owl:Class>
+
+  <owl:DatatypeProperty rdf:ID="wsdlDocument">
+    <owl:domain rdf:resource="#WsdlGrounding" />
+    <owl:range rdf:resource="&xsd;#string" />
+  </owl:DatatypeProperty>
+
+  <owl:DatatypeProperty rdf:ID="bindingType">
+    <owl:domain rdf:resource="#WsdlGrounding" />
+    <owl:range rdf:resource="&xsd;#string" />
+  </owl:DatatypeProperty>
+
+  <owl:DatatypeProperty rdf:ID="echelonOfSupport">
+  <owl:domain rdf:resource="#ServiceProfile" /> 
+  <owl:range rdf:resource="&xsd;#string" /> 
+  </owl:DatatypeProperty>
+
+  <owl:Class rdf:ID="ServiceProvider">
+    <owl:label>ServiceProvider</owl:label> 
+    <owl:subClassOf rdf:resource="&profile;#ServiceProvider" /> 
+    <owl:subClassOf rdf:resource="#Actor" /> 
+    <owl:comment>
+      ServiceProvider is extended to hold Agent type information.
+    </owl:comment>
+  </owl:Class>
+
+  <owl:Class rdf:ID="MilitaryServiceProvider">
+    <owl:label>MilitaryServiceProvider</owl:label>
+    <owl:subClassOf rdf:resource="#ServiceProvider" />
+    <owl:comment>
+      Military/government organizations.
+    </owl:comment>
+  </owl:Class>
+
+  <owl:Class rdf:ID="CommercialServiceProvider">
+    <owl:label>CommercialServiceProvider</owl:label>
+    <owl:subClassOf rdf:resource="#ServiceProvider" />
+    <owl:comment>
+      Commercial (ie, non government) organizations.
+    </owl:comment>
+  </owl:Class>
+
+  <owl:DatatypeProperty rdf:ID="organizationType">
+    <owl:domain rdf:resource="#Actor"/>
+    <owl:range rdf:resource="&xsd;#string"/>
+  </owl:DatatypeProperty>
+
+  <owl:Class rdf:ID="ServiceProfile">
+    <owl:label>ServiceProfile</owl:label> 
+    <owl:subClassOf rdf:resource="&service;#ServiceProfile" /> 
+    <owl:comment>
+      Cougaar agent service profile, may extend or subclass
+    </owl:comment>
+  </owl:Class>
+
+
+<!-- we extend the existing service category to have -->
+<!-- service category name, service naming scheme, and -->
+<!-- additional qualifications -->
+  <owl:ObjectProperty rdf:ID="serviceCategory">
+    <owl:subPropertyOf rdf:resource="&profile;#serviceCategory"/>
+    <owl:domain rdf:resource="&service;#ServiceProfile"/>
+    <owl:range rdf:resource="#ServiceCategory"/>
+  </owl:ObjectProperty>
+
+  <owl:Class rdf:ID="ServiceCategory">
+    <owl:label>ServiceCategory</owl:label> 
+    <owl:subClassOf rdf:resource="&owl;#Thing" /> 
+    <owl:comment>
+      Information about the category/classification of the service.
+    </owl:comment>
+  </owl:Class>
+
+  <owl:DatatypeProperty rdf:ID="serviceCategoryName">
+    <owl:domain rdf:resource="#ServiceCategory"/>
+    <owl:range rdf:resource="&xsd;#string"/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:ID="serviceCategoryCode">
+    <owl:domain rdf:resource="#ServiceCategory"/>
+    <owl:range rdf:resource="&xsd;#string"/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:ID="serviceNamingScheme">
+    <owl:domain rdf:resource="#ServiceCategory"/>
+    <owl:range rdf:resource="&xsd;#string"/>
+  </owl:DatatypeProperty>
+
+  <owl:ObjectProperty rdf:ID="additionalQualification">
+    <owl:domain rdf:resource="#ServiceCategory"/>
+    <owl:range rdf:resource="#AdditionalQualification"/>
+  </owl:ObjectProperty>
+
+  <owl:Class rdf:ID="AdditionalQualification">
+    <owl:label>AdditionalQualification</owl:label> 
+    <owl:subClassOf rdf:resource="&owl;#Thing" /> 
+    <owl:comment>
+      More information about the category/classification of the service.
+    </owl:comment>
+  </owl:Class>
+
+  <owl:DatatypeProperty rdf:ID="qualificationName">
+    <owl:domain rdf:resource="#AdditionalQualification"/>
+    <owl:range rdf:resource="&xsd;#string"/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:ID="qualificationValue">
+    <owl:domain rdf:resource="#AdditionalQualification"/>
+    <owl:range rdf:resource="&xsd;#string"/>
+  </owl:DatatypeProperty>
+
+</rdf:RDF>
+
+
+
+
+
+
+
+
