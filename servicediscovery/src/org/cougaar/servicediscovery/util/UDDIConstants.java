@@ -38,4 +38,5 @@ public interface UDDIConstants {
   public final static String ORGANIZATION_TYPES = "OrganizationTypes";
   public final static String SOURCING_CAPABILITY_SCHEME = "SourcingCapabilityScheme";
   public final static String SUPPORT_COMMAND_ASSIGNMENT = "SupportCommandAssignment";
+  public final static String COMMERCIAL_SERVICE_SCHEME = "CommercialServiceScheme";
 }
