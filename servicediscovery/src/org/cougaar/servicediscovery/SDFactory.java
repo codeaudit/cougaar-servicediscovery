@@ -234,6 +234,16 @@ public class SDFactory implements Factory {
       throw iae;
     }
 
+
+    if (start >= end) {
+      IllegalArgumentException iae = 
+	new IllegalArgumentException(" ServiceContractRelay - " +
+				     relay +
+				     " - does not have a valid time span.\n" +
+				     "Start - " + start + "- >= End - " + end);
+      throw iae;
+    }
+
     return new ServiceContractRelationshipImpl(start, end,
 					       relay.getServiceContract().getServiceRole(),
 					       provider, client, relay);

@@ -102,7 +102,9 @@ public class ServiceContractLP implements LogicProvider, EnvelopeLogicProvider {
       if ((client != null) &&
         (client.getClusterPG().getMessageAddress().equals(self)) &&
         (relay.getServiceContract() != null)) {
-        if (logger.isDebugEnabled()) logger.debug("Received " + relay);
+        if (logger.isDebugEnabled()) {
+	  logger.debug(self + ": Received " + relay);
+	}
         localClientUpdate(relay);
       }
     }
@@ -111,9 +113,6 @@ public class ServiceContractLP implements LogicProvider, EnvelopeLogicProvider {
   // Existing Relay logic should suffice.
 
   private void localProviderUpdate(EnvelopeTuple tuple, ServiceContractRelay relay) {
-   // ServiceContract contract = relay.getServiceContract();
-   // ServiceRequest request = relay.getServiceRequest();
-
     Asset provider = logplan.findAsset(relay.getProvider());
     if (provider == null) {
       logger.error(self + ": unable to process ServiceContractRelay - " +
@@ -142,59 +141,91 @@ public class ServiceContractLP implements LogicProvider, EnvelopeLogicProvider {
         logger.error(self + ": Assets in ServiceContractRelay must be " +
 		     " clones. ServiceContractRelay - " + relay.getUID() +
 		     " - references assets in the log plan.");
+	return;
       }
     }
 
+    boolean updateRelationships = false;
+
     if (related(provider) && related(client)) {
-      if (tuple.isChange() || tuple.isRemove()) {
+      if (logger.isDebugEnabled()) {
+	logger.debug(self + ": localProviderUpdate() relay = " + relay +
+		     " tuple.isAdd() = " + tuple.isAdd() +
+		     " tuple.isChange() = " + tuple.isChange() +
+		     " tuple.isRemove() = " + tuple.isRemove());
+      }
+      updateRelationships = tuple.isAdd() || tuple.isRemove();
+
+      Collection localRelationships =
+	convertToLocalRelationships(relay,
+				    (HasRelationships) provider,
+				    (HasRelationships) client);
+      
+      if (tuple.isChange()) {
+	updateRelationships = 
+	  (localScheduleUpdateRequired(localRelationships, (HasRelationships) provider) || 
+	   localScheduleUpdateRequired(localRelationships, (HasRelationships) client)); 
+      }
+
+      if (logger.isDebugEnabled()) {
+	logger.debug(self + ": localProviderUpdate() updateRelationships = " + 
+		     updateRelationships);
+      }
+
+      if (updateRelationships) {
 	removeExistingRelationships(relay,
                                     (HasRelationships) provider,
                                     (HasRelationships) client);
-      }
 
-      if (tuple.isAdd() || tuple.isChange()) {
-        addRelationships(relay,
+        addRelationships(localRelationships,
 			 (HasRelationships) provider,
 			 (HasRelationships) client);
       }
     }
 
-    Collection changes = new ArrayList();
-    changes.add(new RelationshipSchedule.RelationshipScheduleChangeReport());
-    if (logger.isInfoEnabled())
-      logger.info(self + ": PubChanged an OrgAsset: " + provider);
-    rootplan.change(provider, changes); // change this to root plan
+    
+    if (updateRelationships) {
+      Collection changes = new ArrayList();
+      changes.add(new RelationshipSchedule.RelationshipScheduleChangeReport());
+      if (logger.isInfoEnabled()) {
+	logger.info(self + ": localProviderUpdate() changed provider :" + 
+		    provider);
+      }
+      rootplan.change(provider, changes); // change this to root plan
+    }
 
     if (localClient == null) {
       rootplan.add(client);
-    } else {
-      changes.clear();
+    } else if (updateRelationships) {
+      Collection changes = new ArrayList();
       changes.add(new RelationshipSchedule.RelationshipScheduleChangeReport());
-      if (logger.isInfoEnabled())
-	logger.info(self + ": PubChanged an OrgAsset: " + client);
+      if (logger.isInfoEnabled()) {
+	logger.info(self + ": localProviderUpdate() changed client :" + 
+		    client);
+      }
       rootplan.change(client, changes);
     }
 
-    // Clear client and provider relationship, role, and available schedules to ensure
-    // that there are no references to other organizations.
+    // Clear client and provider relationship, role and available schedules to
+    // ensure that there are no references to other organizations.
     clearSchedule(relay.getClient());
     clearSchedule(relay.getProvider());
   }
 
   private void localClientUpdate(ServiceContractRelay relay) {
-    // figure out the assignee
-   // ServiceContract contract = relay.getServiceContract();
-   // ServiceRequest request = relay.getServiceRequest();
-
     Asset client = logplan.findAsset(relay.getClient()); // local client instance
 
     if (client == null) {
-      logger.error(self + ": Unable to find client asset " +
-                   relay.getClient() + " in " + self);
+      logger.error(self + ": unable to process ServiceContractRelay - " +
+		   relay.getUID() + " client - " + relay.getClient() +
+		   " - is not local to this agent.");
+      return;
+    } else if (client == relay.getClient()) {
+      logger.error(self + ": Assets in ServiceContractRelay must be " +
+		   " clones. ServiceContractRelay - " + relay.getUID() +
+		   " - references assets in the log plan.");
       return;
     }
-
-
 
     // figure out the asset being transferred
     Asset provider = logplan.findAsset(relay.getProvider());
@@ -211,27 +242,57 @@ public class ServiceContractLP implements LogicProvider, EnvelopeLogicProvider {
         hasRelationships.setRelationshipSchedule(ldmf.newRelationshipSchedule(hasRelationships));
       }
     } else {
+      if (provider == relay.getProvider()) {
+	logger.error(self + ": Assets in ServiceContractRelay must be " +
+		     " clones. ServiceContractRelay - " + relay.getUID() +
+		     " - references assets in the log plan.");
+	return;
+      }
       newProvider = false;
     }
 
-    boolean updateRelationships = related(provider) && related(client);
+    if (logger.isDebugEnabled()) {
+      logger.debug(self + ": localClientUpdate() relay = " + relay);
+    }
+
+    boolean updateRelationships = false;
 
     //Only munge relationships pertinent to the transfer - requires that
     //both receiving and transferring assets have relationship schedules
-    if (updateRelationships) {
-      removeExistingRelationships(relay,
+    if (related(provider) && related(client)) {
+      Collection localRelationships =
+	convertToLocalRelationships(relay,
+				    (HasRelationships) provider,
+				    (HasRelationships) client);
+      updateRelationships = 
+	(localScheduleUpdateRequired(localRelationships, 
+				     (HasRelationships) provider) || 
+	 localScheduleUpdateRequired(localRelationships, 
+				     (HasRelationships) client)); 
+      
+
+      if (updateRelationships) {
+	removeExistingRelationships(relay,
 				  (HasRelationships) provider,
 				  (HasRelationships) client);
 
-      addRelationships(relay,
+	addRelationships(localRelationships,
 		       (HasRelationships) provider,
 		       (HasRelationships) client);
+	
+	if (logger.isInfoEnabled()) {
+	  logger.info(self + ": localClientUpdate() changed client: " + 
+		      client);
+	}
 
-      Collection changeReports = new ArrayList();
-      changeReports.add(new RelationshipSchedule.RelationshipScheduleChangeReport());
-      rootplan.change(client, changeReports);
+	Collection changeReports = new ArrayList();
+	changeReports.add(new RelationshipSchedule.RelationshipScheduleChangeReport());
+	rootplan.change(client, changeReports);
+      }
     }
 
+
+    boolean updatePGs = false;
 
     if (!newProvider) {
       // If we already had a matching asset - update with property groups
@@ -245,15 +306,45 @@ public class ServiceContractLP implements LogicProvider, EnvelopeLogicProvider {
         //Don't propagate LocalPGs
         if (!(next instanceof LocalPG)) {
           if (next instanceof PropertyGroup) {
-            provider.addOtherPropertyGroup((PropertyGroup) next);
-          } else if (next instanceof PropertyGroupSchedule) {
-            provider.addOtherPropertyGroupSchedule((PropertyGroupSchedule) next);
-          } else {
-            logger.error(self + ": unrecognized property type - " +
-                         next + " - on provider " + provider);
-          }
-        }
+	    PropertyGroup transferredPG = (PropertyGroup) next;
+	    PropertyGroup localPG = 
+	      provider.searchForPropertyGroup(transferredPG.getPrimaryClass());
+	    if ((localPG == null) ||
+		(!localPG.equals(transferredPG))) {
+	      if (logger.isDebugEnabled()) {
+		logger.debug(self + ": localProviderUpdate() pgs not equal " +
+			     " localPG = " + localPG +
+			     " transferredPG = " + transferredPG);
+	      }
+	      provider.addOtherPropertyGroup((PropertyGroup) next);
+	      updatePGs = true;
+	    } else if (next instanceof PropertyGroupSchedule) {
+	      PropertyGroupSchedule transferredPGSchedule = 
+		(PropertyGroupSchedule) next;
+	      PropertyGroupSchedule localPGSchedule = 
+		provider.searchForPropertyGroupSchedule(transferredPGSchedule.getClass());
+	      if ((localPGSchedule == null) ||
+		  (!localPGSchedule.equals(transferredPGSchedule))) {
+		if (logger.isDebugEnabled()) {
+		  logger.debug(self + ": localProviderUpdate() pgschedules not equal " +
+			       " localPGSchedule = " + localPGSchedule +
+			       " transferredPG = " + transferredPGSchedule);
+		}
+		provider.addOtherPropertyGroupSchedule((PropertyGroupSchedule) next);
+		updatePGs = true;
+	      } else {
+		logger.error(self + ": unrecognized property type - " +
+			     next + " - on provider " + provider);
+	      }
+	    }
+	  }
+	}
       }
+    }
+
+    if (logger.isDebugEnabled()) {
+      logger.debug(self + ": localClientUpdate() updateRelationships = " +
+		   updateRelationships + "updatePGs = " + updatePGs);
     }
 
 
@@ -264,12 +355,13 @@ public class ServiceContractLP implements LogicProvider, EnvelopeLogicProvider {
       if (updateRelationships) {
         Collection changeReports = new ArrayList();
         changeReports.add(new RelationshipSchedule.RelationshipScheduleChangeReport());
-	if (logger.isInfoEnabled())
-	  logger.info(self + ": PubChanged an OrgAsset: " + provider);
+	if (logger.isInfoEnabled()) {
+	  logger.info(self + ": localClientUpdate() changed provider: " + provider);
+	}
         rootplan.change(provider, changeReports);
-      } else {
+      } else if (updatePGs) {
 	if (logger.isInfoEnabled())
-	  logger.info(self + ": PubChanged an OrgAsset: " + provider);
+	  logger.info(self + ": localClientUpdate() changed provider: " + provider);
         rootplan.change(provider, null);
       }
     }
@@ -279,25 +371,67 @@ public class ServiceContractLP implements LogicProvider, EnvelopeLogicProvider {
     return (a instanceof HasRelationships);
   }
 
-  private void addRelationships(ServiceContractRelay relay,
+  private boolean localScheduleUpdateRequired(Collection localRelationships,
+					      HasRelationships localAsset) {
+
+    Collection localMatches = new ArrayList();
+    RelationshipSchedule localRelationshipSchedule = 
+      localAsset.getRelationshipSchedule();
+
+    // Find all existing elationships for the same service contract
+    for (Iterator iterator = localRelationships.iterator();
+         iterator.hasNext();) {
+      final ServiceContractRelationship relationship = 
+	(ServiceContractRelationship) iterator.next();
+      
+      Collection matching = 
+	localRelationshipSchedule.getMatchingRelationships(new UnaryPredicate() {
+	  public boolean execute(Object obj) {
+	    if (obj instanceof ServiceContractRelationship) {
+	      return ((ServiceContractRelationship) obj).getServiceContractUID().equals(relationship.getServiceContractUID());
+	    } else {
+	      return false;
+	    }
+	  }
+	});
+	  
+      localMatches.addAll(matching);
+    }
+
+    if (localMatches.size() != localRelationships.size()) {
+      return true;
+    }
+
+    // Compare entries
+    for (Iterator iterator = localRelationships.iterator();
+         iterator.hasNext();) {
+      ServiceContractRelationship relationship = 
+	(ServiceContractRelationship) iterator.next();
+      boolean found = false;
+
+      for (Iterator existingIterator = localMatches.iterator();
+	   existingIterator.hasNext();) {
+	ServiceContractRelationship existing = 
+	  (ServiceContractRelationship) existingIterator.next();
+	
+	if (relationship.equals(existing)) {
+	  found = true;
+	  localMatches.remove(existing);
+	  break;
+	}
+      }
+
+      if (!found) {
+	return true;
+      }
+    }
+    
+    return false;
+  }
+
+  private void addRelationships(Collection localRelationships,
 				HasRelationships provider,
 				HasRelationships client) {
-
-    if(relay.getServiceContract().isRevoked()) {
-      return;
-    }
-    if(SDFactory.getPreference(relay.getServiceContract().getServicePreferences(),
-                               Preference.START_TIME) >=
-                               SDFactory.getPreference(relay.getServiceContract().getServicePreferences(),
-                               Preference.END_TIME)) {
-      return;
-    }
-
-    // Add ServiceContract relationships to local assets
-    Collection localRelationships =
-      convertToLocalRelationships(relay,
-                                  provider,
-                                  client);
 
     RelationshipSchedule providerSchedule = provider.getRelationshipSchedule();
     providerSchedule.addAll(localRelationships);
@@ -347,8 +481,15 @@ public class ServiceContractLP implements LogicProvider, EnvelopeLogicProvider {
 						   HasRelationships client) {
     Collection relationships = new ArrayList();
 
+
+    if(relay.getServiceContract().isRevoked()) {
+      return relationships;
+    }
+
     try {
-    relationships.add(SDFactory.newServiceContractRelationship(relay, localProvider, client));
+    relationships.add(SDFactory.newServiceContractRelationship(relay, 
+							       localProvider, 
+							       client));
     } catch (IllegalArgumentException iae) {
       logger.error("Unable to create relationship provider " + localProvider + 
 		   " and client " + client,
@@ -372,7 +513,6 @@ public class ServiceContractLP implements LogicProvider, EnvelopeLogicProvider {
       }
     }
   }
-
 }
 
 
