@@ -439,11 +439,11 @@ public class MatchmakerStubPlugin extends SimplePlugin {
 	    return lineage;
 	  } else {
 	    myLoggingService.warn(myAgentName + 
-				   ": getLineage() requested timeSpan " +
-				   new Date(timeSpan.getStartTime()) + 
-				   " - " +
-				   new Date(timeSpan.getEndTime()) +
-				   " spans more than one lineage.");
+				  ": getLineage() requested timeSpan " +
+				  new Date(timeSpan.getStartTime()) + 
+				  " - " +
+				  new Date(timeSpan.getEndTime()) +
+				  " spans more than one lineage.");
 	    return null;
 	  }
 	}
