@@ -239,6 +239,7 @@ implements LineageList {
    */
   public String toString() {
     StringBuffer buf = new StringBuffer();
+    buf.append("UID=" + getUID());
     buf.append("[");
     for (int i = 0; i < size; i++) {
       buf.append(String.valueOf(elementData[i]));
@@ -266,6 +267,18 @@ implements LineageList {
   protected boolean unsafeUpdate(Collection c) {
     clear();
     return super.addAll(c);
+  }
+
+  public boolean equals(Object o) {
+    if (o instanceof LineageListImpl) {
+      if (!(((LineageListImpl) o).getUID().equals(getUID()))) {
+	return false;
+      } else {
+	return super.equals(o);
+      }
+    } else {
+      return false;
+    }
   }
 
  }
