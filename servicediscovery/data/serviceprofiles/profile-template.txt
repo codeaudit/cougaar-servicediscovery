@@ -23,7 +23,7 @@
 
   <daml:Ontology about="">
     <daml:versionInfo>
-      $Id: profile-template.txt,v 1.3 2003-03-20 15:44:51 aleung Exp $
+      $Id: profile-template.txt,v 1.4 2003-03-25 14:57:37 ngivler Exp $
     </daml:versionInfo>
     <rdfs:comment>
       DAML-S service profile for %AGENT_NAME%
@@ -44,12 +44,12 @@
 
   <cougaar:ServiceProfile rdf:ID="%INDEX%_%AGENT_NAME%_Profile">
     <service:isPresentedBy rdf:resource="#%INDEX%_%AGENT_NAME%"/>
-<!--military-->
+<!--militaryEchelon-->
     <cougaar:serviceCategory>
     <cougaar:ServiceCategory>
-      <cougaar:serviceCategoryName>%ROLE_NAME%</cougaar:serviceCategoryName>
-      <cougaar:serviceCategoryCode>%ROLE_NAME%</cougaar:serviceCategoryCode>
-      <cougaar:serviceNamingScheme>MilitaryServiceScheme</cougaar:serviceNamingScheme>
+      <cougaar:serviceCategoryName>%ECHELON%</cougaar:serviceCategoryName>
+      <cougaar:serviceCategoryCode>%ECHELON%</cougaar:serviceCategoryCode>
+      <cougaar:serviceNamingScheme>MilitaryEchelonScheme</cougaar:serviceNamingScheme>
       <cougaar:additionalQualification>
       <cougaar:AdditionalQualification>
         <cougaar:qualificationName>%QNAME%</cougaar:qualificationName>
@@ -58,6 +58,24 @@
       </cougaar:additionalQualification>
     </cougaar:ServiceCategory>	
     </cougaar:serviceCategory>
+
+<!--militaryRole-->
+    <cougaar:serviceCategory>
+    <cougaar:ServiceCategory>
+      <cougaar:serviceCategoryName>%ROLE_NAME%</cougaar:serviceCategoryName>
+      <cougaar:serviceCategoryCode>%ROLE_NAME%</cougaar:serviceCategoryCode>
+      <cougaar:serviceNamingScheme>MilitaryServiceScheme</cougaar:serviceNamingScheme>
+
+      <cougaar:additionalQualification>
+      <cougaar:AdditionalQualification>
+        <cougaar:qualificationName>%QNAME%</cougaar:qualificationName>
+        <cougaar:qualificationValue>%QVALUE%</cougaar:qualificationValue>
+      </cougaar:AdditionalQualification>
+      </cougaar:additionalQualification>
+    </cougaar:ServiceCategory>	
+    </cougaar:serviceCategory>
+
+
 <!--naics-->
     <cougaar:serviceCategory>
     <cougaar:ServiceCategory>
@@ -76,7 +94,7 @@
       </cougaar:MilitaryServiceProvider>
     </profile:providedBy>
 
-    <cougaar:echelonOfSupport>%ECHELON%</cougaar:echelonOfSupport>
+
 
   </cougaar:ServiceProfile>
 

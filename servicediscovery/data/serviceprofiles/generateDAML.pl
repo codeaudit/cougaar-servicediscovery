@@ -211,8 +211,29 @@ sub print_ServiceProfile_bottom {
     close(TEMPLATE);
 }
 
-sub print_military_top {
-    print "print_military_top\n" if $dump;
+sub print_militaryEchelon_top {
+    print "print_militaryEchelon_top\n" if $dump;
+    open(TEMPLATE, "$TEMPLATEFILE");
+    $print=0;
+    while($_=<TEMPLATE>) {
+	if($print) {
+	    s/%AGENT_NAME%/$agentName/;
+	    s/%ECHELON%/$echelon/;
+	    print OUTPUT $_;
+	    print $_ if $dump;
+	}
+	if(/<!--militaryEchelon-->/) {
+	    $print=1;
+	}
+	if(/MilitaryEchelonScheme/) {
+	    last;
+	}
+    }
+    close(TEMPLATE);
+}
+
+sub print_militaryRole_top {
+    print "print_militaryRole_top\n" if $dump;
     open(TEMPLATE, "$TEMPLATEFILE");
     $print=0;
     while($_=<TEMPLATE>) {
@@ -222,7 +243,7 @@ sub print_military_top {
 	    print OUTPUT $_;
 	    print $_ if $dump;
 	}
-	if(/<!--military-->/) {
+	if(/<!--militaryRole-->/) {
 	    $print=1;
 	}
 	if(/MilitaryServiceScheme/) {
@@ -291,6 +312,7 @@ sub print_additionalQualifications {
 }
 
 
+
 sub print_serviceCategory_bottom {
     print "print_serviceCategory_bottom\n" if $dump;
     open(TEMPLATE, "$TEMPLATEFILE");
@@ -312,7 +334,11 @@ sub print_serviceCategory_bottom {
 
 #read from @data and print out a serviceCategory, ServiceCategory
 sub print_military {
-    &print_military_top;
+    &print_militaryEchelon_top;
+    &print_additionalQualifications;
+    &print_serviceCategory_bottom;
+
+    &print_militaryRole_top;
     &print_additionalQualifications;
     &print_serviceCategory_bottom;
 }
