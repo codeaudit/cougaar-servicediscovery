@@ -46,9 +46,9 @@ public class UDDI4JDeleteRegistryEntries {
 
       //Get properties
       String queryURL = System.getProperty("org.cougaar.servicediscovery.registry.queryURL",
-                                             "http://clarinet:8080/uddi/inquiry");
+                                             "http://localhost:8080/uddi/inquiry");
       String publishURL = System.getProperty("org.cougaar.servicediscovery.registry.publishURL",
-                                             "http://clarinet:8080/uddi/publishing");
+                                             "http://localhost:8080/uddi/publishing");
       String username = System.getProperty("org.cougaar.servicediscovery.registry.user.username", "ulservices");
       String password = System.getProperty("org.cougaar.servicediscovery.registry.user.password", "ulservices");
 
@@ -84,7 +84,13 @@ public class UDDI4JDeleteRegistryEntries {
 
       makeConnection(queryURL, publishURL, username, password);
       try {
-        BusinessInfos infos =  (proxy.get_registeredInfo(authorization.getAuthInfoString())).getBusinessInfos();
+        RegisteredInfo ri = proxy.get_registeredInfo(authorization.getAuthInfoString());
+        BusinessInfos infos = ri.getBusinessInfos();
+        if (ri.getBusinessInfos().size() < 1) {
+          System.out.println("No business entries for user --> " + username);
+          proxy.discard_authToken(authorization.getAuthInfoString());
+          return;
+        }
         Enumeration enum = infos.getBusinessInfoVector().elements();
         Vector myKeys = new Vector();
         while(enum.hasMoreElements()) {
@@ -100,6 +106,7 @@ public class UDDI4JDeleteRegistryEntries {
                   "\n errCode: "  + dr.getErrCode() +
                   "\n errInfoText: " + dr.getErrInfoText() +
                   "\n numResults: " + dr.getNumResults());
+        proxy.discard_authToken(authorization.getAuthInfoString());
       } catch (UDDIException e) {
         DispositionReport dr = e.getDispositionReport();
         System.out.println("Error Deleting Businesses" +
