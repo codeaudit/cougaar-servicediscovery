@@ -200,6 +200,7 @@ sub print_ServiceProfile_bottom {
 	if($print) {
 	    s/%AGENT_NAME%/$agentName/;
 	    s/%SERVICE_DESCRIPTION%/$cummulativeDescription/;
+	    s/%ECHELON%/$echelon/;
 	    print OUTPUT $_;
 	    print $_ if $dump;
 	}
@@ -430,7 +431,8 @@ sub process_agent {
 			last;
 		    }
 		    if($name eq "roleName") {
-			$roleName=$value;
+			$roleNameAndEchelon=$value;
+			($roleName, $echelon) = split(",", $roleNameAndEchelon);
 			$rememberedRole=$roleName;
 			&print_military;
 			$cummulativeDescription = $cummulativeDescription.$serviceDescriptions{$roleName};

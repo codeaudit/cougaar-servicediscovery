@@ -20,7 +20,7 @@
 
 <daml:Ontology rdf:about="">
   <daml:versionInfo>
-    $Id: cougaar.daml,v 1.2 2003-01-22 17:30:39 mthome Exp $
+    $Id: cougaar.daml,v 1.3 2003-03-20 15:45:58 aleung Exp $
   </daml:versionInfo>
   <rdfs:comment>
 	cougaar name space
@@ -94,6 +94,11 @@
   <daml:DatatypeProperty rdf:ID="bindingType">
     <daml:domain rdf:resource="#WsdlGrounding" />
     <daml:range rdf:resource="&xsd;#string" />
+  </daml:DatatypeProperty>
+
+  <daml:DatatypeProperty rdf:ID="echelonOfSupport">
+  <daml:domain rdf:resource="#ServiceProfile" /> 
+  <daml:range rdf:resource="&xsd;#string" /> 
   </daml:DatatypeProperty>
 
   <daml:Class rdf:ID="ServiceProvider">
