@@ -167,16 +167,16 @@
     
     <!-- jarfiles required by this module, relative to various other paths -->
     <!-- WARNING: Only relative paths work here. -->
-    <property name="compile.jarlist" value="${target.lib}/core.jar,${target.lib}/util.jar,${target.lib}/glm.jar,${target.lib}/planning.jar,${target.lib}/yp.jar,${target.sys}/xerces.jar,${target.sys}/jena.jar,${target.sys}/interprolog.jar,${target.sys}/wasp.jar,${target.sys}/uddiclient.jar,${target.sys}/soap.jar,${target.sys}/servlet.jar,${target.sys}/uddi4j.jar"/>
+    <property name="compile.jarlist" value="${target.lib}/core.jar,${target.lib}/util.jar,${target.lib}/glm.jar,${target.lib}/planning.jar,${target.lib}/yp.jar,${target.sys}/xerces.jar,${target.sys}/jena.jar,${target.sys}/servlet.jar,${target.sys}/uddi4j.jar"/>
     <!-- Put absolute paths on this list, in the form of a path. -->
     <property name="compile.abs.jarlist" value=""/>
 
     <!-- javadoc package spec for building javadocs -->
-    <property name="javadoc.packages" value="org.cougaar.servicediscovery,org.cougaar.servicediscovery.description,org.cougaar.servicediscovery.lp,org.cougaar.servicediscovery.matchmaker,org.cougaar.servicediscovery.plugin,org.cougaar.servicediscovery.service,org.cougaar.servicediscovery.servlet,org.cougaar.servicediscovery.transaction,org.cougaar.servicediscovery.util,org.cougaar.servicediscovery.util.wasp,org.cougaar.servicediscovery.util.yp"/>
+    <property name="javadoc.packages" value="org.cougaar.servicediscovery,org.cougaar.servicediscovery.description,org.cougaar.servicediscovery.lp,org.cougaar.servicediscovery.plugin,org.cougaar.servicediscovery.service,org.cougaar.servicediscovery.servlet,org.cougaar.servicediscovery.transaction,org.cougaar.servicediscovery.util,org.cougaar.servicediscovery.util.yp"/>
 
     <!-- Extra jars needed at run / unit-test time. -->
     <!-- WARNING: Only relative paths work here. -->
-    <property name="run.jarlist" value="${target.lib}/core.jar,${target.lib}/util.jar,${target.lib}/glm.jar,${target.lib}/planning.jar,${target.lib}/yp.jar,${target.sys}/xerces.jar,${target.sys}/jena.jar,${target.sys}/interprolog.jar,${target.sys}/wasp.jar,${target.sys}/uddiclient.jar,${target.sys}/soap.jar,${target.sys}/servlet.jar,${target.sys}/uddi4j.jar,${target.sys}/activation.jar,${target.sys}/mail.jar,${target.sys}/icu4j.jar"/>
+    <property name="run.jarlist" value="${target.lib}/core.jar,${target.lib}/util.jar,${target.lib}/glm.jar,${target.lib}/planning.jar,${target.lib}/yp.jar,${target.sys}/xerces.jar,${target.sys}/jena.jar,${target.sys}/servlet.jar,${target.sys}/uddi4j.jar,${target.sys}/icu4j.jar"/>
     <!-- Put absolute paths on this list, in the form of a path. -->
     <property name="run.abs.jarlist" value=""/>
     
