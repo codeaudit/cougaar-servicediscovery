@@ -61,7 +61,11 @@ public class SDDomain extends DomainAdapter {
 
   public void setAgentIdentificationService(AgentIdentificationService ais) {
     this.agentIdService = ais;
-    this.self = ais.getMessageAddress();
+    if (ais == null) {
+      // Revocation
+    } else {
+      this.self = ais.getMessageAddress();
+    }
   }
 
   public void setLDMService(LDMService ldmService) {
