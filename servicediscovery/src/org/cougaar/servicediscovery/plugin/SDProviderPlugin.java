@@ -193,6 +193,7 @@ public class SDProviderPlugin extends SimplePlugin
 	contractPreferences.remove(START_TIME_KEY);
 	contractPreferences.remove(END_TIME_KEY);
       } else if (!contractTimeSpan.equals(requestedTimeSpan)) {
+
 	// Replace start/end with what provider can handle.
 	Collection timespanPreferences = 
 	  createTimeSpanPreferences(contractTimeSpan);
@@ -255,6 +256,18 @@ public class SDProviderPlugin extends SimplePlugin
 	      SDFactory.revokeServiceContract(contract);
 	      changeRequired = true;
 	    } else if (!currentContractTimeSpan.equals(contractTimeSpan)) {
+	      if (myLoggingService.isInfoEnabled()) {
+		myLoggingService.info(getAgentIdentifier() +
+				      " changing contract availability to match " +
+				      " provider availability: current contract time span " + 
+				      currentContractTimeSpan.getStartTime() +
+				      " - " +
+				      currentContractTimeSpan.getEndTime() +
+				      " provider capability " +
+				      contractTimeSpan.getStartTime() + " - " +
+				      contractTimeSpan.getEndTime());
+	      }
+				      
 	      HashMap copy = 
 		copyPreferences(contract.getServicePreferences());
 	      
