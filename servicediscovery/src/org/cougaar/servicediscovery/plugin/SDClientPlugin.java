@@ -83,6 +83,10 @@ import org.cougaar.util.UnaryPredicate;
  *
  */
 public class SDClientPlugin extends SimplePlugin implements GLSConstants {
+  private static int WARNING_SUPPRESSION_INTERVAL = 2;
+  private static final String CLIENT_GRACE_PERIOD = 
+    "org.cougaar.servicediscovery.servicediscovery.plugin.ClientGracePeriod"; 
+  private long myWarningCutoffTime = -1;
 
   private IncrementalSubscription mySelfOrgSubscription;
   private IncrementalSubscription myMMRequestSubscription;
@@ -501,10 +505,13 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
       if (services != null) {
 	if (services.size() == 0) {
 	  // MMPlugin said no one matched?
-	  if (myLoggingService.isWarnEnabled())
+	  if(System.currentTimeMillis() > getWarningCutoffTime()) {
+	    myLoggingService.error(getAgentIdentifier() + 
+				  " got 0 results for query " + mmRequest.getQuery());
+	  } else if (myLoggingService.isWarnEnabled()) {
 	    myLoggingService.warn(getAgentIdentifier() + 
 				  " got 0 results for query " + mmRequest.getQuery());
-	  //return;
+	  }
 	  continue; // on to next changed mmRequest
 	}
 
@@ -984,5 +991,18 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
 
     return Collections.EMPTY_SET;
   }
+
+  protected long getWarningCutoffTime() {
+    if (myWarningCutoffTime == -1) {
+      WARNING_SUPPRESSION_INTERVAL = 
+	Integer.getInteger(CLIENT_GRACE_PERIOD, 
+			   WARNING_SUPPRESSION_INTERVAL).intValue();
+      myWarningCutoffTime = System.currentTimeMillis() + 
+	(WARNING_SUPPRESSION_INTERVAL * 60000);
+    }
+    
+    return myWarningCutoffTime;
+  }
+
 }
 
