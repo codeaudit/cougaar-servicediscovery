@@ -1,0 +1,11 @@
+THREAD_ID,DESCRIPTION,BLANK
+"BASE","Base Thread",
+"STRATEGIC-TRANS","Strategic Transportation",
+"THEATER-TRANS","Theater Transportation",
+"MAINT-PARTS","Maintenance, Kits, and Parts",
+"CLASS-1","Class 1: Subsistence",
+"CLASS-3","Class 3: Fuel",
+"CLASS-4","Class 4: Construction Materiel",
+"CLASS-5","Class 5: Ammunition",
+"CLASS-8","Class 8: Medical Supplies",
+"CLASS-9","Class 9: Spare Parts",
