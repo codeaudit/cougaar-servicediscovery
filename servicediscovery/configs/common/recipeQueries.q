@@ -33,7 +33,7 @@ recipeQueryOSCAgent=\
 recipeQueryCCADAgent=\
  SELECT COMPONENT_ALIB_ID FROM alib_component WHERE COMPONENT_TYPE = 'agent' AND COMPONENT_NAME='CCAD'
 
-recipeQueryDLAAgent=\
+ recipeQueryDLAAgent=\
  SELECT COMPONENT_ALIB_ID FROM alib_component WHERE COMPONENT_TYPE = 'agent' AND COMPONENT_NAME='DLA-AVIATION'
 
 recipeQueryARBNAgent=\
@@ -83,6 +83,5 @@ recipeQueryStratTransAndSpareParts=\
 recipeQueryStratTransAndAmmo=\
  SELECT COMPONENT_ALIB_ID FROM alib_component WHERE COMPONENT_TYPE = 'agent' AND COMPONENT_NAME='191-ORDBN';
 
-
-
-
+recipeQueryDAMLAgent=\
+ SELECT COMPONENT_ALIB_ID FROM alib_component WHERE COMPONENT_TYPE = 'agent' AND COMPONENT_NAME='DAML'
