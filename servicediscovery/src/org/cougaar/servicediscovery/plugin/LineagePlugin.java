@@ -578,6 +578,8 @@ public class LineagePlugin extends SimplePlugin
 
   protected void updateSubordinate(LineageRelay relay) {
     ArrayList lineages = new ArrayList();
+    boolean adconFound = false;
+    boolean opconFound = false;
 
     for (Iterator iterator = myLineageSubscription.iterator();
 	 iterator.hasNext();) {
@@ -587,15 +589,26 @@ public class LineagePlugin extends SimplePlugin
 	myLoggingService.debug(myAgentName +
 			       ":updateSubordinate localLineage " +
 			       localLineage);
-     }
+      }
+      if (localLineage.getType() == Lineage.ADCON) {
+	adconFound = true;
+      }
+
+      if (localLineage.getType() == Lineage.OPCON) {
+	opconFound = true;
+      }
+
     }
 
-    if (lineages.size() == 0) {
+    if (!adconFound) {
       lineages.add(addLineageSeed(Lineage.ADCON));
+    }
+
+    if (!opconFound) {
       lineages.add(addLineageSeed(Lineage.OPCON));
     }
-    relay.setLineages(lineages);
 
+    relay.setLineages(lineages);
 
     if (myLoggingService.isDebugEnabled()) {
       myLoggingService.debug(getAgentIdentifier() + 
@@ -797,37 +810,20 @@ public class LineagePlugin extends SimplePlugin
   }
 
   protected Lineage addLineageSeed(int lineageType) {
-    boolean addSeed = true;
-    /*
-    for (Iterator iterator = myLineageSubscription.iterator();
-	 iterator.hasNext();) {
-      Lineage lineage = (Lineage) iterator.next();
-      if (lineage.getType() == lineageType) {
-	addSeed = false;
-	break;
-      }
+    ArrayList list = new ArrayList();
+    list.add(myAgentName);
+    MutableTimeSpan defaultTimeSpan = new MutableTimeSpan();
+    defaultTimeSpan.setTimeSpan(SDFactory.DEFAULT_START_TIME,
+				SDFactory.DEFAULT_END_TIME);
+    Lineage lineage =
+      mySDFactory.newLineage(lineageType, list, defaultTimeSpan);
+    
+    if (myLoggingService.isDebugEnabled()) {
+      myLoggingService.debug(getAgentIdentifier() + 
+			     " adding initial lineage - " + lineage);
     }
-    */
-    if (addSeed) {
-
-      
-      ArrayList list = new ArrayList();
-      list.add(myAgentName);
-      MutableTimeSpan defaultTimeSpan = new MutableTimeSpan();
-      defaultTimeSpan.setTimeSpan(SDFactory.DEFAULT_START_TIME,
-				  SDFactory.DEFAULT_END_TIME);
-      Lineage lineage =
-	mySDFactory.newLineage(lineageType, list, defaultTimeSpan);
-
-      if (myLoggingService.isDebugEnabled()) {
-	myLoggingService.debug(getAgentIdentifier() + 
-			       " adding initial lineage - " + lineage);
-      }
-
-      return lineage;
-    } else {
-      return null;
-    }
+    
+    return lineage;
   }
 
   protected Lineage createLocalLineage(Task rfdTask) {
