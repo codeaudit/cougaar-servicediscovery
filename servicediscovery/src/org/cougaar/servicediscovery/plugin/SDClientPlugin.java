@@ -83,7 +83,7 @@ import org.cougaar.util.UnaryPredicate;
  *
  */
 public class SDClientPlugin extends SimplePlugin implements GLSConstants {
-  private static int WARNING_SUPPRESSION_INTERVAL = 2;
+  private static int WARNING_SUPPRESSION_INTERVAL = 4;
   private static final String CLIENT_GRACE_PERIOD = 
     "org.cougaar.servicediscovery.servicediscovery.plugin.ClientGracePeriod"; 
   private long myWarningCutoffTime = -1;
