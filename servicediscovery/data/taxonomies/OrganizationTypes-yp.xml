@@ -4,11 +4,11 @@
   <name>OrganizationTypes</name>
   <description>List of organization types e.g., Military vs Commercial</description>
   <categoryBag>
-    <keyedReference>
+    <keyedReference
       keyName="Military"
       keyValue="Military">
     </keyedReference>
-    <keyedReference>
+    <keyedReference
       keyName="Commercial"
       keyValue="Commercial">
     </keyedReference>
