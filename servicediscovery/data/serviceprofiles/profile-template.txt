@@ -23,7 +23,7 @@
 
   <daml:Ontology about="">
     <daml:versionInfo>
-      $Id: profile-template.txt,v 1.1 2003-01-20 19:32:23 mthome Exp $
+      $Id: profile-template.txt,v 1.2 2003-02-21 20:04:18 lgoldsto Exp $
     </daml:versionInfo>
     <rdfs:comment>
       DAML-S service profile for %AGENT_NAME%
@@ -86,27 +86,3 @@
 
 
 </rdf:RDF>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
