@@ -38,8 +38,6 @@ import java.util.Vector;
  *   <li> methods : names of different methods exposed by the service.</li>
  *   <li> hasSoapBinding : false by default, true if soap:address is specified.</li>
  *
- *@author    HSingh
- *@version   $Id: WSDLObject.java,v 1.4 2004-03-18 20:51:00 mthome Exp $
  */
 
 public class WSDLObject {

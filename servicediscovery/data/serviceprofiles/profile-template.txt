@@ -23,7 +23,7 @@
 
   <daml:Ontology rdf:about="">
     <daml:versionInfo>
-      $Id: profile-template.txt,v 1.5 2003-10-22 16:21:56 ahelsing Exp $
+      
     </daml:versionInfo>
     <rdfs:comment>
       DAML-S service profile for %AGENT_NAME%

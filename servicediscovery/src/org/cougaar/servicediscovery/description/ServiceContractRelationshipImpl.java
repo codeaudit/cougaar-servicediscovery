@@ -35,7 +35,6 @@ import org.cougaar.servicediscovery.transaction.ServiceContractRelay;
 /**
  * A ServiceContractRelationshipImpl is the encapsulation of a time phased relationship based on
  * a service contract
- * @author  ALPINE <alpine-software@bbn.com>
  *
  **/
 

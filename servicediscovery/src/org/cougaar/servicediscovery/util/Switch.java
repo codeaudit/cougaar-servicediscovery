@@ -28,8 +28,6 @@ package org.cougaar.servicediscovery.util;
 /**
  * ON/OFF Switch. Default start state is true/ON.
  *
- *@author    HSingh
- *@version   $Id: Switch.java,v 1.4 2004-03-18 20:51:00 mthome Exp $
  */
 public class Switch {
 	boolean state;

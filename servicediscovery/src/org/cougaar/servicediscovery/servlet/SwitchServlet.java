@@ -49,8 +49,6 @@ import org.cougaar.util.UnaryPredicate;
  *
  * /$Agent/switchServlet
  *
- *@author    HSingh
- *@version   $Id: SwitchServlet.java,v 1.4 2004-03-18 20:51:00 mthome Exp $
  */
 public class SwitchServlet extends BaseServletComponent implements BlackboardClient {
 
@@ -108,7 +106,6 @@ public class SwitchServlet extends BaseServletComponent implements BlackboardCli
 	/**
 	 * Switch servlet.
 	 *
-	 *@author    HSingh
 	 */
 	private class MyServlet extends HttpServlet {
 		UnaryPredicate pred =

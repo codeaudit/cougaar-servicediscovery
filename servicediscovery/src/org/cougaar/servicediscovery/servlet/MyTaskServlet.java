@@ -68,8 +68,6 @@ import org.cougaar.planning.plugin.util.PluginHelper;
  * Servlet allocates supply task to specified agent.<br>
  * http://&lt;hostname&gt;:&lt;port&gt;/$Agent/taskServlet
  *
- *@author    HSingh
- *@version   $Id: MyTaskServlet.java,v 1.6 2004-03-18 20:51:00 mthome Exp $
  */
 public class MyTaskServlet extends BaseServletComponent implements BlackboardClient {
 

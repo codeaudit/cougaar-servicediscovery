@@ -35,8 +35,6 @@ import com.hp.hpl.jena.rdf.model.RDFException;
  * <p>Description: </p>
  * <p>Copyright: Copyright (c) 2002</p>
  * <p>Company: </p>
- * @author unascribed
- * @version 1.0
  */
 
 public class AdditionalQualificationRecord {

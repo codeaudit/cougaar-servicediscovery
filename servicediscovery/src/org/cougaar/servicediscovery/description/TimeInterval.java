@@ -13,8 +13,6 @@ import org.cougaar.util.log.Logging;
  * <p>Description: </p>
  * <p>Copyright: Copyright (c) 2003</p>
  * <p>Company: </p>
- * @author unascribed
- * @version 1.0
  */
 
 public class TimeInterval extends MutableTimeSpan {

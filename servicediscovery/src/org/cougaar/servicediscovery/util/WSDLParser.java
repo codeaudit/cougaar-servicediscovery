@@ -36,8 +36,6 @@ import org.xml.sax.helpers.DefaultHandler;
 /**
  *  Parses wsdl documents with soap bindings.
  *
- *@author     HSingh
- *@version    $Id: WSDLParser.java,v 1.5 2004-03-18 20:51:00 mthome Exp $
  */
 
 public class WSDLParser extends DefaultHandler {

@@ -41,8 +41,6 @@ import com.hp.hpl.jena.rdf.model.StmtIterator;
  * <p>Description: </p>
  * <p>Copyright: Copyright (c) 2002</p>
  * <p>Company: </p>
- * @author unascribed
- * @version 1.0
  */
 
 public class ServiceCategoryImpl implements ServiceCategory {
