@@ -193,7 +193,6 @@ public class DeleteTaxonomy {
     String ALL = "--all";
     String MILITARY_SERVICE = "--militaryservice";
     String MILITARY_ECHELON = "--militaryechelon";
-    String PLATFORMS_SUPPORTED = "--platformssupported";
     String SUPPORTED_COMMAND = "--supportedcommand";
     String ORGANIZATION_TYPE = "--orgtype";
     String SOURCING_CAPABILITY = "--sourcingcapability";
@@ -217,7 +216,7 @@ public class DeleteTaxonomy {
 
     if (args.length == 0) {
       System.err.println("Usage: DeleteTaxonomy [" + ALL + ", " + MILITARY_SERVICE + ", " + MILITARY_ECHELON +
-                         ", " + PLATFORMS_SUPPORTED + ", " + SUPPORTED_COMMAND + ", " +
+                         ", " + SUPPORTED_COMMAND + ", " +
                          ORGANIZATION_TYPE + ", " + SOURCING_CAPABILITY + "]");
     } else {
 
@@ -244,7 +243,6 @@ public class DeleteTaxonomy {
               findTModelByName(UDDIConstants.MILITARY_ECHELON_SCHEME);
               findTModelByName(UDDIConstants.ORGANIZATION_TYPES);
               findTModelByName(UDDIConstants.SOURCING_CAPABILITY_SCHEME);
-              findTModelByName(UDDIConstants.PLATFORMS_SUPPORTED);
               findTModelByName(UDDIConstants.SUPPORT_COMMAND_ASSIGNMENT);
 
             } catch (Exception e) {
@@ -257,10 +255,6 @@ public class DeleteTaxonomy {
           } else if (args[i].equalsIgnoreCase(MILITARY_ECHELON) && !allFlag) {
             System.out.println("Deleting: " + UDDIConstants.MILITARY_ECHELON_SCHEME);
             findTModelByName(UDDIConstants.MILITARY_ECHELON_SCHEME);
-
-          } else if (args[i].equalsIgnoreCase(PLATFORMS_SUPPORTED) && !allFlag) {
-            System.out.println("Deleting: " + UDDIConstants.PLATFORMS_SUPPORTED);
-            findTModelByName(UDDIConstants.PLATFORMS_SUPPORTED);
 
           } else if (args[i].equalsIgnoreCase(SUPPORTED_COMMAND) && !allFlag) {
             System.out.println("Deleting: " + UDDIConstants.SUPPORT_COMMAND_ASSIGNMENT);
@@ -277,7 +271,7 @@ public class DeleteTaxonomy {
           } else {
             System.out.println("Unknown value: " + args[i]);
             System.err.println("Usage: DeleteTaxonomy [" + ALL + ", " + MILITARY_SERVICE + ", " + MILITARY_ECHELON +
-                               ", " + PLATFORMS_SUPPORTED + ", " + SUPPORTED_COMMAND + ", " +
+                               ", " + SUPPORTED_COMMAND + ", " +
                                ORGANIZATION_TYPE + ", " + SOURCING_CAPABILITY + "]");
           }
         } catch(Exception e) {}
