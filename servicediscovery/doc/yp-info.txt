@@ -14,7 +14,7 @@ above.)
 3) Import Service Discovery specific recipes
 	(a) cd CIP/servicediscovery/data/csmart/recipe
 	(b) mysql -u (userid) -p(password) (CSMART db name) < ServiceDiscoveryRegistration-export.sql
-	(c) mysql -u (userid) -p(password) (CSMART db name) < ServiceDiscoveryBootstrapping-export.sql
+	(c) mysql -u (userid) -p(password) (CSMART db name) < SDBootstrap-export.sql
 	(d) cd CIP/yp/data/csmart/recipes
 	(e) mysql -u (userid) -p(password) (CSMART db name) < YPSupport-export.sql
 
@@ -79,7 +79,7 @@ used as a template.
 	(b) Add the following recipes in the following order:
 		YPSupport
 		ServiceDiscoveryRegistration
-		ServiceDiscoveryBootstrapping
+		SDBootstrap
 	IMPORTANT: If recipes are not loaded in the above order, experiment
 	will not run.
 	
