@@ -138,6 +138,7 @@ COMPONENT_LIB_ID,AGENT_LIB_NAME,AGENT_ORG_CLASS,BLANK
 "416-POL-TRKCO","416-POL-TRKCO","MilitaryOrganization",
 "110-POL-SUPPLYCO","110-POL-SUPPLYCO","MilitaryOrganization",
 "632-MAINTCO","632-MAINTCO","MilitaryOrganization",
+"COMMERCIAL","COMMERCIAL","MilitaryOrganization",
 "DLA-OTHER","DLA-OTHER","MilitaryOrganization",
 "DLA-AVIATION","DLA-AVIATION","MilitaryOrganization",
 "DSCC","DSCC","MilitaryOrganization",
