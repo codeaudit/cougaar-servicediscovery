@@ -26,7 +26,7 @@ UNLOCK TABLES;
 #
 
 LOCK TABLES asb_agent WRITE;
-INSERT INTO asb_agent (ASSEMBLY_ID, COMPONENT_ALIB_ID, COMPONENT_LIB_ID, CLONE_SET_ID, COMPONENT_NAME) VALUES ('RCP-0001-ServiceDiscoveryRegistration-ServiceDisco','DAML','DAML',0.000000000000000000000000000000,'DAML');
+INSERT INTO asb_agent (ASSEMBLY_ID, COMPONENT_ALIB_ID, COMPONENT_LIB_ID, CLONE_SET_ID, COMPONENT_NAME) VALUES ('RCP-0001-ServiceDiscoveryRegistration','DAML','DAML',0.000000000000000000000000000000,'DAML');
 UNLOCK TABLES;
 
 #
@@ -48,7 +48,7 @@ UNLOCK TABLES;
 #
 
 LOCK TABLES asb_assembly WRITE;
-INSERT INTO asb_assembly (ASSEMBLY_ID, ASSEMBLY_TYPE, DESCRIPTION) VALUES ('RCP-0001-ServiceDiscoveryRegistration-ServiceDisco','RCP','ServiceDiscoveryRegistration');
+INSERT INTO asb_assembly (ASSEMBLY_ID, ASSEMBLY_TYPE, DESCRIPTION) VALUES ('RCP-0001-ServiceDiscoveryRegistration','RCP','ServiceDiscoveryRegistration');
 UNLOCK TABLES;
 
 #
@@ -56,9 +56,9 @@ UNLOCK TABLES;
 #
 
 LOCK TABLES asb_component_arg WRITE;
-INSERT INTO asb_component_arg (ASSEMBLY_ID, COMPONENT_ALIB_ID, ARGUMENT, ARGUMENT_ORDER) VALUES ('RCP-0001-ServiceDiscoveryRegistration-ServiceDisco','DAML','DAML',1.000000000000000000000000000000);
-INSERT INTO asb_component_arg (ASSEMBLY_ID, COMPONENT_ALIB_ID, ARGUMENT, ARGUMENT_ORDER) VALUES ('RCP-0001-ServiceDiscoveryRegistration-ServiceDisco','ServiceDiscoveryRegistration|org.cougaar.servicediscovery.servlet.MatchMakerQueryServletComponent','org.cougaar.servicediscovery.servlet.MatchMakerQueryServlet',1.000000000000000000000000000000);
-INSERT INTO asb_component_arg (ASSEMBLY_ID, COMPONENT_ALIB_ID, ARGUMENT, ARGUMENT_ORDER) VALUES ('RCP-0001-ServiceDiscoveryRegistration-ServiceDisco','ServiceDiscoveryRegistration|org.cougaar.servicediscovery.servlet.MatchMakerQueryServletComponent','/matchmaker_query',2.000000000000000000000000000000);
+INSERT INTO asb_component_arg (ASSEMBLY_ID, COMPONENT_ALIB_ID, ARGUMENT, ARGUMENT_ORDER) VALUES ('RCP-0001-ServiceDiscoveryRegistration','DAML','DAML',1.000000000000000000000000000000);
+INSERT INTO asb_component_arg (ASSEMBLY_ID, COMPONENT_ALIB_ID, ARGUMENT, ARGUMENT_ORDER) VALUES ('RCP-0001-ServiceDiscoveryRegistration','ServiceDiscoveryRegistration|org.cougaar.servicediscovery.servlet.MatchMakerQueryServletComponent','org.cougaar.servicediscovery.servlet.MatchMakerQueryServlet',1.000000000000000000000000000000);
+INSERT INTO asb_component_arg (ASSEMBLY_ID, COMPONENT_ALIB_ID, ARGUMENT, ARGUMENT_ORDER) VALUES ('RCP-0001-ServiceDiscoveryRegistration','ServiceDiscoveryRegistration|org.cougaar.servicediscovery.servlet.MatchMakerQueryServletComponent','/matchmaker_query',2.000000000000000000000000000000);
 UNLOCK TABLES;
 
 #
@@ -66,15 +66,15 @@ UNLOCK TABLES;
 #
 
 LOCK TABLES asb_component_hierarchy WRITE;
-INSERT INTO asb_component_hierarchy (ASSEMBLY_ID, COMPONENT_ALIB_ID, PARENT_COMPONENT_ALIB_ID, PRIORITY, INSERTION_ORDER) VALUES ('RCP-0001-ServiceDiscoveryRegistration-ServiceDisco','ServiceDiscoveryRegistration|org.cougaar.servicediscovery.service.UDDI4JRegistrationServiceComponent','ServiceDiscoveryRegistration','COMPONENT',1.000000000000000000000000000000);
-INSERT INTO asb_component_hierarchy (ASSEMBLY_ID, COMPONENT_ALIB_ID, PARENT_COMPONENT_ALIB_ID, PRIORITY, INSERTION_ORDER) VALUES ('RCP-0001-ServiceDiscoveryRegistration-ServiceDisco','ServiceDiscoveryRegistration|org.cougaar.servicediscovery.plugin.LineagePlugin','ServiceDiscoveryRegistration','COMPONENT',3.000000000000000000000000000000);
-INSERT INTO asb_component_hierarchy (ASSEMBLY_ID, COMPONENT_ALIB_ID, PARENT_COMPONENT_ALIB_ID, PRIORITY, INSERTION_ORDER) VALUES ('RCP-0001-ServiceDiscoveryRegistration-ServiceDisco','DAML','ServiceDiscoveryRegistration','COMPONENT',0.000000000000000000000000000000);
-INSERT INTO asb_component_hierarchy (ASSEMBLY_ID, COMPONENT_ALIB_ID, PARENT_COMPONENT_ALIB_ID, PRIORITY, INSERTION_ORDER) VALUES ('RCP-0001-ServiceDiscoveryRegistration-ServiceDisco','DAML|org.cougaar.servicediscovery.servlet.CougaarDAMLServlet','DAML','COMPONENT',0.000000000000000000000000000000);
-INSERT INTO asb_component_hierarchy (ASSEMBLY_ID, COMPONENT_ALIB_ID, PARENT_COMPONENT_ALIB_ID, PRIORITY, INSERTION_ORDER) VALUES ('RCP-0001-ServiceDiscoveryRegistration-ServiceDisco','DAML|org.cougaar.servicediscovery.servlet.CommonWSDLServlet','DAML','COMPONENT',1.000000000000000000000000000000);
-INSERT INTO asb_component_hierarchy (ASSEMBLY_ID, COMPONENT_ALIB_ID, PARENT_COMPONENT_ALIB_ID, PRIORITY, INSERTION_ORDER) VALUES ('RCP-0001-ServiceDiscoveryRegistration-ServiceDisco','DAML|org.cougaar.servicediscovery.plugin.DAMLReadyPlugin','DAML','COMPONENT',2.000000000000000000000000000000);
-INSERT INTO asb_component_hierarchy (ASSEMBLY_ID, COMPONENT_ALIB_ID, PARENT_COMPONENT_ALIB_ID, PRIORITY, INSERTION_ORDER) VALUES ('RCP-0001-ServiceDiscoveryRegistration-ServiceDisco','ServiceDiscoveryRegistration|org.cougaar.servicediscovery.servlet.MatchMakerQueryServletComponent','ServiceDiscoveryRegistration','COMPONENT',5.000000000000000000000000000000);
-INSERT INTO asb_component_hierarchy (ASSEMBLY_ID, COMPONENT_ALIB_ID, PARENT_COMPONENT_ALIB_ID, PRIORITY, INSERTION_ORDER) VALUES ('RCP-0001-ServiceDiscoveryRegistration-ServiceDisco','ServiceDiscoveryRegistration|org.cougaar.servicediscovery.plugin.SDRegistrationPlugin','ServiceDiscoveryRegistration','COMPONENT',4.000000000000000000000000000000);
-INSERT INTO asb_component_hierarchy (ASSEMBLY_ID, COMPONENT_ALIB_ID, PARENT_COMPONENT_ALIB_ID, PRIORITY, INSERTION_ORDER) VALUES ('RCP-0001-ServiceDiscoveryRegistration-ServiceDisco','ServiceDiscoveryRegistration|org.cougaar.servicediscovery.service.UDDI4JRegistryQueryServiceComponent','ServiceDiscoveryRegistration','COMPONENT',2.000000000000000000000000000000);
+INSERT INTO asb_component_hierarchy (ASSEMBLY_ID, COMPONENT_ALIB_ID, PARENT_COMPONENT_ALIB_ID, PRIORITY, INSERTION_ORDER) VALUES ('RCP-0001-ServiceDiscoveryRegistration','ServiceDiscoveryRegistration|org.cougaar.servicediscovery.service.UDDI4JRegistrationServiceComponent','ServiceDiscoveryRegistration','COMPONENT',1.000000000000000000000000000000);
+INSERT INTO asb_component_hierarchy (ASSEMBLY_ID, COMPONENT_ALIB_ID, PARENT_COMPONENT_ALIB_ID, PRIORITY, INSERTION_ORDER) VALUES ('RCP-0001-ServiceDiscoveryRegistration','ServiceDiscoveryRegistration|org.cougaar.servicediscovery.plugin.LineagePlugin','ServiceDiscoveryRegistration','COMPONENT',3.000000000000000000000000000000);
+INSERT INTO asb_component_hierarchy (ASSEMBLY_ID, COMPONENT_ALIB_ID, PARENT_COMPONENT_ALIB_ID, PRIORITY, INSERTION_ORDER) VALUES ('RCP-0001-ServiceDiscoveryRegistration','DAML','ServiceDiscoveryRegistration','COMPONENT',0.000000000000000000000000000000);
+INSERT INTO asb_component_hierarchy (ASSEMBLY_ID, COMPONENT_ALIB_ID, PARENT_COMPONENT_ALIB_ID, PRIORITY, INSERTION_ORDER) VALUES ('RCP-0001-ServiceDiscoveryRegistration','DAML|org.cougaar.servicediscovery.servlet.CougaarDAMLServlet','DAML','COMPONENT',0.000000000000000000000000000000);
+INSERT INTO asb_component_hierarchy (ASSEMBLY_ID, COMPONENT_ALIB_ID, PARENT_COMPONENT_ALIB_ID, PRIORITY, INSERTION_ORDER) VALUES ('RCP-0001-ServiceDiscoveryRegistration','DAML|org.cougaar.servicediscovery.servlet.CommonWSDLServlet','DAML','COMPONENT',1.000000000000000000000000000000);
+INSERT INTO asb_component_hierarchy (ASSEMBLY_ID, COMPONENT_ALIB_ID, PARENT_COMPONENT_ALIB_ID, PRIORITY, INSERTION_ORDER) VALUES ('RCP-0001-ServiceDiscoveryRegistration','DAML|org.cougaar.servicediscovery.plugin.DAMLReadyPlugin','DAML','COMPONENT',2.000000000000000000000000000000);
+INSERT INTO asb_component_hierarchy (ASSEMBLY_ID, COMPONENT_ALIB_ID, PARENT_COMPONENT_ALIB_ID, PRIORITY, INSERTION_ORDER) VALUES ('RCP-0001-ServiceDiscoveryRegistration','ServiceDiscoveryRegistration|org.cougaar.servicediscovery.servlet.MatchMakerQueryServletComponent','ServiceDiscoveryRegistration','COMPONENT',5.000000000000000000000000000000);
+INSERT INTO asb_component_hierarchy (ASSEMBLY_ID, COMPONENT_ALIB_ID, PARENT_COMPONENT_ALIB_ID, PRIORITY, INSERTION_ORDER) VALUES ('RCP-0001-ServiceDiscoveryRegistration','ServiceDiscoveryRegistration|org.cougaar.servicediscovery.plugin.SDRegistrationPlugin','ServiceDiscoveryRegistration','COMPONENT',4.000000000000000000000000000000);
+INSERT INTO asb_component_hierarchy (ASSEMBLY_ID, COMPONENT_ALIB_ID, PARENT_COMPONENT_ALIB_ID, PRIORITY, INSERTION_ORDER) VALUES ('RCP-0001-ServiceDiscoveryRegistration','ServiceDiscoveryRegistration|org.cougaar.servicediscovery.service.UDDI4JRegistryQueryServiceComponent','ServiceDiscoveryRegistration','COMPONENT',2.000000000000000000000000000000);
 UNLOCK TABLES;
 
 #
@@ -148,7 +148,7 @@ REPLACE INTO lib_mod_recipe_arg (MOD_RECIPE_LIB_ID, ARG_NAME, ARG_ORDER, ARG_VAL
 REPLACE INTO lib_mod_recipe_arg (MOD_RECIPE_LIB_ID, ARG_NAME, ARG_ORDER, ARG_VALUE) VALUES ('RECIPE-0006ServiceDiscoveryRegistration','$$CP=org.cougaar.servicediscovery.service.UDDI4JRegistrationServiceComponent-1',3.000000000000000000000000000000,'recipeQueryAllAgents');
 REPLACE INTO lib_mod_recipe_arg (MOD_RECIPE_LIB_ID, ARG_NAME, ARG_ORDER, ARG_VALUE) VALUES ('RECIPE-0006ServiceDiscoveryRegistration','$$CP=org.cougaar.servicediscovery.service.UDDI4JRegistryQueryServiceComponent-2',4.000000000000000000000000000000,'recipeQueryAllAgents');
 REPLACE INTO lib_mod_recipe_arg (MOD_RECIPE_LIB_ID, ARG_NAME, ARG_ORDER, ARG_VALUE) VALUES ('RECIPE-0006ServiceDiscoveryRegistration','$$CP=org.cougaar.servicediscovery.servlet.MatchMakerQueryServletComponent-5',5.000000000000000000000000000000,'recipeQueryAllAgents');
-REPLACE INTO lib_mod_recipe_arg (MOD_RECIPE_LIB_ID, ARG_NAME, ARG_ORDER, ARG_VALUE) VALUES ('RECIPE-0006ServiceDiscoveryRegistration','Assembly Id',1.000000000000000000000000000000,'RCP-0001-ServiceDiscoveryRegistration-ServiceDisco');
+REPLACE INTO lib_mod_recipe_arg (MOD_RECIPE_LIB_ID, ARG_NAME, ARG_ORDER, ARG_VALUE) VALUES ('RECIPE-0006ServiceDiscoveryRegistration','Assembly Id',1.000000000000000000000000000000,'RCP-0001-ServiceDiscoveryRegistration');
 REPLACE INTO lib_mod_recipe_arg (MOD_RECIPE_LIB_ID, ARG_NAME, ARG_ORDER, ARG_VALUE) VALUES ('RECIPE-0006ServiceDiscoveryRegistration','Target Component Selection Query',0.000000000000000000000000000000,'recipeQuerySelectNothing');
 UNLOCK TABLES;
 
