@@ -32,8 +32,10 @@ import com.hp.hpl.jena.rdf.model.RDFException;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.Statement;
 import com.hp.hpl.jena.shared.JenaException;
-import org.cougaar.core.service.LoggingService;
+
 import org.cougaar.servicediscovery.Constants;
+import org.cougaar.util.log.Logger;
+import org.cougaar.util.log.Logging;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -57,11 +59,18 @@ public class ProviderDescriptionImpl implements ProviderDescription {
   private String fileName;
   private String cougaarInstallPath;
 
-  private LoggingService log;
+  private static Logger logger = Logging.getLogger(ProviderDescription.class);
+
+  private static Boolean LOCKED;
+
+  static {
+    LOCKED = Boolean.FALSE;
+  }
 
   public static void main (String args[]) {
 
-    ProviderDescription pd = new ProviderDescriptionImpl(null);
+    ProviderDescription pd = 
+      new ProviderDescriptionImpl();
     pd.parseDAML("123-MSB.profile.daml");
     System.out.println(pd.toString());
   }
@@ -70,12 +79,28 @@ public class ProviderDescriptionImpl implements ProviderDescription {
    * This constructor builds an instance using a DAML-S file that is expected
    * to contain at least one service profile and one service provider.
    */
-  public ProviderDescriptionImpl(LoggingService log) {
-    this.log = log;
+  public ProviderDescriptionImpl() {
     this.cougaarInstallPath = System.getProperty("org.cougaar.install.path", "");
   }
 
   public boolean parseDAML(String damlFileName) {
+    synchronized (LOCKED) {
+      if (logger.isDebugEnabled()) {
+	logger.debug("ProviderDescription.parseDAML for " + 
+		     damlFileName + " LOCKED == " +  LOCKED);
+      }
+      if (LOCKED == Boolean.TRUE) {
+	return false;
+      } else {
+	LOCKED = Boolean.TRUE;
+      }
+    }
+
+    if (logger.isDebugEnabled()) {
+      logger.debug("ProviderDescription.parseDAML starting to parse " + 
+		   damlFileName);
+    }
+
     this.fileName = damlFileName;
 
     InputStream in = null;
@@ -86,15 +111,14 @@ public class ProviderDescriptionImpl implements ProviderDescription {
       in = inURL.openStream();
 
     } catch (java.net.MalformedURLException mue) {
-      if (log != null && log.isErrorEnabled()) {
-        log.error("Error:  Cannot open file, " + fileName, mue);
-      }
-      return false;
+      logger.error("Error:  Cannot open file, " + fileName, mue);
     } catch (IOException e1) {
-      if (log != null && log.isErrorEnabled()) {
-        log.error("Error:  Cannot open file, " + fileName, e1);
+      logger.error("Error:  Cannot open file, " + fileName, e1);
+    } finally {
+      if (in == null) {
+	LOCKED = Boolean.FALSE;
+	return false;
       }
-      return false;
     }
 
     model = ModelFactory.createDAMLModel();
@@ -134,10 +158,8 @@ public class ProviderDescriptionImpl implements ProviderDescription {
 
     try {
         model.read(in, "");
-    }
-    catch (RDFException e1) {
-      if (log != null && log.isErrorEnabled()) {
-        String helpMessage =
+    } catch (RDFException e1) {
+      String helpMessage =
         "If the following StackTrace includes \"IO error while reading URL:\"\n" +
         " you should examine the URL and confirm that it exists and\n" +
         " is currently accessible. If the URL includes www.daml.org,\n" +
@@ -151,19 +173,20 @@ public class ProviderDescriptionImpl implements ProviderDescription {
         " profile.daml files from a ruby script while your %COUGAAR_INSTALL_PATH%\n" +
         " environment variable was not set correctly. Check these things and try\n" +
         " regenerating your profile.daml files. \n";
-          log.error(helpMessage + "Error parsing DAML file [" + fileName + "]\n" +
-                    "  Error Number: " + e1.getErrorCode() + "\n" +
-                    "  Error Message: " + e1.getMessage() + "\n" +
-                    "  Error StackTrace: " + e1.getStackTrace() + "\n" +
-                    "  File: " + fileName, e1);
-      }
+      logger.error(helpMessage + "Error parsing DAML file [" + fileName + "]\n" +
+		"  Error Number: " + e1.getErrorCode() + "\n" +
+		"  Error Message: " + e1.getMessage() + "\n" +
+		"  Error StackTrace: " + e1.getStackTrace() + "\n" +
+		"  File: " + fileName, e1);
+    } catch (JenaException eJ){
+      logger.error("JenaException in "+ fileName + " " + eJ.getMessage());
     }
-    catch (JenaException eJ){
-        if (log != null && log.isErrorEnabled()) {
-          log.error("JenaException in "+ fileName + " " + eJ.getMessage());
-        }
-    }
-      return model.getLoadSuccessful();
+
+    boolean success = model.getLoadSuccessful();
+
+    LOCKED = Boolean.FALSE;
+    
+    return success;
   }
 
   public String getProviderName() {
@@ -174,14 +197,11 @@ public class ProviderDescriptionImpl implements ProviderDescription {
       if(serviceProvider !=null) {
         name = serviceProvider.getProperty(Profile.PROVIDERNAME).getString();
       }
-    }
-    catch(RDFException e) {
-      if (log != null && log.isErrorEnabled()) {
-        log.error("Error getting Provider Name \n" +
-                  "  Error Number: " + e.getErrorCode() + "\n" +
-                  "  Error Message: " + e.getMessage() + "\n" +
-                  "  File: " + fileName, e);
-      }
+    } catch(RDFException e) {
+      logger.error("Error getting Provider Name \n" +
+		"  Error Number: " + e.getErrorCode() + "\n" +
+		"  Error Message: " + e.getMessage() + "\n" +
+		"  File: " + fileName, e);
     }
     return name;
   }
@@ -212,11 +232,9 @@ public class ProviderDescriptionImpl implements ProviderDescription {
         }
       }
     } catch(RDFException e) {
-      if (log != null && log.isErrorEnabled()) {
-        log.error("Error getOrganizationType failed \n" +
-                  "  Error Number: " + e.getErrorCode() + "\n" +
-                  "  Error Message: " + e.getMessage(), e);
-      }
+      logger.error("Error getOrganizationType failed \n" +
+		"  Error Number: " + e.getErrorCode() + "\n" +
+		"  Error Message: " + e.getMessage(), e);
     }
     return group;
   }
@@ -240,12 +258,10 @@ public class ProviderDescriptionImpl implements ProviderDescription {
         }
       }
     } catch(RDFException e) {
-      if (log != null && log.isErrorEnabled()) {
-        log.error("Error getting Service Provider \n" +
-                  "  Error Number: " + e.getErrorCode() + "\n" +
-                  "  Error Message: " + e.getMessage() + "\n" +
-                  "  File: " + fileName, e);
-      }
+      logger.error("Error getting Service Provider \n" +
+		"  Error Number: " + e.getErrorCode() + "\n" +
+		"  Error Message: " + e.getMessage() + "\n" +
+		"  File: " + fileName, e);
     }
     return serviceProvider;
   }
@@ -259,14 +275,14 @@ public class ProviderDescriptionImpl implements ProviderDescription {
         serviceProfiles.add(inst);
       }
     }
-    if (serviceProfiles.isEmpty() && (log !=null && log.isInfoEnabled())) {
-      log.info("Info: getServicePs() for [" + fileName + "] is returning an empty collection.\n" +
+    if (serviceProfiles.isEmpty() && logger.isInfoEnabled()) {
+      logger.info("Info: getServicePs() for [" + fileName + "] is returning an empty collection.\n" +
                "DAMLInstance does not contain: " + Profile.SERVICEPROFILE.getURI());
     }
-
+    
     return serviceProfiles;
   }
-
+  
   private Collection getServiceGroundings() {
     ArrayList serviceGroundings = new ArrayList();
     Iterator instances = model.listDAMLInstances();
@@ -278,8 +294,8 @@ public class ProviderDescriptionImpl implements ProviderDescription {
       }
     }
 
-    if (serviceGroundings.isEmpty() && (log != null && log.isInfoEnabled())) {
-      log.info("Info: getServiceGroundings() for [" +  fileName + "] is returning an empty collection.\n" +
+    if (serviceGroundings.isEmpty() && logger.isInfoEnabled()) {
+      logger.info("Info: getServiceGroundings() for [" +  fileName + "] is returning an empty collection.\n" +
                "DAMLInstance does not contain: " + Profile.GROUNDING.getURI());
     }
 
@@ -303,12 +319,10 @@ public class ProviderDescriptionImpl implements ProviderDescription {
       try {
         theProfileService =profile.getProperty(Profile.PRESENTEDBY).getResource();
       } catch(RDFException e) {
-        if (log != null && log.isErrorEnabled()) {
-          log.error("Error getting ServiceProfiles \n" +
-                    "  Error Number: " + e.getErrorCode() + "\n" +
-                    "  Error Message: " + e.getMessage() + "\n" +
-                    "  File: " + fileName,    e);
-        }
+	logger.error("Error getting ServiceProfiles \n" +
+		  "  Error Number: " + e.getErrorCode() + "\n" +
+		  "  Error Message: " + e.getMessage() + "\n" +
+		  "  File: " + fileName,    e);
       }
       Iterator groundings = serviceGroundings.iterator();
       //for each grounding
@@ -323,12 +337,10 @@ public class ProviderDescriptionImpl implements ProviderDescription {
             serviceDescriptions.add(new ServiceProfileImpl(profile, grounding));
           }
         } catch(RDFException e) {
-          if (log != null && log.isErrorEnabled()) {
-            log.error("Error cannot find isSupporteBy in grounding \n" +
-                      "  Error Number: " + e.getErrorCode() + "\n" +
-                      "  Error Message: " + e.getMessage() + "\n" +
-                      "  File: " + fileName , e);
-          }
+	  logger.error("Error cannot find isSupporteBy in grounding \n" +
+		    "  Error Number: " + e.getErrorCode() + "\n" +
+		    "  Error Message: " + e.getMessage() + "\n" +
+		    "  File: " + fileName , e);
         }
       }
     }
