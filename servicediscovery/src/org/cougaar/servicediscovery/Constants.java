@@ -127,8 +127,9 @@ public class Constants implements org.cougaar.planning.Constants {
     public static final String USARMY = "US-ARMY";
     public static final String JOINT = "JOINT";
     
-    private static final String[] ECHELON_ORDER = 
+    public static final String[] ECHELON_ORDER = 
       {BRIGADE, DIVISION, CORPS, THEATER, USARMY, JOINT};
+    public static final int MAX_ECHELON_INDEX = ECHELON_ORDER.length - 1;
 
     public static boolean validMilitaryEchelon(String echelon) {
       return ((echelon.equals(BRIGADE)) ||
