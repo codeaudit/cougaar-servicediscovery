@@ -613,6 +613,7 @@ public abstract class SDRegistrationPluginBase extends ComponentPlugin {
 	boolean change = false;
 	if (overlaps.size() == 0) {
 	  if (availabilityChange.isAvailable()) {
+	    change = true;
 	    // Construct ScheduleElement to fill the entire period.
 	    ScheduleElementImpl newScheduleElement = 
 	      new ScheduleElementImpl(timeSpan.getStartTime(),
