@@ -52,7 +52,7 @@ set QUERY_URL=http://%UDDI_HOST%:%UDDI_PORT%/uddi/inquiry
 set PUBLISH_URL=http://%UDDI_HOST%:%UDDI_PORT%/uddi/publishing
 
 set UDDIPROPERTIES=-Dorg.cougaar.servicediscovery.registry.queryURL=%QUERY_URL% -Dorg.cougaar.servicediscovery.registry.publishURL=%PUBLISH_URL% -Dorg.cougaar.servicediscovery.registry.user.username=%USER_USERNAME% -Dorg.cougaar.servicediscovery.registry.user.password=%USER_PASSWORD%
-set UDDICLASSPATH=%COUGAAR_INSTALL_PATH%\lib\servicediscovery.jar;%COUGAAR_INSTALL_PATH%\sys\commons-logging.jar;%COUGAAR_INSTALL_PATH%\sys\castor-0.9.3.9-xml.jar;%COUGAAR_INSTALL_PATH%\sys\xerces.jar;%COUGAAR_INSTALL_PATH%\sys\mail.jar;%COUGAAR_INSTALL_PATH%\sys\dom4j.jar;%COUGAAR_INSTALL_PATH%\sys\activation.jar;%COUGAAR_INSTALL_PATH%\sys\uddi4j.jar;%COUGAAR_INSTALL_PATH%\sys\soap.jar
+set UDDICLASSPATH=%COUGAAR_INSTALL_PATH%\lib\servicediscovery.jar;%COUGAAR_INSTALL_PATH%\sys\xerces.jar;%COUGAAR_INSTALL_PATH%\sys\mail.jar;%COUGAAR_INSTALL_PATH%\sys\activation.jar;%COUGAAR_INSTALL_PATH%\sys\uddi4j.jar;%COUGAAR_INSTALL_PATH%\sys\soap.jar
 
 REM The path to java.exe must be in the PATH environment variable
 java %UDDIPROPERTIES% -classpath %UDDICLASSPATH% org.cougaar.servicediscovery.util.UDDI4JDeleteRegistryEntries
