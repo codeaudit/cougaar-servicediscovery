@@ -92,7 +92,7 @@ public class PublishTaxonomy {
 //  public static String createTModel(String name, String key, String user,
 //                                    String password) throws UDDIException {
   public static String createTModel(String name, String key, String checked) throws UDDIException {
-      AuthToken authToken = publishing.get_authToken(
+    AuthToken authToken = publishing.get_authToken(
       new GetAuthToken(new UserID(userid), new Cred(password)));
     KeyedReferences krs = new KeyedReferences();
     krs.add(new KeyedReference(
@@ -194,7 +194,7 @@ public class PublishTaxonomy {
     String file_ext = "-wasp.xml";
 
     String basePath = System.getProperty("org.cougaar.install.path") + File.separator +
-        "servicediscovery" + File.separator + "data" + File.separator + "taxonomies" + File.separator;
+      "servicediscovery" + File.separator + "data" + File.separator + "taxonomies" + File.separator;
 
     if(validPath(basePath + name + file_ext)) {
       createTaxonomy(createTModel(name, uuid, checked), basePath + name + file_ext);
@@ -217,7 +217,6 @@ public class PublishTaxonomy {
     String ALL = "--all";
     String MILITARY_SERVICE = "--militaryservice";
     String MILITARY_ECHELON = "--militaryechelon";
-    String PLATFORMS_SUPPORTED = "--platformssupported";
     String SUPPORTED_COMMAND = "--supportedcommand";
     String ORGANIZATION_TYPE = "--orgtype";
     String SOURCING_CAPABILITY = "--sourcingcapability";
@@ -233,7 +232,7 @@ public class PublishTaxonomy {
 
     try {
       String fullpath = System.getProperty("org.cougaar.install.path") + File.separator +
-          "servicediscovery" + File.separator + "data" + File.separator + "common" + File.separator;
+        "servicediscovery" + File.separator + "data" + File.separator + "common" + File.separator;
       props.load(new FileInputStream(new File(fullpath + "waspUtil.props")));
     } catch (Exception e) {
       System.err.println("PublishTaxonomy: java could not read properties file, relying on -D args.");
@@ -245,66 +244,61 @@ public class PublishTaxonomy {
     //Taxonomies to be published are specified in the batch script that launches this program.
     //See pubtax.bat for details.
 
-      if (args.length == 0) {
-        System.err.println("Usage: PublishTaxonomy [" + ALL + ", " + MILITARY_SERVICE + ", " + MILITARY_ECHELON +
-                           ", " + PLATFORMS_SUPPORTED + ", " + SUPPORTED_COMMAND + ", " +
-                           ORGANIZATION_TYPE + ", " + SOURCING_CAPABILITY + "]");
-      } else {
-        try {
-          lookup("http://" + System.getProperty("org.cougaar.servicediscovery.registry.hostname") + ":" +
-                 System.getProperty("org.cougaar.servicediscovery.registry.server.port"));
+    if (args.length == 0) {
+      System.err.println("Usage: PublishTaxonomy [" + ALL + ", " + MILITARY_SERVICE + ", " + MILITARY_ECHELON +
+                         ", " + SUPPORTED_COMMAND + ", " +
+                         ORGANIZATION_TYPE + ", " + SOURCING_CAPABILITY + "]");
+    } else {
+      try {
+        lookup("http://" + System.getProperty("org.cougaar.servicediscovery.registry.hostname") + ":" +
+               System.getProperty("org.cougaar.servicediscovery.registry.server.port"));
 
-          boolean allFlag = false;
-          for (int i = 0; i < args.length; i++) {
-            if (args[i].equalsIgnoreCase(ALL)) {
-              System.out.println("Publishing all Taxonomies");
-              allFlag = true;
+        boolean allFlag = false;
+        for (int i = 0; i < args.length; i++) {
+          if (args[i].equalsIgnoreCase(ALL)) {
+            System.out.println("Publishing all Taxonomies");
+            allFlag = true;
 
-              try {
-                genTaxonomy(UDDIConstants.MILITARY_SERVICE_SCHEME, UDDIConstants.MILITARY_SERVICE_SCHEME_UUID, CHECKED);
-                genTaxonomy(UDDIConstants.MILITARY_ECHELON_SCHEME, UDDIConstants.MILITARY_ECHELON_SCHEME_UUID, CHECKED);
-                genTaxonomy(UDDIConstants.ORGANIZATION_TYPES, UDDIConstants.ORGANIZATION_TYPES_UUID, CHECKED);
-                genTaxonomy(UDDIConstants.SOURCING_CAPABILITY_SCHEME, UDDIConstants.SOURCING_CAPABILITY_SCHEME_UUID, CHECKED);
-                genTaxonomy(UDDIConstants.PLATFORMS_SUPPORTED, UDDIConstants.PLATFORMS_SUPPORTED_UUID, UNCHECKED);
-                genTaxonomy(UDDIConstants.SUPPORT_COMMAND_ASSIGNMENT, UDDIConstants.SUPPORT_COMMAND_ASSIGNMENTI_UUID, UNCHECKED);
-
-              } catch (UDDIException e) {
-                e.printStackTrace();  //To change body of catch statement use Options | File Templates.
-              }
-            } else if (args[i].equalsIgnoreCase(MILITARY_SERVICE) && !allFlag) {
-              System.out.println("Publishing: " + UDDIConstants.MILITARY_SERVICE_SCHEME);
+            try {
               genTaxonomy(UDDIConstants.MILITARY_SERVICE_SCHEME, UDDIConstants.MILITARY_SERVICE_SCHEME_UUID, CHECKED);
-
-            } else if (args[i].equalsIgnoreCase(MILITARY_ECHELON) && !allFlag) {
-              System.out.println("Publishing: " + UDDIConstants.MILITARY_ECHELON_SCHEME);
               genTaxonomy(UDDIConstants.MILITARY_ECHELON_SCHEME, UDDIConstants.MILITARY_ECHELON_SCHEME_UUID, CHECKED);
-
-            } else if (args[i].equalsIgnoreCase(PLATFORMS_SUPPORTED) && !allFlag) {
-              System.out.println("Publishing: " + UDDIConstants.PLATFORMS_SUPPORTED);
-              genTaxonomy(UDDIConstants.PLATFORMS_SUPPORTED, UDDIConstants.PLATFORMS_SUPPORTED_UUID, UNCHECKED);
-
-            } else if (args[i].equalsIgnoreCase(SUPPORTED_COMMAND) && !allFlag) {
-              System.out.println("Publishing: " + UDDIConstants.SUPPORT_COMMAND_ASSIGNMENT);
+              genTaxonomy(UDDIConstants.ORGANIZATION_TYPES, UDDIConstants.ORGANIZATION_TYPES_UUID, CHECKED);
+              genTaxonomy(UDDIConstants.SOURCING_CAPABILITY_SCHEME, UDDIConstants.SOURCING_CAPABILITY_SCHEME_UUID, CHECKED);
               genTaxonomy(UDDIConstants.SUPPORT_COMMAND_ASSIGNMENT, UDDIConstants.SUPPORT_COMMAND_ASSIGNMENTI_UUID, UNCHECKED);
 
-           } else if (args[i].equalsIgnoreCase(ORGANIZATION_TYPE) && !allFlag) {
-              System.out.println("Publishing: " + UDDIConstants.ORGANIZATION_TYPES);
-             genTaxonomy(UDDIConstants.ORGANIZATION_TYPES, UDDIConstants.ORGANIZATION_TYPES_UUID, CHECKED);
-
-           } else if (args[i].equalsIgnoreCase(SOURCING_CAPABILITY) && !allFlag) {
-              System.out.println("Publishing: " + UDDIConstants.SOURCING_CAPABILITY_SCHEME);
-             genTaxonomy(UDDIConstants.SOURCING_CAPABILITY_SCHEME, UDDIConstants.SOURCING_CAPABILITY_SCHEME_UUID, CHECKED);
-
-           } else {
-              System.out.println("Unknown value: " + args[i]);
-             System.err.println("Usage: PublishTaxonomy [" + ALL + ", " + MILITARY_SERVICE + ", " + MILITARY_ECHELON +
-                                ", " + PLATFORMS_SUPPORTED + ", " + SUPPORTED_COMMAND + ", " +
-                                ORGANIZATION_TYPE + ", " + SOURCING_CAPABILITY + "]");
+            } catch (UDDIException e) {
+              e.printStackTrace();  //To change body of catch statement use Options | File Templates.
             }
+          } else if (args[i].equalsIgnoreCase(MILITARY_SERVICE) && !allFlag) {
+            System.out.println("Publishing: " + UDDIConstants.MILITARY_SERVICE_SCHEME);
+            genTaxonomy(UDDIConstants.MILITARY_SERVICE_SCHEME, UDDIConstants.MILITARY_SERVICE_SCHEME_UUID, CHECKED);
+
+          } else if (args[i].equalsIgnoreCase(MILITARY_ECHELON) && !allFlag) {
+            System.out.println("Publishing: " + UDDIConstants.MILITARY_ECHELON_SCHEME);
+            genTaxonomy(UDDIConstants.MILITARY_ECHELON_SCHEME, UDDIConstants.MILITARY_ECHELON_SCHEME_UUID, CHECKED);
+
+          } else if (args[i].equalsIgnoreCase(SUPPORTED_COMMAND) && !allFlag) {
+            System.out.println("Publishing: " + UDDIConstants.SUPPORT_COMMAND_ASSIGNMENT);
+            genTaxonomy(UDDIConstants.SUPPORT_COMMAND_ASSIGNMENT, UDDIConstants.SUPPORT_COMMAND_ASSIGNMENTI_UUID, UNCHECKED);
+
+          } else if (args[i].equalsIgnoreCase(ORGANIZATION_TYPE) && !allFlag) {
+            System.out.println("Publishing: " + UDDIConstants.ORGANIZATION_TYPES);
+            genTaxonomy(UDDIConstants.ORGANIZATION_TYPES, UDDIConstants.ORGANIZATION_TYPES_UUID, CHECKED);
+
+          } else if (args[i].equalsIgnoreCase(SOURCING_CAPABILITY) && !allFlag) {
+            System.out.println("Publishing: " + UDDIConstants.SOURCING_CAPABILITY_SCHEME);
+            genTaxonomy(UDDIConstants.SOURCING_CAPABILITY_SCHEME, UDDIConstants.SOURCING_CAPABILITY_SCHEME_UUID, CHECKED);
+
+          } else {
+            System.out.println("Unknown value: " + args[i]);
+            System.err.println("Usage: PublishTaxonomy [" + ALL + ", " + MILITARY_SERVICE + ", " + MILITARY_ECHELON +
+                               ", " + SUPPORTED_COMMAND + ", " +
+                               ORGANIZATION_TYPE + ", " + SOURCING_CAPABILITY + "]");
           }
-        } catch (UDDIException e) {
-          System.err.println(e.getMessage());
         }
+      } catch (UDDIException e) {
+        System.err.println(e.getMessage());
       }
+    }
   }
 }
