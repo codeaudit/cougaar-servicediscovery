@@ -23,93 +23,84 @@
 package org.cougaar.servicediscovery.matchmaker;
 
 import org.cougaar.core.component.BindingSite;
-import org.cougaar.core.component.ContainerAPI;
-import org.cougaar.core.component.ContainerSupport;
-import org.cougaar.core.component.PropagatingServiceBroker;
+import org.cougaar.core.component.Component;
 import org.cougaar.core.component.ServiceBroker;
 import org.cougaar.core.component.ServiceProvider;
 import org.cougaar.core.node.NodeControlService;
+import org.cougaar.util.GenericStateModelAdapter;
 
 /**
- * ServiceProvider for MatchMakerService
+ * ServiceProvider for MatchMakerService.
+ * <p>
  * MatchMakerService is a node level service
  */
-public class MatchMakerServiceProviderComponent extends ContainerSupport implements ContainerAPI{
-    
-    // Implementation of abstract method for ContainerSupport
-    protected ContainerAPI getContainerProxy(){
-        return this;
-    }
-    
-    // Implementation of abstract method for ContainerSupport
-    protected String specifyContainmentPoint(){
-        return "Node.AgentManager.Agent.MatchMakerServiceProvider";
-    }
-    
-    /**
-     * Needed for containerAPI which in turn is needed by getContainerProxy
-     */
-    public void requestStop() {
-    }
-    
-    /**
-     * Needed for containerAPI which in turn is needed by getContainerProxy
-     */
-    // borrowed from MetricsServiceProvider
-    public final void setBindingSite(BindingSite bs) {
-        super.setBindingSite(bs);
-        setChildServiceBroker(new PropagatingServiceBroker(bs));
-    }
-    
-    /**
-     * Registers MatchMakerService with node service broker
-     */
-    public void load(){
-        super.load();
-        ServiceBroker sb = getServiceBroker();
-        NodeControlService ncs = 
-            (NodeControlService) sb.getService(this, NodeControlService.class, null);
-            ServiceBroker rootsb = ncs.getRootServiceBroker();
-            if(!rootsb.hasService(MatchMakerService.class)){
-                // Register the service provider with the RootServiceBroker
-                MatchMakerServiceProvider mmsp = new MatchMakerServiceProvider();
-                rootsb.addService(MatchMakerService.class, mmsp);
-            }
-    }
-    
-    public void unload(){
-        super.unload();
-    }
+public class MatchMakerServiceProviderComponent
+extends GenericStateModelAdapter
+implements Component 
+{
+  private ServiceBroker rootsb;
+  private MatchMakerServiceProvider sp;
 
+  public void setBindingSite(BindingSite bs) {
+    // ignore
+  }
 
-    public class MatchMakerServiceProvider implements ServiceProvider {
-        private MatchMakerService mmService;
-        
-        /**
-         * Creates an implementation of <code>MatchMakerService</code> to be used within a node.
-         */
-        public MatchMakerServiceProvider(){
-            mmService = new MatchMakerImpl();
+  public void setNodeControlService(NodeControlService ncs) {
+    if (ncs != null) {
+      this.rootsb = ncs.getRootServiceBroker();
+    }
+  }
+
+  /**
+   * Registers MatchMakerService with node service broker
+   */
+  public void load(){
+    super.load();
+
+    if (sp == null &&
+        rootsb != null &&
+        !rootsb.hasService(MatchMakerService.class)) {
+      // Register the service provider with the RootServiceBroker
+      sp = new MatchMakerServiceProvider();
+      rootsb.addService(MatchMakerService.class, sp);
+    }
+  }
+
+  public void unload(){
+    super.unload();
+    if (sp != null && rootsb != null) {
+      rootsb.revokeService(MatchMakerService.class, sp);
+      sp = null;
+    }
+  }
+
+  public class MatchMakerServiceProvider 
+    implements ServiceProvider {
+
+      private final MatchMakerService mmService = 
+        new MatchMakerImpl();
+
+      /**
+       * @return <code>MatchMakerService</code> implementation
+       */
+      public Object getService(
+          ServiceBroker sb, Object requestor, Class serviceClass) {
+        if (serviceClass == MatchMakerService.class) {
+          return mmService;
+        } else {
+          throw new IllegalArgumentException(
+              "MatchMakerServiceProvider does not provide a service for: "+
+              serviceClass);
         }
-        
-        /**
-         * @return <code>MatchMakerService</code> implementation
-         */
-        public Object getService(ServiceBroker sb, Object requestor, Class serviceClass) {
-            if (serviceClass == MatchMakerService.class) {
-                return mmService;
-            } else {
-                throw new IllegalArgumentException("MatchMakerServiceProvider does not provide a service for: "+
-                serviceClass);
-            }
-        }
-        
-        /**
-         * Currently does nothing
-         */
-        public void releaseService(ServiceBroker sb, Object requestor, Class serviceClass, Object service) {
-            //if (service instanceof MatchMakerImpl) {
-            //}
-        }
+      }
+
+      /**
+       * Currently does nothing
+       */
+      public void releaseService(
+          ServiceBroker sb, Object requestor, Class serviceClass, Object service) {
+        //if (service instanceof MatchMakerImpl) {
+        //}
+      }
     }
 }
