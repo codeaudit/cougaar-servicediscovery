@@ -443,13 +443,14 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
     
     
     if (opconLineages.size() == 0) {
-      myLoggingService.debug(getAgentIdentifier() + 
-			     ": queryServices: no OPCON Lineage on blackboard" +
-			     "for requested time span - " + 
-			     timeSpan.getStartTime() + " to " +
-			     timeSpan.getEndTime() +
-			     ". Making single element OPCON lineage.");
-
+      if (myLoggingService.isDebugEnabled()) {
+	myLoggingService.debug(getAgentIdentifier() + 
+			       ": queryServices: no OPCON Lineage on blackboard" +
+			       "for requested time span - " + 
+			       timeSpan.getStartTime() + " to " +
+			       timeSpan.getEndTime() +
+			       ". Making single element OPCON lineage.");
+      }
       // Build a 1 node opcon list
       ArrayList list = new ArrayList();
       list.add(getAgentIdentifier().toString());
@@ -468,8 +469,10 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
 
     if (myLoggingService.isDebugEnabled()) {
       myLoggingService.debug(getAgentIdentifier() +
-			     ": queryServices() OPCON schedule = " + getOPCONSchedule() +
-			     " OPCON schedule intersectingSet = " + opconLineages);
+			     ": queryServices() OPCON schedule = " + 
+			     getOPCONSchedule() +
+			     " OPCON schedule intersectingSet = " + 
+			     opconLineages);
     }
     
     for (Iterator iterator = opconLineages.iterator();
@@ -580,7 +583,8 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
         String numProviders = 
 	  fullParam.substring(endRoleIndex + 1, fullParam.length());
         if (myLoggingService.isInfoEnabled()) {
-          myLoggingService.info("numProviders desired for role " +
+          myLoggingService.info(getAgentIdentifier() + 
+				" numProviders desired for role " +
 				desiredRole + " is " + numProviders);
         }
         Integer i = new Integer(numProviders);
@@ -909,17 +913,23 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
     
     if (currentOPCONSchedule.equals(getOPCONSchedule())) {
       if (myLoggingService.isDebugEnabled()) {
-	myLoggingService.debug(getAgentIdentifier() + ": handleChangedLineage() " +
+	myLoggingService.debug(getAgentIdentifier() + 
+			       ": handleChangedLineage() " +
 			       " change in lineage subscription - no change in OPCON schedule. " +
-			       " currentOPCONSchedule = " + currentOPCONSchedule + 
-			       " previous OPCON schedule = " + getOPCONSchedule());
+			       " currentOPCONSchedule = " + 
+			       currentOPCONSchedule + 
+			       " previous OPCON schedule = " + 
+			       getOPCONSchedule());
       }
     } else {
       if (myLoggingService.isDebugEnabled()) {
-	myLoggingService.debug(getAgentIdentifier() + ": handleChangedLineage() " + 
-			       " change in OPCON schedule - " +
-			       " currentOPCONSchedule = " + currentOPCONSchedule + 
-			       " previous OPCON schedule = " + getOPCONSchedule());
+	myLoggingService.debug(getAgentIdentifier() + 
+			       ": handleChangedLineage() " + 
+			       "change in OPCON schedule - " +
+			       " currentOPCONSchedule = " + 
+			       currentOPCONSchedule + 
+			       " previous OPCON schedule = " + 
+			       getOPCONSchedule());
       }
      
       verifyOutstandingRequests(currentOPCONSchedule);
@@ -1071,7 +1081,7 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
 	  theLDMF.createDisposition(task.getPlan(), task, estResult);
         if (myLoggingService.isInfoEnabled()) {
           myLoggingService.info(getAgentIdentifier() +
-                                ": updateFindProvidersTaskDispositions: Create disposition with conf " 
+                                ": updateFindProvidersTaskDispositions: create disposition with conf " 
                                 + conf);
         }
 	publishAdd(disposition);
@@ -1086,15 +1096,15 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
 	  justFoundProviders = true;
 	  if (myLoggingService.isInfoEnabled()) {
 	    myLoggingService.info(getAgentIdentifier() 
-                                  + ": updateFindProvidersTaskDispositions: " +
-				  " Just added a conf 1.0 disposition to findProviders while doingInitialFindProviders - going to request persistence.");
+                                  + ": updateFindProvidersTaskDispositions - " +
+				  " added a conf 1.0 disposition to findProviders while doingInitialFindProviders - going to request persistence.");
 	  }
 	}
       } else {
 	if (conf != pe.getEstimatedResult().getConfidenceRating()) {
 	  if (myLoggingService.isInfoEnabled()) {
             myLoggingService.info(getAgentIdentifier() + 
-				  ": updateFindProvidersTaskDispositions() Changed conf from " +
+				  ": updateFindProvidersTaskDispositions() changed conf from " +
 				  pe.getEstimatedResult().getConfidenceRating() +
 				  " to " + conf);
 	  } // end if logging block
@@ -1263,7 +1273,7 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
 	    myEventService.isEventEnabled()) {
 	  myEventService.event(getAgentIdentifier() + 
 			     " persisted after finding providers.");
-	} else {
+	} else if (myLoggingService.isInfoEnabled()) {
 	  myLoggingService.info(getAgentIdentifier() + 
 				" (no event service): persisted after finding providers.");
 	}
@@ -1272,7 +1282,7 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
 	    myEventService.isEventEnabled()) {
 	  myEventService.event(getAgentIdentifier() + 
 			     " finished finding providers (persistence not enabled).");
-	} else {
+	} else if (myLoggingService.isInfoEnabled()) {
 	  myLoggingService.info(getAgentIdentifier() + 
 				" (no event service): finished finding providers (persistence not enabled).");
 	}

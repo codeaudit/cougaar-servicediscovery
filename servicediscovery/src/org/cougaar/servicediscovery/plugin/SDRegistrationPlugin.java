@@ -80,13 +80,14 @@ public class SDRegistrationPlugin extends SDRegistrationPluginBase {
         isPending = false;
 
 	if (log.isInfoEnabled()) {
-	  log.info("Completed initial registration of "+getAgentIdentifier());
+	  log.info(getAgentIdentifier()+ " completed initial registration.");
 	}
 
 	if (outstandingSCAUpdates != 0) {
 	  Collection scas = supportLineageSubscription.getCollection();
 	  if (log.isInfoEnabled()) {
-	    log.info(getAgentIdentifier() + " post pending added new SCAs - " + scas);
+	    log.info(getAgentIdentifier() + 
+		     " post pending added new SCAs - " + scas);
 	  }
 
 	  // Set outstanding count to 1 because we're adding all known SCAs
@@ -96,14 +97,14 @@ public class SDRegistrationPlugin extends SDRegistrationPluginBase {
       } else if (!isRegistered) {
 	if (supportLineageSubscription.size() >= knownSCAs) {
 	  if (log.isDebugEnabled()) {
-	    log.debug("Registering: " + getAgentIdentifier() +
-		      " with SCAs " + supportLineageSubscription);
+	    log.debug(getAgentIdentifier() + " registering with SCAs " + 
+		      supportLineageSubscription);
 	  }
 	  registrationInitiated = true;
 	  initialRegister();
 	} else {
 	  if (log.isDebugEnabled()) {
-	    log.debug("Waiting to register: " + getAgentIdentifier() +
+	    log.debug(getAgentIdentifier() + " waiting to register - " + 
 		      " need " + knownSCAs + " SCAs, have " +
 		      supportLineageSubscription.size());
 	  }
@@ -197,7 +198,7 @@ public class SDRegistrationPlugin extends SDRegistrationPluginBase {
       
       if (inProgress) {
 	if (log.isInfoEnabled()) {
-	  log.info(getAgentIdentifier() + "Still waiting for register");
+	  log.info(getAgentIdentifier() + " still waiting for register");
 	}
       } else {
 	inProgress = true;      // don't allow another one to start
@@ -209,7 +210,8 @@ public class SDRegistrationPlugin extends SDRegistrationPluginBase {
 	  public void invoke(Object o) {
 	    boolean success = ((Boolean) o).booleanValue();
 	    if (log.isInfoEnabled()) {
-	      log.info(pd.getProviderName()+ " initialRegister success = "+success);
+	      log.info(pd.getProviderName()+ " initialRegister success = " + 
+		       success);
 	    }
 	    
 	    isPending = true; // let the plugin set isRegistered
@@ -235,7 +237,7 @@ public class SDRegistrationPlugin extends SDRegistrationPluginBase {
       }
     } else {
       if (log.isDebugEnabled()) {
-	log.debug("Agent " + getAgentIdentifier() + " Not Registering, no owl file.");
+	log.debug(getAgentIdentifier() + " not registering, no owl file.");
       }
     }
   }

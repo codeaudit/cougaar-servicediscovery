@@ -88,7 +88,10 @@ public final class UDDI4JRegistrationServiceComponent
 
   /**  Cougaar service used for logging **/
   private LoggingService log;
-  public void setLoggingService(LoggingService ls) { log=ls; }
+  public void setLoggingService(LoggingService ls) {
+    log = (log==null)?LoggingService.NULL:log; 
+  }
+
   private YPService ypService;
   public void setYPService(YPService yp) { ypService = yp; }
   private ThreadService threads;
@@ -102,7 +105,7 @@ public final class UDDI4JRegistrationServiceComponent
     super.load();
 
     // create and advertise our service
-    this.mySP = new RegistrationServiceProviderImpl();
+    mySP = new RegistrationServiceProviderImpl();
     getServiceBroker().addService(RegistrationService.class, mySP);
 
     agentName = agentIdentificationService.getName();
@@ -238,11 +241,6 @@ public final class UDDI4JRegistrationServiceComponent
       public  void set(State s) {
 	super.set(s);
 	if (staticLogger.isInfoEnabled()) {
-	  /*
-          if ("POP".equals(s.getKey()))
-            staticLogger.info(this.toString()+" StateMachine set to "+s, new Throwable());
-          else
-          */
 	  staticLogger.info(this.toString()+" StateMachine set to "+s);
 	}
       }
@@ -264,16 +262,6 @@ public final class UDDI4JRegistrationServiceComponent
 ));
 	}
       }
-
-      /*
-      public String toString() {
-	if (agentName != null) {
-	  return super.toString()+"("+agentName+")";
-	} else { 
-	  return super.toString();
-	}
-      } */
-
     }
     
 
@@ -352,8 +340,7 @@ public final class UDDI4JRegistrationServiceComponent
               kick();
             }
             public void handle(Exception e) {
-              UDDI4JRegistrationServiceComponent.this.log.error(
-                "initBag.Loop.getKeyedReference(" + bc + ")",
+              log.error("initBag.Loop.getKeyedReference(" + bc + ")",
                 e);
               //transit("ERROR");
               callback.handle(e);
@@ -402,8 +389,7 @@ public final class UDDI4JRegistrationServiceComponent
               kick();
             }
             public void handle(Exception e) {
-              UDDI4JRegistrationServiceComponent.this.log.error(
-                "ibsl_sub1.getKeyedReference(" + sc + ")",
+              log.error("ibsl_sub1.getKeyedReference(" + sc + ")",
                 e);
               //transit("ERROR");
               callback.handle(e);
@@ -434,7 +420,7 @@ public final class UDDI4JRegistrationServiceComponent
                                 kick();
                               }
                               public void handle(Exception e) {
-                                UDDI4JRegistrationServiceComponent.this.log.error("ibsl_sub2.getKeyedReference("+sc+")", e);
+                                log.error("ibsl_sub2.getKeyedReference("+sc+")", e);
                                 //transit("ERROR");
                                 callback.handle(e);
                               }};
@@ -468,9 +454,7 @@ public final class UDDI4JRegistrationServiceComponent
               kick();
             }
             public void handle(Exception e) {
-              UDDI4JRegistrationServiceComponent.this.log.error(
-                "ibsl_sub3.getKeyedReference(" + sc + ")",
-                e);
+              log.error("ibsl_sub3.getKeyedReference(" + sc + ")", e);
               //transit("ERROR");
               callback.handle(e);
             }
@@ -507,9 +491,7 @@ public final class UDDI4JRegistrationServiceComponent
               kick();
             }
             public void handle(Exception e) {
-              UDDI4JRegistrationServiceComponent.this.log.error(
-                "ibsl_1c.createTModelInstance",
-                e);
+              log.error("ibsl_1c.createTModelInstance", e);
               //transit("ERROR");
               callback.handle(e);
             }
@@ -538,7 +520,7 @@ public final class UDDI4JRegistrationServiceComponent
               // ignore the result.
             }
             public void handle(Frame f, Exception e) {
-              UDDI4JRegistrationServiceComponent.this.log.error("saveBusiness exception", e);
+              log.error("saveBusiness exception", e);
               callback.handle(e);
             }
           });
@@ -607,7 +589,7 @@ public final class UDDI4JRegistrationServiceComponent
               businessList = (BusinessList) r;
             }
             public void handle(Frame f, Exception e) {
-              UDDI4JRegistrationServiceComponent.this.log.error("updateServiceDescription.findBusiness", e);
+              log.error("updateServiceDescription.findBusiness", e);
               callback.handle(e);
               transit("ERROR");
             }
@@ -617,8 +599,9 @@ public final class UDDI4JRegistrationServiceComponent
             public void invoke() {
               Iterator it = businessList.getBusinessInfos().getBusinessInfoVector().iterator();
               if (!it.hasNext()) {
-                if (UDDI4JRegistrationServiceComponent.this.log.isDebugEnabled()) {
-                  UDDI4JRegistrationServiceComponent.this.log.debug("updateServiceDescription, cannot find registration for: " + providerName);
+                if (log.isDebugEnabled()) {
+                  log.debug("updateServiceDescription, cannot find registration for: " + 
+			    providerName);
                 }
                 callback.invoke(Boolean.TRUE);
                 transit("DONE");
@@ -652,9 +635,7 @@ public final class UDDI4JRegistrationServiceComponent
                     kick();
                   }
                   public void handle(Exception e) {
-                    UDDI4JRegistrationServiceComponent.this.log.error(
-                      "initBagLoop.getKeyedReference(" + sc + ")",
-                      e);
+                    log.error("initBagLoop.getKeyedReference(" + sc + ")", e);
                     //transit("ERROR");
                     callback.handle(e);
                   }
@@ -685,7 +666,7 @@ public final class UDDI4JRegistrationServiceComponent
               }
             }
             public void handle(Frame f, Exception e) {
-              UDDI4JRegistrationServiceComponent.this.log.error("getServiceDetail", e);
+              log.error("getServiceDetail", e);
               callback.handle(e);
             }
           });
@@ -699,7 +680,7 @@ public final class UDDI4JRegistrationServiceComponent
               // copacetic
             }
             public void handle(Frame f, Exception e) {
-              UDDI4JRegistrationServiceComponent.this.log.error("saveService", e);
+              log.error("saveService", e);
               callback.handle(e);
             }
           });
@@ -775,9 +756,7 @@ public final class UDDI4JRegistrationServiceComponent
                     kick();
                   }
                   public void handle(Exception e) {
-                    UDDI4JRegistrationServiceComponent.this.log.error(
-                      "initBagLoop.getKeyedReference(" + sc + ")",
-                      e);
+                    log.error("initBagLoop.getKeyedReference(" + sc + ")", e);
                     //transit("ERROR");
                     callback.handle(e);
                   }
@@ -801,7 +780,7 @@ public final class UDDI4JRegistrationServiceComponent
               businessList = (BusinessList) result;
             }
             public void handle(Frame f, Exception e) {
-              UDDI4JRegistrationServiceComponent.this.log.error("findBusiness", e);
+              log.error("findBusiness", e);
               callback.handle(e);
             }
           });
@@ -825,8 +804,9 @@ public final class UDDI4JRegistrationServiceComponent
               if (iter.hasNext()) {
                 businessInfo = (BusinessInfo) iter.next();
                 if (businessInfo == null) {
-                  if (UDDI4JRegistrationServiceComponent.this.log.isDebugEnabled()) {
-                    UDDI4JRegistrationServiceComponent.this.log.debug("deleteServiceDescription, cannot find registration for: " + providerName);
+                  if (log.isDebugEnabled()) {
+                    log.debug("deleteServiceDescription, cannot find registration for: " + 
+			      providerName);
                   }
                 } else {
                   transit("dbLoop1");
@@ -850,7 +830,7 @@ public final class UDDI4JRegistrationServiceComponent
               // dont care
             }
             public void handle(Frame f, Exception e) {
-              UDDI4JRegistrationServiceComponent.this.log.error("deleteServiceDescription exception", e);
+              log.error("deleteServiceDescription exception", e);
               transit("dbLoop"); // continue to next
             }
           });

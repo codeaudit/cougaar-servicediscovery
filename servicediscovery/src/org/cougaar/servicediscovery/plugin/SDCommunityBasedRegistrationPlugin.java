@@ -238,9 +238,11 @@ public class SDCommunityBasedRegistrationPlugin extends SDRegistrationPluginBase
       final SCAInfo scaInfo = (SCAInfo) entry.getValue();
       
       if (scaInfo.getIsRegistered()) {
-	log.debug("Added SCAs - " + scas + " - to " + 
-		  getAgentIdentifier() + " with " +
-		  scaInfo.getCommunity());
+	if (log.isDebugEnabled()) {
+	  log.debug("Added SCAs - " + scas + " - to " + 
+		    getAgentIdentifier() + " with " +
+		    scaInfo.getCommunity());
+	}
 	RegistrationService.Callback cb = new RegistrationService.Callback() {
 	  public void invoke(Object o) {
 	    boolean success = ((Boolean)o).booleanValue();
@@ -326,8 +328,10 @@ public class SDCommunityBasedRegistrationPlugin extends SDRegistrationPluginBase
     
     if (scaCommunity != null) {
       scaInfo.setCommunity(scaCommunity);
-      log.debug("Registering: " + getAgentIdentifier() + " with " +
-		scaInfo.getCommunity());
+      if (log.isDebugEnabled()) {
+	log.debug("Registering: " + getAgentIdentifier() + " with " +
+		  scaInfo.getCommunity());
+      }
       initialRegister(scaInfo);
     }
   }
@@ -502,7 +506,8 @@ public class SDCommunityBasedRegistrationPlugin extends SDRegistrationPluginBase
       if ((myIsRegistered) && (!isRegistered) &&
 	  (log.isDebugEnabled())) {
 	RuntimeException re  = new RuntimeException();
-	log.debug(getAgentIdentifier() + " setIsRegistered() going from true to false.", re);
+	log.debug(getAgentIdentifier() + 
+		  " setIsRegistered() going from true to false.", re);
       }
       myIsRegistered = isRegistered;
     }
@@ -571,8 +576,10 @@ public class SDCommunityBasedRegistrationPlugin extends SDRegistrationPluginBase
       // Paranoia code - bug in community code seems to lead to
       // notifications with null communities.
       if (scaCommunity == null) {
-	log.debug(getAgentIdentifier() + 
-		  " received Community change info for a null community");
+	if (log.isDebugEnabled()) {
+	  log.debug(getAgentIdentifier() + 
+		    " received Community change info for a null community");
+	}
 	return;
       }
 
@@ -582,8 +589,10 @@ public class SDCommunityBasedRegistrationPlugin extends SDRegistrationPluginBase
       }
 
       if (scaCommunity == null) {
-	log.debug(getAgentIdentifier() + 
-		  " received Community change info for a null community");
+	if (log.isDebugEnabled()) {
+	  log.debug(getAgentIdentifier() + 
+		    " received Community change info for a null community");
+	}
 	return;
       }
 

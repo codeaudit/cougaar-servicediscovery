@@ -424,9 +424,11 @@ public class SDProviderPlugin extends SimplePlugin
       ProviderCapability capability = 
 	capabilities.getCapability(role);
 
-      myLoggingService.info(getAgentIdentifier() +
-			    " getCapability returned " + capability + 
-			    " for "  + role);
+      if (myLoggingService.isInfoEnabled()) {
+	myLoggingService.info(getAgentIdentifier() +
+			      " getCapability returned " + capability + 
+			      " for "  + role);
+      }
       
       if (capability != null) {
 	return capability;
@@ -467,10 +469,12 @@ public class SDProviderPlugin extends SimplePlugin
 	  break;
 	}
       } else {
-	myLoggingService.info(getAgentIdentifier() + 
-			      " no overlaps, requestedTimeSpan = " +
-			      requestedTimeSpan +
-			      " available schedule " + currentAvailability);
+	if (myLoggingService.isInfoEnabled()) {
+	  myLoggingService.info(getAgentIdentifier() + 
+				" no overlaps, requestedTimeSpan = " +
+				requestedTimeSpan +
+				" available schedule " + currentAvailability);
+	}
       }
     }
   

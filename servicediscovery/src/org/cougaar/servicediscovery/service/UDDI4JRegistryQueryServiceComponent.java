@@ -223,10 +223,7 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
     /**
      * Returns providers matching the attributes in the RegistryQuery 
      * object. Uses single step YPService search. Query is applied to the
-     * YP server for the specified agent. Currently requires that agent 
-     * also be a YPServer. Bug in CommunityService 
-     * (http://bugs.cougaar.org/show_bug.cgi?id=3585) prevents a more general
-     * implementation.
+     * YP server for the specified agent.
      * 
      * @param agentName Name of the agent whose YP server should be queried
      * @param query RegistryQuery containing the attributes to be matched.
@@ -320,9 +317,7 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
      * Returns all services matching the attributes in the RegistryQuery object.
      * Uses single step YPService search.  Query is applied to the
      * YP server for the specified agent. Currently requires that agent 
-     * also be a YPServer. Bug in CommunityService 
-     * (http://bugs.cougaar.org/show_bug.cgi?id=3585) prevents a more general
-     * implementation.
+     * also be a YPServer.
      *
      * @param agentName Name of the agent whose YP server should be queried
      * @param query RegistryQuery containing the attributes to be matched.

@@ -203,7 +203,7 @@ public class LineagePlugin extends SimplePlugin
     if (myLineageSubscription.hasChanged()) {
       if (myLoggingService.isDebugEnabled()) {
 	myLoggingService.debug(myAgentName +
-			       ":execute lineage list subscription has changed.");
+			       ": execute lineage list subscription has changed.");
       }
       updateSubordinates();
     }
@@ -291,7 +291,7 @@ public class LineagePlugin extends SimplePlugin
 
       if (myLoggingService.isDebugEnabled()) {
 	myLoggingService.debug(getAgentIdentifier() + 
-			       "addSupportLineage: publishChange of " +
+			       ": addSupportLineage: publishChange of " +
 			       lineage.getUID());
       }
     } else {
@@ -359,7 +359,8 @@ public class LineagePlugin extends SimplePlugin
     }
 
     if (myLoggingService.isDebugEnabled()) {
-      myLoggingService.debug(getAgentIdentifier() + ": constructLineageSchedule() " +
+      myLoggingService.debug(getAgentIdentifier() + 
+			     ": constructLineageSchedule() " +
 			     "looking for " + lineageRole + " RFDs to " + 
 			     superiorName + " list = " + lineageList);
     }
@@ -472,7 +473,8 @@ public class LineagePlugin extends SimplePlugin
 	      localPublishChange(localLineage);
 	    } else {
 	      if (myLoggingService.isDebugEnabled()) {
-		myLoggingService.debug(getAgentIdentifier() + " removing Lineage: " +
+		myLoggingService.debug(getAgentIdentifier() + 
+				       " removing Lineage: " +
 				       localLineage + " which is never active.");
 	      }
 	      localPublishRemove(localLineage);
@@ -528,12 +530,14 @@ public class LineagePlugin extends SimplePlugin
       if (localLineage.getSchedule().isEmpty()) {
 	if (newLineage) {
 	  if (myLoggingService.isDebugEnabled()) {
-	    myLoggingService.debug(getAgentIdentifier() + " ignoring Lineage: " +
+	    myLoggingService.debug(getAgentIdentifier() + 
+				   " ignoring Lineage  " +
 				   localLineage + " which is never active.");
 	  }
 	} else {
 	  if (myLoggingService.isDebugEnabled()) {
-	    myLoggingService.debug(getAgentIdentifier() + " removing Lineage: " +
+	    myLoggingService.debug(getAgentIdentifier() + 
+				   " removing Lineage " +
 				   localLineage + " which is never active.");
 	  }
 	  localPublishRemove(localLineage);
@@ -547,8 +551,9 @@ public class LineagePlugin extends SimplePlugin
 	  localPublishAdd(localLineage);
 	} else {
 	  if (myLoggingService.isDebugEnabled()) {
-	    myLoggingService.debug(getAgentIdentifier() + ": updateLineage() " +
-				   "modifying lineage - " + localLineage);
+	    myLoggingService.debug(getAgentIdentifier() + 
+				   ": updateLineage() modifying lineage - " +
+				   localLineage);
 	  }
 	  localPublishChange(localLineage);
 	}
@@ -567,7 +572,7 @@ public class LineagePlugin extends SimplePlugin
 
 	if (myLoggingService.isDebugEnabled()) {
 	  myLoggingService.debug(getAgentIdentifier() + ": updateLineage() " +
-			 " removing local lineage " + 
+				 " removing local lineage " + 
 				 lineage.getType() + " " + 
 				 lineage.getList() + 
 				 ". Not found in relay lineages from " +
@@ -588,7 +593,7 @@ public class LineagePlugin extends SimplePlugin
       lineages.add(mySDFactory.copyLineage(localLineage));
       if (myLoggingService.isDebugEnabled()) {
 	myLoggingService.debug(myAgentName +
-			       ":updateSubordinate localLineage " +
+			       ": updateSubordinate localLineage " +
 			       localLineage);
       }
       if (localLineage.getType() == Lineage.ADCON) {
@@ -602,13 +607,13 @@ public class LineagePlugin extends SimplePlugin
 
     if (!adconFound) {
       myLoggingService.warn(myAgentName + 
-                            ":updateSubordinate local ADCON Lineage not found");
+                            ": updateSubordinate local ADCON Lineage not found");
       lineages.add(addLineageSeed(Lineage.ADCON));
     }
 
     if (!opconFound) {
       myLoggingService.warn(myAgentName + 
-                            ":updateSubordinate local OPCON Lineage not found");
+                            ": updateSubordinate local OPCON Lineage not found");
       lineages.add(addLineageSeed(Lineage.OPCON));
     }
 
@@ -633,8 +638,9 @@ public class LineagePlugin extends SimplePlugin
   protected Object findIndirectObject(Task task, String prep) {
     PrepositionalPhrase pp = task.getPrepositionalPhrase(prep);
     if (pp == null) {
-      myLoggingService.error("Didn't find a single \"" + prep +
-			     "\" Prepositional Phrase in " + task);
+      myLoggingService.error(getAgentIdentifier() + 
+			     ": findIndirectObject - didn't find a " + prep +
+			     " prepositional phrase in " + task);
       return null;
     } else {
       return pp.getIndirectObject();
@@ -651,7 +657,8 @@ public class LineagePlugin extends SimplePlugin
     Schedule modifiedSchedule = SDFactory.newLineageSchedule();
 
     if (myLoggingService.isDebugEnabled()) {
-      myLoggingService.debug(getAgentIdentifier() + ": updateLineageSchedule() " +
+      myLoggingService.debug(getAgentIdentifier() + 
+			     ": updateLineageSchedule() " +
 			     " relaySchedule = " + relayLineage + 
 			     " constructedSchedule = " + constructedSchedule);
     }
@@ -685,7 +692,8 @@ public class LineagePlugin extends SimplePlugin
     
     if ((modifiedSchedule.size() == 0) &&
 	(myLoggingService.isDebugEnabled())) {
-      myLoggingService.debug(getAgentIdentifier() + " updateLineageSchedule() " + 
+      myLoggingService.debug(getAgentIdentifier() + 
+			     ": updateLineageSchedule() " + 
 			     " no overlap between relay Schedule and constructed schedule.");
     }
 
@@ -728,7 +736,7 @@ public class LineagePlugin extends SimplePlugin
       return  superior.getClusterPG().getMessageAddress().toString();
     } else {
       myLoggingService.error(getAgentIdentifier() + 
-			     ": getSuperiorName() RFD task - " + rfdTask +
+			     ": getSuperiorName -  RFD task " + rfdTask +
 			     " does not specify a superior.");
       return null;
     }
@@ -824,7 +832,7 @@ public class LineagePlugin extends SimplePlugin
     
     if (myLoggingService.isDebugEnabled()) {
       myLoggingService.debug(getAgentIdentifier() + 
-			     " adding initial lineage - " + lineage);
+			     ": adding initial lineage - " + lineage);
     }
     
     return lineage;
@@ -859,7 +867,8 @@ public class LineagePlugin extends SimplePlugin
 
     if (myLoggingService.isDebugEnabled()) {
       myLoggingService.debug(getAgentIdentifier() + 
-			     ": createLocalLineage() localLineage " + localLineage);
+			     ": createLocalLineage() localLineage " + 
+			     localLineage);
     }   
 
     return localLineage;
@@ -975,8 +984,10 @@ public class LineagePlugin extends SimplePlugin
 	    break;
 	  } else {
 	    if (myLoggingService.isDebugEnabled()) {
-	      myLoggingService.debug(getAgentIdentifier() + ": findRelay() - " +
-				     " recently added relay to " + nextRelay.getAgentName() +
+	      myLoggingService.debug(getAgentIdentifier() + 
+				     ": findRelay() - " +
+				     " recently added relay to " + 
+				     nextRelay.getAgentName() +
 				     " does not match.");
 	    }
 	  }

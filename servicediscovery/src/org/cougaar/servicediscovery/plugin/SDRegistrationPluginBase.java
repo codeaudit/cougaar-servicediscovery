@@ -436,7 +436,8 @@ public abstract class SDRegistrationPluginBase extends ComponentPlugin {
 	// Tell the Q Service I'm quiescent
 	quiescenceReportService.setQuiescentState();
 	if (log.isInfoEnabled()) {
-	  log.info(getAgentIdentifier() + " done with SDRegistration. Now quiescent.");
+	  log.info(getAgentIdentifier() + 
+		   " done with SDRegistration. Now quiescent.");
 	}
       } else if (registerTaskSubscription.isEmpty()) {
 	// no point in checking for the reregistration kludge
