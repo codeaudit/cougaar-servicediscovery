@@ -1,3 +1,6 @@
+***Note that that file is no longer used by the application***
+***We retain it as a record of which web files we store locally***
+
 http://www.w3.org/1999/02/22-rdf-syntax-ns -> rdfSyntaxNS.rdf
 http://www.w3.org/2000/01/rdf-schema -> rdfSchema.rdf
 http://www.daml.org/2001/03/daml+oil -> damlOil.daml
@@ -6,3 +9,4 @@ http://www.daml.org/services/daml-s/2001/10/Service.daml -> Service.daml
 http://www.daml.org/services/daml-s/2001/10/Process.daml -> Process.daml
 http://www.daml.org/services/daml-s/2001/10/Profile.daml -> Profile.daml
 http://cougaar.daml -> cougaar.daml
+http://www.ai.sri.com/daml/ontologies/sri-basic/1-0/Time.daml -> Time.daml
