@@ -50,6 +50,7 @@ public class ServiceContractImpl implements ServiceContract, java.io.Serializabl
   private Role myServiceRole;
   private Collection myServicePreferences;
   private boolean isRevoked;
+  private transient String myToString = null;
 
   public ServiceContractImpl() {
   }
@@ -128,6 +129,11 @@ public class ServiceContractImpl implements ServiceContract, java.io.Serializabl
     return isRevoked;
   }
 
+  public String toString() {
+    if (myToString == null)
+      myToString = "<ServiceContractImpl: Provider=" + getProvider() + ", Role=" + getServiceRole() + ", # Service Preferences=" + getServicePreferences().size() + ", Revoked? " + isRevoked() + ">";
+    return myToString;
+  }
 }
 
 

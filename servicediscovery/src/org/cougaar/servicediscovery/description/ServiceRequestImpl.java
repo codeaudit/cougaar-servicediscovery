@@ -49,6 +49,7 @@ public class ServiceRequestImpl implements ServiceRequest, java.io.Serializable 
   private Asset myClient;
   private Role myServiceRole;
   private Collection myServicePreferences;
+  private transient String myToString = null;
 
   public ServiceRequestImpl() {
   }
@@ -113,6 +114,11 @@ public class ServiceRequestImpl implements ServiceRequest, java.io.Serializable 
     myServicePreferences = new ArrayList(servicePreferences);
   }
 
+  public String toString() {
+    if (myToString == null)
+      myToString = "<ServiceRequestImpl: Role: " + myServiceRole + ", Client: " + getClient() + ", # ServicePrefs: " + getServicePreferences().size() + ">";
+    return myToString;
+  }
 }
 
 
