@@ -49,12 +49,14 @@ import org.cougaar.util.Configuration;
  * Simplified version of SDRegistrationPlugin that registers this agent
  * using the <agent name>-profile.owl file if any in the plugin parameter-named YP agent.
  * <p>
- * This version of the plugin is somewhat simplified -- fewer error checks for example.
+ * This version of the plugin is somewhat simplified -- fewer error checks for example. It 
+ * does not create {@link ProviderCapabilities} objects (used by more complex SDProviderPlugins).
  * <p>
  * First plugin argument is the name of the agent hosting the YP that we will register with.
  *<p>
  * The {@link SDRegistrationPluginBase} and extensions are more complex; they handle more errors,
- * dynamic changes to the services provided, deal with society quiescence issues, etc. 
+ * dynamic changes to the services provided, deal with society quiescence issues, create 
+ * ProviderCapabilities, etc.  
  * Complex applications will likely want to use those plugins, but most users will prefer
  * to extend this plugin. Extensions should over-rider the getServiceProfileURL() method,
  * to specify where their application's service profiles are located. For an example, 
