@@ -428,10 +428,12 @@ public abstract class SDRegistrationPluginBase extends ComponentPlugin {
 	// know whether the previous registration still exists but we don't 
 	// want to perturb quiescence state.
 	if (log.isInfoEnabled()) {
-	    log.info(getAgentIdentifier() + 
-		     ": updateQuiescenceService() " +
-		     " setting quiescent state even though reregistration " +
-		     " after rehydration is not complete.");
+	  log.info(getAgentIdentifier() + 
+		   ": updateQuiescenceService() " +
+		   " setting quiescent state even though reregistration " +
+		   " after rehydration is not complete\n" +
+		   " rehydrated = " + rehydrated + 
+		   " register tasks = " + registerTaskSubscription);
 	}
       }
     }

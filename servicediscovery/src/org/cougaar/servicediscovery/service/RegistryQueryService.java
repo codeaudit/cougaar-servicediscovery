@@ -61,6 +61,23 @@ public interface RegistryQueryService extends Service, YPServiceAdapter {
 			    CallbackWithContext callback);
 
   /**
+   * Returns providers matching the attributes in the RegistryQuery 
+   * object. Uses single step YPService search. Query is applied to the
+   * YP server for the specified agent. Currently requires that agent 
+   * also be a YPServer. Bug in CommunityService 
+   * (http://bugs.cougaar.org/show_bug.cgi?id=3585) prevents a more general
+   * implementation.
+   * 
+   * @param agentName Name of the agent whose YP server should be queried
+   * @param query RegistryQuery containing the attributes to be matched.
+   * @param callback  CallbackWithContext, callback.setNextContext(object) with
+   * yp server context, callback.invoke(Collection) of ProviderInfo objects. 
+   * If no matches, returns empty list. 
+   */
+  public void findProviders(String agentName, RegistryQuery query, 
+			    CallbackWithContext callback);
+
+  /**
    * Returns all services matching the attributes in the RegistryQuery object.
    * Uses default YPService search, i.e. query progresses
    * up the structure of YP servers until either a match is found or
@@ -88,6 +105,23 @@ public interface RegistryQueryService extends Service, YPServiceAdapter {
 
   /**
    * Returns all services matching the attributes in the RegistryQuery object.
+   * Uses single step YPService search.  Query is applied to the
+   * YP server for the specified agent. Currently requires that agent 
+   * also be a YPServer. Bug in CommunityService 
+   * (http://bugs.cougaar.org/show_bug.cgi?id=3585) prevents a more general
+   * implementation.
+   *
+   * @param agentName Name of the agent whose YP server should be queried
+   * @param query RegistryQuery containing the attributes to be matched.
+   * @param callback  CallbackWithContext, callback.setNextContext(object) with
+   * yp server context, callback.invoke(Collection) with ServiceInfo objects.
+   * If no matches, returns empty list. 
+   */
+  public void findServices(String agentName, RegistryQuery query, 
+			   CallbackWithContext callback);
+
+  /**
+   * Returns all services matching the attributes in the RegistryQuery object.
    * Uses default YPService search, i.e. query progresses
    * up the structure of YP servers until either a match is found or
    * search has reached the topmost server. 
@@ -111,6 +145,33 @@ public interface RegistryQueryService extends Service, YPServiceAdapter {
    */
   public void findServiceAndBinding(Object lastYPContext, RegistryQuery query,
 				    CallbackWithContext callback);
+
+
+  /**
+   * Returns all services matching the attributes in the RegistryQuery 
+   * object.
+   * Uses single step YPService search. Query is applied to the
+   * YP server for the specified agent. Currently requires that agent 
+   * also be a YPServer. Bug in CommunityService 
+   * (http://bugs.cougaar.org/show_bug.cgi?id=3585) prevents a more general
+   * implementation.
+   *
+   * @param agentName Name of the agent whose YP server should be queried
+   * @param query RegistryQuery containing the attributes to be matched.
+   * @param callback  CallbackWithContext, callback.setNextContext(object) with
+   * yp server context, callback.invoke(Collection) with lightweight 
+   * ServiceInfo, objects. If no matches, returns empty list. 
+   */
+  public void findServiceAndBinding(String agentName, 
+				    RegistryQuery query,
+				    CallbackWithContext callback);
+  
 }
+
+
+
+
+
+
 
 

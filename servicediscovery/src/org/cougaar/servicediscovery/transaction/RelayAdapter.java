@@ -161,7 +161,8 @@ abstract public class RelayAdapter implements Relay.Source, Relay.Target, Unique
   }
 
   protected boolean contentChanged(RelayAdapter newCCN) {
-    return false;
+    return true;
+    //return getContent().equals(newCCN.getContent());
   }
 
   private static final class SimpleRelayFactory
@@ -231,12 +232,10 @@ abstract public class RelayAdapter implements Relay.Source, Relay.Target, Unique
 
   /**
    * Set the response that was sent from a target. For LP use only.
-   * This implemenation does nothing because responses are not needed
-   * or used.
+   * Assume that all changes are meaningful.
    **/
   public int updateResponse(MessageAddress target, Object response) {
-    // No response expected
-    return Relay.NO_CHANGE;
+    return Relay.RESPONSE_CHANGE;
   }
 
   /**

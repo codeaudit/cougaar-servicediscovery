@@ -159,38 +159,38 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
     }
 
 
-  /**
-   * Returns providers matching the attributes in the RegistryQuery 
-   * object. Uses default YPService search, i.e. query progresses
-   * up the structure of YP servers until either a match is found or
-   * search has reached the topmost server. 
-   * @param query RegistryQuery containing the attributes to be matched.
-   * @param callback  callback.invoke(Collection) of ProviderInfo objects.
-   * If no matches, returns empty list. 
-   */
+    /**
+     * Returns providers matching the attributes in the RegistryQuery 
+     * object. Uses default YPService search, i.e. query progresses
+     * up the structure of YP servers until either a match is found or
+     * search has reached the topmost server. 
+     * @param query RegistryQuery containing the attributes to be matched.
+     * @param callback  callback.invoke(Collection) of ProviderInfo objects.
+     * If no matches, returns empty list. 
+     */
     public void findProviders(RegistryQuery query, Callback callback) {
       // Explicit call for a specific service
       YPProxy proxy = makeProxy(ypAgent);
-
+      
       if (query.getServiceName() != null) {
         findServiceByNames(query, callback, proxy);
       } else {
         findAllProviders(query, callback, proxy);
       }
     }
-
-  /**
-   * Returns providers matching the attributes in the RegistryQuery 
-   * object. Uses single step YPService search. Query is applied to the
-   * YP server in the next YPContext. If lastYPContext argument is null, 
-   * search starts with the closest YPServer. 
-   * @param lastYPContext YP context where the previous search ended. 
-   * Use null if starting search.
-   * @param query RegistryQuery containing the attributes to be matched.
-   * @param callback  CallbackWithContext, callback.setNextContext(object) with
-   * yp server context, callback.invoke(Collection) of ProviderInfo objects. 
-   * If no matches, returns empty list. 
-   */
+    
+    /**
+     * Returns providers matching the attributes in the RegistryQuery 
+     * object. Uses single step YPService search. Query is applied to the
+     * YP server in the next YPContext. If lastYPContext argument is null, 
+     * search starts with the closest YPServer. 
+     * @param lastYPContext YP context where the previous search ended. 
+     * Use null if starting search.
+     * @param query RegistryQuery containing the attributes to be matched.
+     * @param callback  CallbackWithContext, callback.setNextContext(object) with
+     * yp server context, callback.invoke(Collection) of ProviderInfo objects. 
+     * If no matches, returns empty list. 
+     */
     public void findProviders(final Object lastYPContext, 
 			      final RegistryQuery query, 
 			      final CallbackWithContext callback) {
@@ -199,12 +199,12 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
 				    new YPService.NextContextCallback() {
 	public void setNextContext(Object context){
 	  callback.setNextContext(context);
-
+	  
 	  if (context != null) {
 	    YPProxy proxy = 
 	      makeProxy(context, 
 			YPProxy.SearchMode.SINGLE_COMMUNITY_SEARCH);
-
+	    
 	    if (query.getServiceName() != null) {
 	      findServiceByNames(query, callback, proxy);
 	    } else {
@@ -219,7 +219,68 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
 	  }
 	}
       });
+      
+    }
+    
 
+    /**
+     * Returns providers matching the attributes in the RegistryQuery 
+     * object. Uses single step YPService search. Query is applied to the
+     * YP server for the specified agent. Currently requires that agent 
+     * also be a YPServer. Bug in CommunityService 
+     * (http://bugs.cougaar.org/show_bug.cgi?id=3585) prevents a more general
+     * implementation.
+     * 
+     * @param agentName Name of the agent whose YP server should be queried
+     * @param query RegistryQuery containing the attributes to be matched.
+     * @param callback  CallbackWithContext, callback.setNextContext(object) with
+     * yp server context, callback.invoke(Collection) of ProviderInfo objects. 
+     * If no matches, returns empty list. 
+     */
+    public void findProviders(final String agentName, 
+			      final RegistryQuery query, 
+			      final CallbackWithContext callback) {
+      
+      /* Should work for agents which are not YPServers. Unfortunately
+       * CommunityService has stubbed out the necessary support
+       *
+      // Explicit call for a specific service
+      ypService.getYPServerContext(agentName, 
+				   new YPService.NextContextCallback() {
+	public void setNextContext(Object context){
+	  callback.setNextContext(agentName);
+	  
+	  if (context != null) {
+	    if (log.isDebugEnabled()) {
+	      log.debug("Found YPServerContext for " + agentName + 
+			" - will continue in " + context);
+	    }
+	    YPProxy proxy = 
+	      makeProxy(context, 
+			YPProxy.SearchMode.SINGLE_COMMUNITY_SEARCH);
+	    
+	    if (query.getServiceName() != null) {
+	      findServiceByNames(query, callback, proxy);
+	    } else {
+	      findAllProviders(query, callback, proxy);
+	    }
+	  } else {
+	    if (log.isDebugEnabled()) {
+	      log.debug("No yp context for " + agentName);
+	    }
+	    callback.invoke(Collections.EMPTY_LIST);
+	  }
+	}
+       }); */
+
+
+      YPProxy proxy = makeProxy(agentName);
+
+      if (query.getServiceName() != null) {
+        findServiceByNames(query, callback, proxy);
+      } else {
+        findAllProviders(query, callback, proxy);
+      }
     }
 
     /**
@@ -234,18 +295,18 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
     }
 
 
-  /**
-   * Returns all services matching the attributes in the RegistryQuery object.
-   * Uses single step YPService search. Query is applied to the
-   * YP server in the next YPContext. If lastYPContext argument is null, 
-   * search starts with the closest YPServer. 
-   * @param lastYPContext YP context where the previous search ended. 
-   * Use null if starting search.
-   * @param query RegistryQuery containing the attributes to be matched.
-   * @param callback  CallbackWithContext, callback.setNextContext(object) with
-   * yp server context, callback.invoke(Collection) with ServiceInfo objects.
-   * If no matches, returns empty list. 
-   */
+    /**
+     * Returns all services matching the attributes in the RegistryQuery object.
+     * Uses single step YPService search. Query is applied to the
+     * YP server in the next YPContext. If lastYPContext argument is null, 
+     * search starts with the closest YPServer. 
+     * @param lastYPContext YP context where the previous search ended. 
+     * Use null if starting search.
+     * @param query RegistryQuery containing the attributes to be matched.
+     * @param callback  CallbackWithContext, callback.setNextContext(object) 
+     * with yp server context, callback.invoke(Collection) with ServiceInfo 
+     * objects. If no matches, returns empty list. 
+     */
     public void findServices(final Object lastYPContext, 
 			     final RegistryQuery query, 
 			     final CallbackWithContext callback) {
@@ -253,12 +314,12 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
 				    new YPService.NextContextCallback() {
 	public void setNextContext(Object context){
 	  callback.setNextContext(context);
-
+	  
 	  if (context != null) {
 	    YPProxy proxy = 
 	      makeProxy(context, 
 			YPProxy.SearchMode.SINGLE_COMMUNITY_SEARCH);
-
+	    
 	    findAllServices(query, callback, proxy);
 	  } else {
 	    if (log.isDebugEnabled()) {
@@ -269,6 +330,58 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
 	}
       });
     }
+    
+    /**
+     * Returns all services matching the attributes in the RegistryQuery object.
+     * Uses single step YPService search.  Query is applied to the
+     * YP server for the specified agent. Currently requires that agent 
+     * also be a YPServer. Bug in CommunityService 
+     * (http://bugs.cougaar.org/show_bug.cgi?id=3585) prevents a more general
+     * implementation.
+     *
+     * @param agentName Name of the agent whose YP server should be queried
+     * @param query RegistryQuery containing the attributes to be matched.
+     * @param callback  CallbackWithContext, callback.setNextContext(object) 
+     * with yp server context, callback.invoke(Collection) with ServiceInfo
+     * objects. If no matches, returns empty list. 
+     */
+    public void findServices(final String agentName, 
+			     final RegistryQuery query, 
+			     final CallbackWithContext callback) {
+      
+      /* Should work for agents which are not YPServers. Unfortunately
+       * CommunityService has stubbed out the necessary support
+       *
+      // Explicit call for a specific service
+      ypService.getYPServerContext(agentName, 
+				   new YPService.NextContextCallback() {
+	public void setNextContext(Object context){
+	  callback.setNextContext(agentName);
+	  
+	  if (context != null) {
+	    if (log.isDebugEnabled()) {
+	      log.debug("Found YPServerContext for " + agentName + 
+			" - will continue in " + context);
+	    }
+	    YPProxy proxy = 
+	      makeProxy(context, 
+			YPProxy.SearchMode.SINGLE_COMMUNITY_SEARCH);
+	    
+	    findAllServices(query, callback, proxy);
+	  } else {
+	    if (log.isDebugEnabled()) {
+	      log.debug("No yp context for " + agentName);
+	    }
+	    callback.invoke(Collections.EMPTY_LIST);
+	  }
+	}
+      }); */ 
+
+      YPProxy proxy = makeProxy(agentName);
+
+      findAllServices(query, callback, proxy);
+    }
+
 
     /**
      * Returns all services matching the attributes in the RegistryQuery object.
@@ -284,8 +397,8 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
       
       findServiceAndBinding(query, callback, proxy);
     }
-      
-      
+    
+    
 
     /**
      * Returns all services matching the attributes in the RegistryQuery object.
@@ -330,7 +443,57 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
     }
 
 
+      
 
+    /**
+     * Returns all services matching the attributes in the RegistryQuery object.
+     * Uses single step YPService search. Query is applied to the
+     * YP server for the specified agent. Currently requires that agent 
+     * also be a YPServer. Bug in CommunityService 
+     * (http://bugs.cougaar.org/show_bug.cgi?id=3585) prevents a more general
+     * implementation.
+     * 
+     * @param agentName Name of the agent whose YP server will be queried
+     * @param query RegistryQuery containing the attributes to be matched.
+     * @param callback  CallbackWithContext, callback.setNextContext(object) with
+     * yp server context, callback.invoke(Collection) with lightweight 
+     * ServiceInfo, objects. If no matches, returns empty list. 
+     */
+    public void findServiceAndBinding(final String agentName, 
+				      final RegistryQuery query,
+				      final CallbackWithContext callback) {
+      /* Should work for agents which are not YPServers. Unfortunately
+       * CommunityService has stubbed out the necessary support
+       *
+      // Explicit call for a specific service
+      ypService.getYPServerContext(agentName, 
+				   new YPService.NextContextCallback() {
+	public void setNextContext(Object context){
+	  callback.setNextContext(agentName);
+	  
+	  if (context != null) {
+	    if (log.isDebugEnabled()) {
+	      log.debug("Found YPServerContext for " + agentName + 
+			" - will continue in " + context);
+	    }
+	    YPProxy proxy = 
+	      makeProxy(context, 
+			YPProxy.SearchMode.SINGLE_COMMUNITY_SEARCH);
+	    
+	    findServiceAndBinding(query, callback, proxy);
+	  } else {
+	    if (log.isDebugEnabled()) {
+	      log.debug("No yp context for " + agentName);
+	    }
+	    callback.invoke(Collections.EMPTY_LIST);
+	  }
+	}
+      }); */
+
+      YPProxy proxy = makeProxy(agentName);
+
+      findServiceAndBinding(query, callback, proxy);
+    }
 
     private void findAllServices(final RegistryQuery rq, 
 				 final Callback callback,

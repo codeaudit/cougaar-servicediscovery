@@ -28,6 +28,7 @@ package org.cougaar.servicediscovery.plugin;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 
@@ -35,19 +36,17 @@ import org.cougaar.core.blackboard.IncrementalSubscription;
 import org.cougaar.core.service.LoggingService;
 import org.cougaar.glm.ldm.asset.Organization;
 import org.cougaar.planning.ldm.plan.AspectType;
-import org.cougaar.planning.ldm.plan.AspectValue;
 import org.cougaar.planning.ldm.plan.Preference;
 import org.cougaar.planning.ldm.plan.Role;
 import org.cougaar.planning.ldm.plan.Schedule;
 import org.cougaar.planning.ldm.plan.ScheduleElement;
-import org.cougaar.planning.ldm.plan.ScoringFunction;
-import org.cougaar.planning.ldm.plan.TimeAspectValue;
 import org.cougaar.planning.plugin.legacy.SimplePlugin;
 import org.cougaar.servicediscovery.SDDomain;
 import org.cougaar.servicediscovery.SDFactory;
 import org.cougaar.servicediscovery.description.ProviderCapabilities;
 import org.cougaar.servicediscovery.description.ProviderCapability;
 import org.cougaar.servicediscovery.description.ServiceContract;
+import org.cougaar.servicediscovery.description.ServiceContractImpl;
 import org.cougaar.servicediscovery.description.ServiceRequest;
 import org.cougaar.servicediscovery.transaction.ProviderServiceContractRelay;
 import org.cougaar.servicediscovery.transaction.ServiceContractRelay;
@@ -133,10 +132,30 @@ public class SDProviderPlugin extends SimplePlugin
       for (Iterator adds = addedRelays.iterator(); adds.hasNext();) {
 	ProviderServiceContractRelay relay = 
 	  (ProviderServiceContractRelay) adds.next();
-        handleAddedServiceContractRelay(relay);
+
+	if (myLoggingService.isDebugEnabled()) {
+	  myLoggingService.debug(getAgentIdentifier() +
+				 ": execute() new ServiceContractRelay - " +
+				 relay);
+	}
+        handleServiceContractRelay(relay);
       }
 
-      // Not currently handling modifications or removes
+      Collection changedRelays = 
+	myServiceContractRelaySubscription.getChangedCollection();
+      for (Iterator changes = changedRelays.iterator(); changes.hasNext();) {
+	ProviderServiceContractRelay relay = 
+	  (ProviderServiceContractRelay) changes.next();
+
+	if (myLoggingService.isDebugEnabled()) {
+	  myLoggingService.debug(getAgentIdentifier() +
+				 ": execute() modified ServiceContractRelay - " +
+				 relay);
+	}
+	handleServiceContractRelay(relay);
+      }
+
+      // Not currently handling removes
     }
 
     if(myProviderCapabilitiesSubscription.hasChanged()) {
@@ -152,23 +171,49 @@ public class SDProviderPlugin extends SimplePlugin
     }
   }
 
-  protected void handleAddedServiceContractRelay(ProviderServiceContractRelay relay){
+  protected void handleServiceContractRelay(ProviderServiceContractRelay relay){
     ServiceRequest serviceRequest = relay.getServiceRequest();
+    ServiceContract serviceContract = relay.getServiceContract();
 
     HashMap contractPreferences = 
       copyPreferences(serviceRequest.getServicePreferences());
+
+    boolean contractChanged = false;
+    boolean contractExists = (serviceContract != null);
 
     // Replace start/end time preferences
     // Construct start/end pref by making request agree with capability avail
     // schedule
     TimeSpan requestedTimeSpan = 
-      getTimeSpanFromPreferences(serviceRequest.getServicePreferences());
-    TimeSpan contractTimeSpan  = requestedTimeSpan;
+      mySDFactory.getTimeSpanFromPreferences(serviceRequest.getServicePreferences());
 
+    if (myLoggingService.isDebugEnabled()) {
+      TimeSpan contractTimeSpan = (serviceContract != null) ?
+	mySDFactory.getTimeSpanFromPreferences(serviceContract.getServicePreferences()) :
+	null;
+
+      String contractTimeSpanString = (contractTimeSpan == null) ?
+	"" : 
+	new Date(contractTimeSpan.getStartTime()) + 
+	" " + 
+	new Date(contractTimeSpan.getEndTime());
+
+      myLoggingService.debug(getAgentIdentifier() +
+			     ": handleServiceContractRelay() relay = " + relay + 
+			     " " + relay.getUID() +
+			     " requestedTimeSpan = " + 
+			     new Date(requestedTimeSpan.getStartTime()) + " " +
+			     new Date(requestedTimeSpan.getEndTime()) + 
+			     contractTimeSpanString);
+    }
+
+    TimeSpan contractTimeSpan  = requestedTimeSpan;
+    Collection modifiedContractPreferences = null;
+ 
     if (requestedTimeSpan == null) {
       if (myLoggingService.isInfoEnabled()) {
 	myLoggingService.info(getAgentIdentifier() + 
-			      " unable to handle service request - " + 
+			      ": handleServiceContractRelay() unable to handle service request - " + 
 			      relay.getServiceRequest() +
 			      " - does not have start and/or end time preferences.");
       }   
@@ -176,6 +221,7 @@ public class SDProviderPlugin extends SimplePlugin
       // Remove start/end preferences since provider can't meet request.
       contractPreferences.remove(START_TIME_KEY);
       contractPreferences.remove(END_TIME_KEY);
+      contractChanged = true;
     } else {
       contractTimeSpan = 
 	checkProviderCapability(getProviderCapability(serviceRequest.getServiceRole()),
@@ -184,7 +230,7 @@ public class SDProviderPlugin extends SimplePlugin
       if (contractTimeSpan == null) {
 	if (myLoggingService.isInfoEnabled()) {
 	  myLoggingService.info(getAgentIdentifier() + 
-				" unable to handle service request - " + 
+				": handleServiceContractRelay() unable to handle service request - " + 
 				relay.getServiceRequest() + 
 				" - does not match provider capabilities.");
 	}
@@ -192,33 +238,79 @@ public class SDProviderPlugin extends SimplePlugin
 	// Remove start/end preferences since provider can't meet request.
 	contractPreferences.remove(START_TIME_KEY);
 	contractPreferences.remove(END_TIME_KEY);
+	contractChanged = true;
       } else if (!contractTimeSpan.equals(requestedTimeSpan)) {
-
 	// Replace start/end with what provider can handle.
-	Collection timespanPreferences = 
-	  createTimeSpanPreferences(contractTimeSpan);
-	
-	for (Iterator iterator = timespanPreferences.iterator();
-	     iterator.hasNext(); ) {
-	  Preference preference = (Preference) iterator.next();
-	  contractPreferences.put(new Integer(preference.getAspectType()),
-				  preference);
+	modifiedContractPreferences = 
+	  mySDFactory.createTimeSpanPreferences(contractTimeSpan);
+
+	contractChanged = true;
+      } else if (contractExists) {
+	//compare with existing contract
+	TimeSpan existingContractTimeSpan = 
+	  mySDFactory.getTimeSpanFromPreferences(serviceContract.getServicePreferences());
+
+	if (myLoggingService.isDebugEnabled()) {
+	  myLoggingService.debug(getAgentIdentifier() + 
+				 ": handleServiceContractRelay() - " +
+				 " current time span = " +
+				 new Date(existingContractTimeSpan.getStartTime()) +
+				 " to " + 
+				 new Date(existingContractTimeSpan.getEndTime()) +
+				 " new time span = " +
+				 new Date(contractTimeSpan.getStartTime()) +
+				 " to " + 
+				 new Date(contractTimeSpan.getEndTime()) + 
+				 " (current == new) = " +
+				 existingContractTimeSpan.equals(contractTimeSpan));
+	}
+	if (!existingContractTimeSpan.equals(contractTimeSpan)) {
+	  // Replace contract start end with requested start end
+	  modifiedContractPreferences = 
+	    mySDFactory.createTimeSpanPreferences(contractTimeSpan);
+
+	  contractChanged = true;
 	}
       }
     }
 
-    ServiceContract serviceContract =
-      mySDFactory.newServiceContract(getSelfOrg(),
-                                     serviceRequest.getServiceRole(),
-                                     contractPreferences.values());
-    relay.setServiceContract(serviceContract);
-    if (myLoggingService.isInfoEnabled())
-      myLoggingService.info(getAgentIdentifier() + " added new ServiceContract on a relay from " + relay.getUID() +
-                            " for the role " + serviceRequest.getServiceRole());
-    publishChange(relay);
+	
+    if (modifiedContractPreferences != null) {
+      for (Iterator iterator = modifiedContractPreferences.iterator();
+	   iterator.hasNext(); ) {
+	Preference preference = (Preference) iterator.next();
+	contractPreferences.put(new Integer(preference.getAspectType()),
+				preference);
+      }
+    }
 
+    if (!contractExists) {
+      if (myLoggingService.isInfoEnabled()) {
+	myLoggingService.info(getAgentIdentifier() + 
+			      ": added new ServiceContract on a relay from " + 
+			      relay.getUID() + " for the role " + 
+			      serviceRequest.getServiceRole());
+      }
+      serviceContract =
+	mySDFactory.newServiceContract(getSelfOrg(),
+				       serviceRequest.getServiceRole(),
+				       contractPreferences.values());
+      relay.setServiceContract(serviceContract);
+    } else if (contractChanged) {
+      if (myLoggingService.isInfoEnabled()) {
+	myLoggingService.info(getAgentIdentifier() + 
+			      ": changed ServiceContract on a relay from " + 
+			      relay.getUID() +
+			      " for the role " + serviceRequest.getServiceRole());
+      }
+      ((ServiceContractImpl) serviceContract).setServicePreferences(contractPreferences.values());
+    }
+
+    if ((!contractExists) || (contractChanged)) {
+      publishChange(relay);
+    }
+    
   }
-
   void handleChangedProviderCapabilities(ProviderCapabilities capabilities) {
     if (myLoggingService.isInfoEnabled()) {
         myLoggingService.info(getAgentIdentifier() + 
@@ -241,7 +333,7 @@ public class SDProviderPlugin extends SimplePlugin
 	  boolean changeRequired = false;
 
 	  TimeSpan currentContractTimeSpan = 
-	    getTimeSpanFromPreferences(contract.getServicePreferences());
+	    mySDFactory.getTimeSpanFromPreferences(contract.getServicePreferences());
 	  
 	  if (currentContractTimeSpan != null) {
 	    TimeSpan contractTimeSpan = 
@@ -253,7 +345,7 @@ public class SDProviderPlugin extends SimplePlugin
 				      relay.getServiceContract() + 
 				      " due to provider capability change.");
 	      }
-	      SDFactory.revokeServiceContract(contract);
+	      mySDFactory.revokeServiceContract(contract);
 	      changeRequired = true;
 	    } else if (!(currentContractTimeSpan.equals(contractTimeSpan))) {
 	      if (myLoggingService.isInfoEnabled()) {
@@ -272,7 +364,7 @@ public class SDProviderPlugin extends SimplePlugin
 		copyPreferences(contract.getServicePreferences());
 	      
 	      Collection timespanPreferences = 
-		createTimeSpanPreferences(contractTimeSpan);
+		mySDFactory.createTimeSpanPreferences(contractTimeSpan);
 
 	      // Replace start/end with what provider can handle.
 	      for (Iterator preferenceIterator = timespanPreferences.iterator();
@@ -326,19 +418,6 @@ public class SDProviderPlugin extends SimplePlugin
     }
 
     return null;
-  }
-
-  private long getTimeValue(Preference timePreference) {
-    ScoringFunction scoringFunction = 
-      timePreference.getScoringFunction();
-    AspectValue aspectValue = 
-      scoringFunction.getBest().getAspectValue();
-    
-    if (aspectValue instanceof TimeAspectValue) {
-      return ((TimeAspectValue) aspectValue).timeValue();
-    } else {
-      return -1;
-    }
   }
 
   protected ProviderCapability getProviderCapability(Role role) { 
@@ -407,50 +486,7 @@ public class SDProviderPlugin extends SimplePlugin
       return returnTimeSpan;
     }
   }
-
-  protected Collection createTimeSpanPreferences(TimeSpan timeSpan) {
-    ArrayList preferences = new ArrayList(2);
-
-    AspectValue startTAV = TimeAspectValue.create(AspectType.START_TIME, 
-						  timeSpan.getStartTime());
-    ScoringFunction startScoreFunc =
-      ScoringFunction.createStrictlyAtValue(startTAV);
-    Preference startPreference =
-      getFactory().newPreference(AspectType.START_TIME, startScoreFunc);
-
-    AspectValue endTAV = TimeAspectValue.create(AspectType.END_TIME, 
-						timeSpan.getEndTime());
-    ScoringFunction endScoreFunc =
-      ScoringFunction.createStrictlyAtValue(endTAV);
-    Preference endPreference =
-      getFactory().newPreference(AspectType.END_TIME, endScoreFunc );
-    
-    preferences.add(startPreference);
-    preferences.add(endPreference);
-
-    return preferences;
-  }
-
-  private TimeSpan getTimeSpanFromPreferences(Collection preferences) {
-    double preferenceStart = 
-      SDFactory.getPreference(preferences, Preference.START_TIME);
-    double preferenceEnd = 
-      SDFactory.getPreference(preferences, Preference.END_TIME);
-    
-    if ((preferenceEnd == -1) ||
-	(preferenceStart == -1)) {
-      myLoggingService.error(getAgentIdentifier() + 
-			     " unable to handle start and/or end time " +
-			     " preferences from " + preferences);
-      return null;
-    }
-    
-    MutableTimeSpan timeSpan = new MutableTimeSpan();
-    timeSpan.setTimeSpan((long) preferenceStart, (long) preferenceEnd);
-    
-    return timeSpan;
-  }
-
+ 
   private HashMap copyPreferences(Collection preferences) {
     HashMap preferenceMap = new HashMap(preferences.size());
 
@@ -468,10 +504,3 @@ public class SDProviderPlugin extends SimplePlugin
     return preferenceMap;
   }
 }
-
-
-
-
-
-
-

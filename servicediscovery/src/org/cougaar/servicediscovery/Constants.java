@@ -28,6 +28,8 @@ package org.cougaar.servicediscovery;
 
 import java.net.URL;
 
+import org.cougaar.servicediscovery.description.LineageScheduleElement;
+
 import org.cougaar.glm.ldm.Constants.RelationshipType;
 import org.cougaar.util.Configuration;
 import org.cougaar.util.log.Logger;
@@ -37,6 +39,11 @@ public class Constants implements org.cougaar.planning.Constants {
   private static Logger logger = Logging.getLogger(Constants.class);
 
   private Constants() {}
+
+  public interface SDScheduleElementType {
+  
+    Class LINEAGE = LineageScheduleElement.class;
+  }
 
   public static class Role {
     /**
@@ -170,6 +177,7 @@ public class Constants implements org.cougaar.planning.Constants {
     }
   }
 
+  
   public static URL getServiceProfileURL() {
     try {
       return new URL(Configuration.getInstallURL(), 

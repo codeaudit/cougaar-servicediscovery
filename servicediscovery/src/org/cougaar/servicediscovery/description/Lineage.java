@@ -66,8 +66,18 @@ public abstract class Lineage implements java.io.Serializable, UniqueObject {
   }
 
   public static int roleToType(Role role) { 
-    return UNDEFINED;
+    if ((role.equals(org.cougaar.glm.ldm.Constants.Role.ADMINISTRATIVESUPERIOR)) ||
+	(role.equals(org.cougaar.glm.ldm.Constants.Role.SUPERIOR))) {
+      return ADCON;
+    } else if (role.equals(org.cougaar.glm.ldm.Constants.Role.OPERATIONALSUPERIOR)) {
+      return OPCON;
+    } else if (role.equals(org.cougaar.glm.ldm.Constants.Role.SUPPORTSUPERIOR)) {
+      return SUPPORT;
+    } else {
+      return UNDEFINED;
+    }
   }
+
   public static boolean validType(int lineageType) {
     switch (lineageType) {
     case (ADCON):
@@ -76,6 +86,27 @@ public abstract class Lineage implements java.io.Serializable, UniqueObject {
       return true;
     default:
       return false;
+    }
+  }
+
+  public static int countHops(List lineageList, String startingAgent, String endingAgent) {
+    int listSize = lineageList.size();
+    String leaf = (String) ((listSize > 0) ? 
+		   (lineageList.get(listSize - 1)) : null);
+    String root = (String) ((listSize > 0) ? lineageList.get(0) : null);
+
+    if (startingAgent.equals(leaf) &&
+	endingAgent.equals(root)) {
+      return listSize - 1;
+    }
+
+    int start = lineageList.indexOf(startingAgent);
+    int end = lineageList.indexOf(endingAgent);
+
+    if ((start == -1) || (end == -1) || (end > start)) {
+      return -1;
+    } else {
+      return start - end;
     }
   }
 

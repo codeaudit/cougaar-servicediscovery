@@ -29,12 +29,15 @@ package org.cougaar.servicediscovery.plugin;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 
 import org.cougaar.core.blackboard.IncrementalSubscription;
 import org.cougaar.core.service.LoggingService;
 import org.cougaar.planning.ldm.asset.Asset;
+import org.cougaar.planning.ldm.plan.AspectType;
 import org.cougaar.planning.ldm.plan.PrepositionalPhrase;
 import org.cougaar.planning.ldm.plan.Role;
+import org.cougaar.planning.ldm.plan.Schedule;
 import org.cougaar.planning.ldm.plan.Task;
 import org.cougaar.planning.plugin.legacy.SimplePlugin;
 import org.cougaar.servicediscovery.Constants;
@@ -43,6 +46,8 @@ import org.cougaar.servicediscovery.SDFactory;
 import org.cougaar.servicediscovery.description.Lineage;
 import org.cougaar.servicediscovery.description.LineageImpl;
 import org.cougaar.servicediscovery.transaction.LineageRelay;
+import org.cougaar.servicediscovery.description.LineageScheduleElement;
+import org.cougaar.util.MutableTimeSpan;
 import org.cougaar.util.UnaryPredicate;
 
 /**
@@ -59,6 +64,10 @@ public class LineagePlugin extends SimplePlugin
 
   private LoggingService myLoggingService;
   private SDFactory mySDFactory;
+
+  private ArrayList myExecuteAdds;
+  private ArrayList myExecuteRemoves;
+  private ArrayList myExecuteChanges;
 
   private UnaryPredicate myLineagePred = new UnaryPredicate() {
     public boolean execute(Object o) {
@@ -121,32 +130,9 @@ public class LineagePlugin extends SimplePlugin
 
     mySDFactory = (SDFactory) getFactory(SDDomain.SD_NAME);
 
-    // Add initial seed for command lineage?
-    boolean addSeed = true;
-    for (Iterator iterator = myLineageSubscription.iterator();
-	 iterator.hasNext();) {
-      Lineage lineage = (Lineage) iterator.next();
-      if (lineage.getType() == Lineage.ADCON) {
-	addSeed = false;
-	break;
-      }
-    }
-
-    if (addSeed) {
-      if (myLoggingService.isDebugEnabled()) {
-	myLoggingService.debug(getAgentIdentifier() + 
-			       " publishing initial administrative command lineage.");
-      }
-
-      ArrayList list = new ArrayList();
-      list.add(myAgentName);
-      Lineage lineage =
-	mySDFactory.newLineage(Lineage.ADCON, list);
-      publishAdd(lineage);
-      lineage =
-	mySDFactory.newLineage(Lineage.OPCON, list);
-      publishAdd(lineage);
-    }
+    myExecuteAdds = new ArrayList();
+    myExecuteRemoves = new ArrayList();
+    myExecuteChanges = new ArrayList();
   }
 
   public void execute() {
@@ -164,12 +150,25 @@ public class LineagePlugin extends SimplePlugin
 	  if (role.equals(Constants.Role.SUPPORTSUBORDINATE)) {
 	    addSupportLineage(task);
 	  } else {
-	    querySuperior(task);
+	    addCommandLineage(task); 
 	  }
 	}
       }
 
-      // Not currently handling modifications or removes
+      Collection changedRFDs = 
+	myReportForDutySubscription.getChangedCollection();
+      for (Iterator changes = changedRFDs.iterator(); changes.hasNext();) {
+	Task task = (Task) changes.next();
+	modifyLineage(task);
+      }
+
+      Collection removedRFDs = 
+	myReportForDutySubscription.getRemovedCollection();
+      for (Iterator removes = removedRFDs.iterator(); removes.hasNext();) {
+	Task task = (Task) removes.next();
+	modifyLineage(task);
+      }
+ 
       // On remove -
       //   should publish remove lineage relay to superior
       //   remove published lineage list associated with the superior
@@ -184,7 +183,7 @@ public class LineagePlugin extends SimplePlugin
 	updateSubordinate((LineageRelay) adds.next());
       }
 
-      // Not interested in modifications or removes
+      //Nothing required for modifications or removes
     }
 
     if (mySuperiorLineageRelaySubscription.hasChanged()) {
@@ -195,9 +194,8 @@ public class LineagePlugin extends SimplePlugin
 	   changes.hasNext();) {
 	updateLineage((LineageRelay) changes.next());
       }
-
-      // Not handling adds/removes at this point
-      // I believe both add/removes should only be initiated by this
+      
+      // I believe both relay add/removes should only be initiated by this
       // plugin.
     }
 
@@ -208,103 +206,359 @@ public class LineagePlugin extends SimplePlugin
       }
       updateSubordinates();
     }
+
+    // Done with all execute related publishing.
+    myExecuteAdds.clear();
+    myExecuteRemoves.clear();
+    myExecuteChanges.clear();
+  }
+
+  protected void localPublishAdd(Object o) {
+    myExecuteAdds.add(o);
+    publishAdd(o);
+  }
+
+  protected void localPublishRemove(Object o) {
+    myExecuteRemoves.add(o);
+    publishRemove(o);
+  }
+
+  protected void localPublishChange(Object o) {
+    myExecuteChanges.add(o);
+    publishChange(o);
+  }
+
+  protected void localPublishChange(Object o, Collection changes) {
+    myExecuteChanges.add(o);
+    publishChange(o, changes);
+  }
+    
+
+
+  protected void addCommandLineage(Task rfdTask) {
+    LineageRelay relay = findRelay(rfdTask);
+    Lineage localLineage = findLocalLineage(rfdTask);
+    boolean addLocalLineage = (localLineage == null);
+
+    if (addLocalLineage) {
+      localLineage = createLocalLineage(rfdTask);
+    }
+
+    if (relay == null) {
+      Asset superior = (Asset) findIndirectObject(rfdTask, Constants.Preposition.FOR);
+      relay =
+	mySDFactory.newLineageRelay(superior.getClusterPG().getMessageAddress());
+      if (myLoggingService.isDebugEnabled()) {
+	myLoggingService.debug(getAgentIdentifier() + 
+			       ": addCommandLineage() publishAdd of " +
+			       relay.getUID() + " to " + relay.getAgentName());
+      }
+
+      if (addLocalLineage) {
+	localPublishAdd(localLineage);
+      }
+      localPublishAdd(relay);
+    } else {
+      Lineage relayLineage = findRelayLineage(rfdTask);
+      
+      Schedule updatedSchedule = null;
+      if (relayLineage == null) {
+	  updatedSchedule = constructLineageSchedule(localLineage, true);
+      } else {
+	updatedSchedule = updateLineageSchedule(localLineage,
+						relayLineage,
+						true);
+      }
+      
+      if (!localLineage.getSchedule().equals(updatedSchedule)) {
+	((LineageImpl) localLineage).setSchedule(updatedSchedule);
+	if (addLocalLineage) {
+	  localPublishAdd(localLineage);
+	} else {
+	  localPublishChange(localLineage);
+	}
+      }
+    }
   }
 
   protected void addSupportLineage(Task rfdTask) {
+    LineageImpl lineage = (LineageImpl) findLocalLineage(rfdTask);
 
-    ArrayList list = new ArrayList();
-    Asset superior =
-      (Asset) findIndirectObject(rfdTask, Constants.Preposition.FOR);
-    String scaName = superior.getClusterPG().getMessageAddress().toString();
+    if (lineage != null) {
+      lineage.setSchedule(constructLineageSchedule(lineage, true));
+      localPublishChange(lineage);
 
-    list.add(scaName);
-    // Okay to support oneself but don't add duplicate entries to the
-    // lineage
-    if (!myAgentName.equals(scaName)) {
-      list.add(myAgentName);
-    }
-
-
-    Lineage lineage = mySDFactory.newLineage(Lineage.SUPPORT, list);
-    publishAdd(lineage);
-
-    if (myLoggingService.isDebugEnabled()) {
-      myLoggingService.debug(getAgentIdentifier() + 
-			     "addSupportLineage: publishAdd of " +
-			     lineage.getUID());
-    }
-
-  }
-
-  protected void querySuperior(Task rfdTask) {
-    // Missing command support logic - look at roles specified in the AS
-    // prep.
-    Asset superior = (Asset) findIndirectObject(rfdTask, Constants.Preposition.FOR);
-    LineageRelay relay =
-      mySDFactory.newLineageRelay(superior.getClusterPG().getMessageAddress());
-    if (myLoggingService.isDebugEnabled()) {
-      myLoggingService.debug(getAgentIdentifier() + 
-			     " querySuperior: publishAdd of " +
-			     relay.getUID());
-    }
-
-    publishAdd(relay);
-  }
-
-  protected void updateLineage(LineageRelay relay) {
-    for (Iterator relayLineageIterator = relay.getLineages().iterator();
-	 relayLineageIterator.hasNext();) {
-      Lineage relayLineage = (Lineage) relayLineageIterator.next();
-      Lineage localLineage = null;
-
-      for (Iterator localLineageIterator = myLineageSubscription.iterator();
-	   localLineageIterator.hasNext();) {
-        Lineage lineage = 
-	  (Lineage) localLineageIterator.next();
-	if (relayLineage.getType() == lineage.getType()) {
-          if(relayLineage.getType() == Lineage.SUPPORT) {
-            if(lineage.getRoot().equals(relayLineage.getRoot())) {
-              localLineage = lineage;
-              break;
-            }
-          } else {
-            localLineage = lineage;
-            break;
-          }
-	}
+      if (myLoggingService.isDebugEnabled()) {
+	myLoggingService.debug(getAgentIdentifier() + 
+			       "addSupportLineage: publishChange of " +
+			       lineage.getUID());
       }
+    } else {
+      ArrayList list = new ArrayList();
+      Asset superior =
+	(Asset) findIndirectObject(rfdTask, Constants.Preposition.FOR);
+      String scaName = superior.getClusterPG().getMessageAddress().toString();
+      
+      list.add(scaName);
+      // Okay to support oneself but don't add duplicate entries to the
+      // lineage
+      if (!myAgentName.equals(scaName)) {
+	list.add(myAgentName);
+      }
+      
+      lineage = (LineageImpl) mySDFactory.newLineage(Lineage.SUPPORT, list);
+      lineage.setSchedule(constructLineageSchedule(lineage, true));
+
+      localPublishAdd(lineage);
+      
+      if (myLoggingService.isDebugEnabled()) {
+	myLoggingService.debug(getAgentIdentifier() + 
+			       ": addSupportLineage: publishAdd of " +
+			       lineage.getUID() + " " + lineage);
+      }
+    }
+
+  }
+
+  protected Schedule constructLineageSchedule(Lineage lineage, boolean local) {
+    Role lineageRole = ((lineage.getType() == Lineage.SUPPORT) && (!local)) ?
+      Lineage.typeToRole(Lineage.OPCON) :
+      Lineage.typeToRole(lineage.getType());					       
+
+    /*
+    Role lineageRole = ((lineage.getType() == Lineage.SUPPORT) && (local)) ?
+      Lineage.typeToRole(lineage.getType())  :
+      org.cougaar.glm.ldm.Constants.Role.SUPERIOR;
+      */
+
+    // Use converse for comparison to RFD tasks
+    lineageRole = lineageRole.getConverse();
+
+    List lineageList = lineage.getList();
+    Schedule lineageSchedule = SDFactory.newLineageSchedule();
+
+    
+    int listLength = lineageList.size();
+    String superiorName = (listLength >=2) ?
+      (String) lineageList.get(listLength - 2) : null;
+
+    if (superiorName == null) {
+      if ((lineage.getType() == Lineage.SUPPORT) &&
+	  (lineageList.size() == 1)) {
+	// Okay to support yourself.
+	superiorName = (String) lineageList.get(0);
+      } else {
+	myLoggingService.error(getAgentIdentifier() + 
+			       ": constructLineageSchedule() lineage - " + 
+			       lineage + 
+			       " does not include a superior." + 
+			       " Unable to construct schedule from RFD tasks.");
+	return lineageSchedule;
+      }
+    }
+
+    if (myLoggingService.isDebugEnabled()) {
+      myLoggingService.debug(getAgentIdentifier() + ": constructLineageSchedule() " +
+			     "looking for " + lineageRole + " RFDs to " + 
+			     superiorName + " list = " + lineageList);
+    }
 
 
-      ArrayList updatedList = new ArrayList(); 
-      updatedList.addAll(relayLineage.getList());
-      updatedList.add(myAgentName);
-
-
-      if (localLineage != null) {
-	// Compare lists before publish changing. Required because restart
-	// processing for Relays resends all relays.
-	if (!updatedList.equals(localLineage.getList())) {
-	  ((LineageImpl) localLineage).setList(updatedList);
+    for (Iterator rfdIterator = myReportForDutySubscription.iterator();
+	 rfdIterator.hasNext();) {
+      Task task = (Task) rfdIterator.next();
+      
+      Asset taskSuperior =
+	(Asset) findIndirectObject(task, Constants.Preposition.FOR);
+      String taskSuperiorName = taskSuperior.getClusterPG().getMessageAddress().toString();
+      if (taskSuperiorName.equals(superiorName)) {
+	
+	Collection roles =
+	  (Collection) findIndirectObject(task, Constants.Preposition.AS);
+	
+	for (Iterator roleIterator = roles.iterator(); 
+	     roleIterator.hasNext();) {
+	  Role role = (Role) roleIterator.next();
 	  
 	  if (myLoggingService.isDebugEnabled()) {
 	    myLoggingService.debug(getAgentIdentifier() + 
-				   " updateLineage: publishChange of " +
-				   localLineage);
+				   ": constructLineageSchedule() comparing " +
+				   role + " to " + lineageRole);
 	  }
-	  
-	  publishChange(localLineage);
+	  if (role.equals(lineageRole)) {
+	    long startTime =
+	      (long) task.getPreferredValue(AspectType.START_TIME);
+	    long endTime =
+	      (long) task.getPreferredValue(AspectType.END_TIME);
+	    
+	    if (myLoggingService.isDebugEnabled()) {
+	      myLoggingService.debug(getAgentIdentifier() + 
+				     ": constructLineageSchedule() found a match");
+	    }   
+	    lineageSchedule.add(SDFactory.newLineageScheduleElement(startTime,
+								    endTime));
+	  }
 	}
+      }
+    }
+
+    if (myLoggingService.isDebugEnabled()) {
+      myLoggingService.debug(getAgentIdentifier() + 
+			     ": constructLineageSchedule() returning " +
+			     lineageSchedule);
+    }   
+    return lineageSchedule;
+  }
+
+  protected void modifyLineage(Task rfdTask) {
+    Lineage localLineage = findLocalLineage(rfdTask);
+    if (localLineage == null) {
+      myLoggingService.error(getAgentIdentifier() + " modifyLineage():" +
+			     " unable to find matching local lineage for RFD task " + rfdTask);
+      return;
+    } 
+
+    Lineage relayLineage = findRelayLineage(rfdTask);
+
+    Schedule updatedSchedule = null;
+    if (relayLineage == null) {
+      updatedSchedule = constructLineageSchedule(localLineage, true);
+    } else {
+      updatedSchedule = updateLineageSchedule(localLineage,
+					      relayLineage,
+					      true);
+    }
+      
+    if (!localLineage.getSchedule().equals(updatedSchedule)) {
+      ((LineageImpl) localLineage).setSchedule(updatedSchedule);
+      localPublishChange(localLineage);
+    }
+  }
+
+  protected void updateLineage(LineageRelay relay) {
+    Collection localLineages = getMatchingLineages(relay);
+    Collection relayLineages = new ArrayList(relay.getLineages());
+
+    // Find and update all exact lineage matches
+    for (Iterator relayLineageIterator = relayLineages.iterator();
+	 relayLineageIterator.hasNext();) {
+      Lineage relayLineage = (Lineage) relayLineageIterator.next();
+
+      if (myLoggingService.isDebugEnabled()) {
+	myLoggingService.debug(getAgentIdentifier() + ": updateLineage() - " +
+			       " looking for an exact match for " + 
+			       relayLineage);
+      }
+      
+      boolean publishChange = false;
+      Lineage localLineage = findExactMatch(relayLineage, localLineages);
+
+      if (localLineage != null) {
+	localLineages.remove(localLineage);
+	//relayLineages.remove(relayLineage);
+	relayLineageIterator.remove();
+
+	// Modify local lineage schedule if necessary
+	Schedule relaySchedule = relayLineage.getSchedule();
+	Schedule localSchedule = localLineage.getSchedule();
+	boolean scheduleChange = false;
+	
+	if (!relaySchedule.equals(localSchedule)) {
+	  Schedule modifiedSchedule = updateLineageSchedule(localLineage, 
+							    relayLineage,
+							    false);
+	  
+	  if (!modifiedSchedule.equals(localSchedule)) {
+	    ((LineageImpl) localLineage).setSchedule(modifiedSchedule);
+	    localPublishChange(localLineage);
+
+	    if (modifiedSchedule.size() == 0) {
+	      myLoggingService.warn(getAgentIdentifier() + " has Lineage: " +
+				    localLineage + " which is never active.");
+	    }
+	  }
+	}
+      }
+    }
+
+    // Find and update all the other lineages 
+    for (Iterator relayLineageIterator = relayLineages.iterator();
+	 relayLineageIterator.hasNext();) {
+      Lineage relayLineage = (Lineage) relayLineageIterator.next();
+
+      if (myLoggingService.isDebugEnabled()) {
+	myLoggingService.debug(getAgentIdentifier() + ": updateLineage() - " +
+			       " looking for a match for " + 
+			       relayLineage.getType() + " " +
+			       relayLineage.getList());
+      }
+      
+      boolean publishChange = false;
+
+      LineageImpl localLineage = 
+	(LineageImpl) findMatch(relayLineage, localLineages);
+      boolean newLineage = (localLineage == null);
+
+      if (!newLineage) {
+	localLineages.remove(localLineage);
       } else {
-	localLineage = mySDFactory.newLineage(relayLineage.getType(),
-					      updatedList);
+	localLineage = 
+	  (LineageImpl) mySDFactory.newLineage(relayLineage.getType());
+      }
+      
+      ArrayList list = new ArrayList(relayLineage.getList());
+      list.add(myAgentName);
+      localLineage.setList(list);
+	
+      if (newLineage) {
+	localLineage.setSchedule(constructLineageSchedule(localLineage, false));
+      }
+
+      // Modify local lineage schedule if necessary
+      Schedule relaySchedule = relayLineage.getSchedule();
+      Schedule localSchedule = localLineage.getSchedule();
+	
+      if (!relaySchedule.equals(localSchedule)) {
+	Schedule modifiedSchedule = updateLineageSchedule(localLineage, 
+							  relayLineage,
+							  false);
+	((LineageImpl) localLineage).setSchedule(modifiedSchedule);
+	
+	if (modifiedSchedule.size() == 0) {
+	  myLoggingService.warn(getAgentIdentifier() + " has Lineage: " +
+				localLineage + " which is never active.");
+	}
+      }
+
+      if (newLineage) {
+	if (myLoggingService.isDebugEnabled()) {
+	  myLoggingService.debug(getAgentIdentifier() + ": updateLineage() " +
+				 "adding lineage - " + localLineage);
+	}
+	localPublishAdd(localLineage);
+      } else {
+	localPublishChange(localLineage);
+      }
+    }
+
+    // Remove any left over local lineages - they are no longer valid.
+    for (Iterator iterator = localLineages.iterator();
+	 iterator.hasNext();) {
+      Lineage lineage = (Lineage) iterator.next();
+
+      // Make an exception for SCA lineages initiated by the local agent
+      if ((lineage.getType() != Lineage.SUPPORT) || 
+	  (!lineage.getRoot().equals(relay.getAgentName()))) {
+	localPublishRemove(lineage);
 
 	if (myLoggingService.isDebugEnabled()) {
-	  myLoggingService.debug(getAgentIdentifier() + 
-				 " updateLineage: publishAdd of " +
-				 localLineage);
+	  myLoggingService.debug(getAgentIdentifier() + ": updateLineage() " +
+			 " removing local lineage " + 
+				 lineage.getType() + " " + 
+				 lineage.getList() + 
+				 ". Not found in relay lineages from " +
+				 relay.getAgentName());
 	}
-
-	publishAdd(localLineage);
       }
     }
   }
@@ -319,11 +573,14 @@ public class LineagePlugin extends SimplePlugin
       if (myLoggingService.isDebugEnabled()) {
 	myLoggingService.debug(myAgentName +
 			       ":updateSubordinate localLineage " +
-			       localLineage +
-			       " type: " + localLineage.getType());
+			       localLineage);
      }
     }
 
+    if (lineages.size() == 0) {
+      lineages.add(addLineageSeed(Lineage.ADCON));
+      lineages.add(addLineageSeed(Lineage.OPCON));
+    }
     relay.setLineages(lineages);
 
 
@@ -333,7 +590,7 @@ public class LineagePlugin extends SimplePlugin
 			     relay.getUID());
     }
 
-    publishChange(relay);
+    localPublishChange(relay);
   }
 
   protected void updateSubordinates() {
@@ -353,6 +610,407 @@ public class LineagePlugin extends SimplePlugin
       return pp.getIndirectObject();
     }
   }
+
+
+  protected Schedule updateLineageSchedule(Lineage localLineage,
+					   Lineage relayLineage,
+					   boolean local) {
+    Schedule relaySchedule = relayLineage.getSchedule();
+    Schedule constructedSchedule = 
+      constructLineageSchedule(localLineage, local);
+    Schedule modifiedSchedule = SDFactory.newLineageSchedule();
+
+    if (myLoggingService.isDebugEnabled()) {
+      myLoggingService.debug(getAgentIdentifier() + ": updateLineageSchedule() " +
+			     " relaySchedule = " + relayLineage + 
+			     " constructedSchedule = " + constructedSchedule);
+    }
+
+    for (Iterator iterator = new ArrayList(constructedSchedule).iterator();
+	 iterator.hasNext();) {
+      LineageScheduleElement constructedScheduleElement = 
+	(LineageScheduleElement) iterator.next();
+      Collection relayScheduleElements = 
+	relaySchedule.getOverlappingScheduleElements(constructedScheduleElement.getStartTime(),
+						     constructedScheduleElement.getEndTime());
+      
+      if (relayScheduleElements.size() > 0) {
+	for (Iterator intersectingIterator = relayScheduleElements.iterator();
+	     intersectingIterator.hasNext();) {
+	  LineageScheduleElement relayScheduleElement = 
+	    (LineageScheduleElement) intersectingIterator.next();
+	  if (relayScheduleElement.equals(constructedScheduleElement)) {
+	    modifiedSchedule.add(constructedScheduleElement);
+	  } else {
+	    long start = Math.max(relayScheduleElement.getStartTime(),
+				  constructedScheduleElement.getStartTime());
+	    long end = Math.min(relayScheduleElement.getEndTime(),
+				constructedScheduleElement.getEndTime());
+	    modifiedSchedule.add(SDFactory.newLineageScheduleElement(start,
+								     end));
+	  }
+	}
+      }
+    }
+    
+    if ((modifiedSchedule.size() == 0) &&
+	(myLoggingService.isDebugEnabled())) {
+      myLoggingService.debug(getAgentIdentifier() + " updateLineageSchedule() " + 
+			     " no overlap between relay Schedule and constructed schedule.");
+    }
+
+    return modifiedSchedule;
+  }
+
+  protected Role getRFDRole(Task rfdTask) {
+    Collection roles =
+      (Collection) findIndirectObject(rfdTask, Constants.Preposition.AS);
+    
+    if ((roles == null) ||
+	(roles.size() == 0)){
+      myLoggingService.error(getAgentIdentifier() + 
+			     ": getRFDRole() RFD task - " + rfdTask +
+			     " does not specify a role.");
+      return null;
+    } else if (roles.size() > 1) {
+      myLoggingService.error(getAgentIdentifier() + 
+			     ": getRFDRole() expected 1 role in RFD task - " +
+			     rfdTask + ". Found " + roles.size() + 
+			     ": " + roles + 
+			     ". Will ignore all but the first role.");
+      
+    }
+    
+    Role taskRole = null;
+    for (Iterator iterator = roles.iterator(); iterator.hasNext();) {
+      taskRole = (Role) iterator.next();
+      break;
+    }
+
+    return taskRole;
+  }
+
+  protected String getSuperiorName(Task rfdTask) {
+    Asset superior =
+      (Asset) findIndirectObject(rfdTask, Constants.Preposition.FOR);
+
+    if (superior != null) {
+      return  superior.getClusterPG().getMessageAddress().toString();
+    } else {
+      myLoggingService.error(getAgentIdentifier() + 
+			     ": getSuperiorName() RFD task - " + rfdTask +
+			     " does not specify a superior.");
+      return null;
+    }
+  }
+
+  protected Lineage findLocalLineage(Task rfdTask) {
+    Lineage lineage = null;
+
+    for (Iterator iterator = myLineageSubscription.iterator();
+	 iterator.hasNext();) {
+      Lineage nextLineage = (Lineage) iterator.next();
+      
+      if (matchRFDTask(rfdTask, nextLineage)) {
+	lineage = nextLineage;
+	break;
+      }
+    }
+    
+    if (lineage == null) {
+      // look in recent adds
+      for (Iterator iterator = myExecuteAdds.iterator();
+	   iterator.hasNext();) {
+	Object next = iterator.next();
+
+	if (next instanceof Lineage) {
+	  if (matchRFDTask(rfdTask, (Lineage) next)) {
+	    lineage = (Lineage) next;
+	    break;
+	  }
+	}
+      }
+    }
+
+    if ((lineage == null) &&
+	(myLoggingService.isDebugEnabled())) {
+      myLoggingService.debug(getAgentIdentifier() + 
+			     ": findLocalLineage() no " + 
+			     getRFDRole(rfdTask) + 
+			     " lineage to " + getSuperiorName(rfdTask));
+    }
+
+    return lineage;
+  } 
+
+  protected Lineage findRelayLineage(Task rfdTask) {
+    LineageRelay relay = findRelay(rfdTask);
+
+    if (relay == null) {
+      return null;
+    }
+
+    Role rfdRole = getRFDRole(rfdTask);
+    if (rfdRole == null) {
+      return null;
+    }
+
+    int lineageType = Lineage.roleToType(rfdRole.getConverse());
+
+    if (lineageType == Lineage.SUPPORT) {
+      // No pertinent info from Superior
+      return null;
+    }
+
+    Lineage lineage = null;
+
+    for (Iterator relayLineageIterator = relay.getLineages().iterator();
+	 relayLineageIterator.hasNext();) {
+      Lineage relayLineage = (Lineage) relayLineageIterator.next();
+      if (relayLineage.getType() == lineageType) {
+	lineage = relayLineage;
+	break;
+      }
+    }
+    
+    if ((lineage == null) &&
+	(myLoggingService.isDebugEnabled())) {
+      myLoggingService.debug(getAgentIdentifier() + 
+			     ": findRelayLineage() no " + rfdRole + 
+			     " lineage to " + relay.getAgentName());
+    }
+
+    return lineage;
+  }
+
+  protected Lineage addLineageSeed(int lineageType) {
+    boolean addSeed = true;
+    /*
+    for (Iterator iterator = myLineageSubscription.iterator();
+	 iterator.hasNext();) {
+      Lineage lineage = (Lineage) iterator.next();
+      if (lineage.getType() == lineageType) {
+	addSeed = false;
+	break;
+      }
+    }
+    */
+    if (addSeed) {
+
+      
+      ArrayList list = new ArrayList();
+      list.add(myAgentName);
+      MutableTimeSpan defaultTimeSpan = new MutableTimeSpan();
+      defaultTimeSpan.setTimeSpan(SDFactory.DEFAULT_START_TIME,
+				  SDFactory.DEFAULT_END_TIME);
+      Lineage lineage =
+	mySDFactory.newLineage(lineageType, list, defaultTimeSpan);
+
+      if (myLoggingService.isDebugEnabled()) {
+	myLoggingService.debug(getAgentIdentifier() + 
+			       " adding initial lineage - " + lineage);
+      }
+
+      return lineage;
+    } else {
+      return null;
+    }
+  }
+
+  protected Lineage createLocalLineage(Task rfdTask) {
+    Role rfdRole = getRFDRole(rfdTask);
+    if (rfdRole == null) {
+      return null;
+    }
+
+    int lineageType = Lineage.roleToType(rfdRole.getConverse());
+    ArrayList list = new ArrayList();
+    Asset superior =
+      (Asset) findIndirectObject(rfdTask, Constants.Preposition.FOR);
+    String superiorName = 
+      superior.getClusterPG().getMessageAddress().toString();
+    
+    list.add(superiorName);
+    list.add(myAgentName);
+
+    long startTime =
+      (long) rfdTask.getPreferredValue(AspectType.START_TIME);
+    long endTime =
+      (long) rfdTask.getPreferredValue(AspectType.END_TIME);
+
+    
+    Lineage localLineage = 
+      mySDFactory.newLineage(lineageType, list, 
+			     SDFactory.newLineageScheduleElement(startTime, endTime));
+
+
+    if (myLoggingService.isDebugEnabled()) {
+      myLoggingService.debug(getAgentIdentifier() + 
+			     ": createLocalLineage() localLineage " + localLineage);
+    }   
+
+    return localLineage;
+  }
+
+  protected boolean match(Lineage localLineage, Lineage relayLineage) {
+    if (localLineage.getType() == relayLineage.getType()) {
+      if (localLineage.getType() == Lineage.SUPPORT) {
+	return localLineage.getRoot().equals(relayLineage.getRoot());
+      } else {
+	String lineageSuperior = (localLineage.getList().size() > 1) ?
+	  (String) localLineage.getList().get(localLineage.getList().size() - 2) :
+	  "";
+	return lineageSuperior.equals((String) relayLineage.getLeaf());
+      }
+    } else {
+      return false;
+    }
+  }
+
+  protected Collection getMatchingLineages(LineageRelay relay) {
+    ArrayList localLineages = new ArrayList();
+
+    for (Iterator iterator = myLineageSubscription.iterator();
+	 iterator.hasNext();) {
+      Lineage lineage = (Lineage) iterator.next();
+      String lineageSuperior = (lineage.getList().size() > 1) ?
+	(String) lineage.getList().get(lineage.getList().size() - 2) :
+	  "";
+
+      if (lineageSuperior.equals(relay.getAgentName())) {
+	localLineages.add(lineage);
+      }
+    }
+
+    return localLineages;
+  }
+
+  protected Lineage findExactMatch(Lineage relayLineage, 
+				   Collection localLineages) {
+    ArrayList updatedList = new ArrayList(); 
+    updatedList.addAll(relayLineage.getList());
+    updatedList.add(myAgentName);
+    
+    for (Iterator iterator = localLineages.iterator();
+	 iterator.hasNext();) {
+      Lineage localLineage = (Lineage) iterator.next();
+      if ((localLineage.getType() == relayLineage.getType()) &&
+	  (localLineage.getList().equals(updatedList))) {
+	return localLineage;
+      }
+    }
+    return null;
+  }
+
+  protected Lineage findMatch(Lineage relayLineage, 
+			      Collection localLineages) {
+    // Must be exact for SCA lineages
+    if (relayLineage.getType() == Lineage.SUPPORT) {
+      return findExactMatch(relayLineage, localLineages);
+    }
+
+    for (Iterator iterator = localLineages.iterator();
+	 iterator.hasNext();) {
+      Lineage localLineage = (Lineage) iterator.next();
+      if (localLineage.getType() == relayLineage.getType()) {
+	return localLineage;
+      }
+    }
+    return null;
+  }
+
+  protected LineageRelay findRelay(Task rfdTask) {
+     String superiorName = getSuperiorName(rfdTask);
+
+    if (superiorName == null) {
+      return null;
+    }
+
+    if (myLoggingService.isDebugEnabled()) {
+      myLoggingService.debug(getAgentIdentifier() + ": findRelay() - " +
+			     "reporting to " + superiorName);
+    }
+
+    LineageRelay relay = null;
+    for (Iterator relayIterator = mySuperiorLineageRelaySubscription.iterator();
+	 relayIterator.hasNext();) {
+      
+      LineageRelay next = (LineageRelay) relayIterator.next();
+      
+      if (next.getAgentName().equals(superiorName)) {
+	relay = next;
+	break;
+      } else {
+	if (myLoggingService.isDebugEnabled()) {
+	  myLoggingService.debug(getAgentIdentifier() + ": findRelay() - " +
+				 " relay to " + next.getAgentName() +
+				 " does not match.");
+	}
+      }
+    }
+    
+    if (relay == null) {
+      // look in recent adds
+      for (Iterator relayIterator = myExecuteAdds.iterator();
+	 relayIterator.hasNext();) {
+      
+	Object next = relayIterator.next();
+	if (next instanceof LineageRelay) {
+	  LineageRelay nextRelay = (LineageRelay) next;
+	  if (nextRelay.getAgentName().equals(superiorName)) {
+	    relay = nextRelay;
+	    break;
+	  } else {
+	    if (myLoggingService.isDebugEnabled()) {
+	      myLoggingService.debug(getAgentIdentifier() + ": findRelay() - " +
+				     " recently added relay to " + nextRelay.getAgentName() +
+				     " does not match.");
+	    }
+	  }
+	}
+      }
+    }
+
+    if (myLoggingService.isDebugEnabled()) {
+      myLoggingService.debug(getAgentIdentifier() + ": findRelay() - " +
+			     "returning " + relay);
+    }
+
+    return relay;
+  }
+
+  protected boolean matchRFDTask(Task rfdTask, Lineage localLineage) {
+    String superiorName = getSuperiorName(rfdTask);
+
+    if (superiorName == null) {
+      return false;
+    }
+
+    Role rfdRole = getRFDRole(rfdTask);
+    if (rfdRole == null) {
+      return false;
+    }
+
+    int taskType = Lineage.roleToType(rfdRole.getConverse());
+
+    if (localLineage.getType() == taskType) {
+      int length = localLineage.getList().size();
+      String lineageSuperior = (length >= 2) ?
+	(String) localLineage.getList().get(length - 2) :
+	((localLineage.getType() == Lineage.SUPPORT) &&
+	 (length == 1)) ?
+	// Okay to support yourself.
+	(String) localLineage.getList().get(0) : null;
+      
+      
+      return (superiorName.equals(lineageSuperior));
+    } else {
+      return false;
+    }
+  }
+    
 }
+
+
 
 

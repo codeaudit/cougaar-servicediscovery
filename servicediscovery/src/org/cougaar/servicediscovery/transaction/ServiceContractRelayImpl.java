@@ -161,18 +161,18 @@ public class ServiceContractRelayImpl extends RelayAdapter
   public int updateResponse(MessageAddress target, Object response) {
     ServiceContractRelay serviceContractRelay =
       (ServiceContractRelay) response;
-
+    
     setServiceContract(serviceContractRelay.getServiceContract());
-
+    
     return Relay.RESPONSE_CHANGE;
   }
-
-  // Relay.Target:
+    
+    // Relay.Target:
 
   public Object getResponse() {
     return (myServiceContract != null ? this : null);
   }
-
+    
   public String toString() {
     if (myToString == null) {
       myToString = getClass() + ": provider=<" + getProviderName() +
@@ -182,8 +182,19 @@ public class ServiceContractRelayImpl extends RelayAdapter
         getServiceContract() +
         ">, UID=<" + getUID() + ">";
     }
-
+    
     return myToString;
+  }
+    
+  /* Assume all changes are meaningful.   
+   */
+  protected boolean contentChanged(RelayAdapter content) {
+    ServiceContractRelay serviceContractRelay =
+      (ServiceContractRelay) content;
+    
+    setServiceRequest(serviceContractRelay.getServiceRequest());
+    
+    return true;
   }
 
 }

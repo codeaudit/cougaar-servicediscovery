@@ -29,7 +29,10 @@ package org.cougaar.servicediscovery.plugin;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.Iterator;
+import java.util.List;
+
 
 import org.cougaar.core.agent.service.alarm.Alarm;
 import org.cougaar.core.blackboard.IncrementalSubscription;
@@ -39,6 +42,7 @@ import org.cougaar.core.service.QuiescenceReportService;
 import org.cougaar.planning.ldm.plan.Role;
 import org.cougaar.planning.plugin.legacy.SimplePlugin;
 import org.cougaar.servicediscovery.Constants;
+import org.cougaar.servicediscovery.description.Lineage;
 import org.cougaar.servicediscovery.description.MMRoleQuery;
 import org.cougaar.servicediscovery.description.ScoredServiceDescriptionImpl;
 import org.cougaar.servicediscovery.description.ServiceClassification;
@@ -50,6 +54,7 @@ import org.cougaar.servicediscovery.transaction.MMQueryRequestImpl;
 import org.cougaar.servicediscovery.transaction.RegistryQuery;
 import org.cougaar.servicediscovery.transaction.RegistryQueryImpl;
 import org.cougaar.servicediscovery.util.UDDIConstants;
+import org.cougaar.util.TimeSpan;
 import org.cougaar.util.UnaryPredicate;
 
 /**
@@ -59,27 +64,36 @@ import org.cougaar.util.UnaryPredicate;
  */
 public class MatchmakerStubPlugin extends SimplePlugin {
   private static int WARNING_SUPPRESSION_INTERVAL = 2;
-  private long warningCutoffTime = 0;
+  private long myWarningCutoffTime = 0;
   private static final String QUERY_GRACE_PERIOD_PROPERTY = 
                 "org.cougaar.servicediscovery.plugin.QueryGracePeriod";
 
-
-  private boolean usingCommunities;
-  private String agentName;
-  private LoggingService log;
-  private RegistryQueryService registryQueryService;
-  private QuiescenceReportService qrs;
-  private AgentIdentificationService ais;
-  private IncrementalSubscription clientRequestSub;
+  private boolean myDistributedYPServers;
+  private String myAgentName;
+  private LoggingService myLoggingService;
+  private RegistryQueryService myRegistryQueryService;
+  private QuiescenceReportService myQuiescenceReportService;
+  private AgentIdentificationService myAgentIdentificationService;
+  private IncrementalSubscription myClientRequestSubscription;
+  private IncrementalSubscription myLineageSubscription;
 
   // outstanding RQ are those which have been issued but have not yet returned
-  private ArrayList outstandingRQs = new ArrayList();
+  private ArrayList myOutstandingRQs = new ArrayList();
   // pending RQs are returned RQ which haven't been consumed by the plugin yet
-  private ArrayList pendingRQs = new ArrayList();
+  private ArrayList myPendingRQs = new ArrayList();
 
-  private int outstandingAlarms = 0; // Outstanding alarms (any means non-quiescent)
+  // Outstanding alarms (any means non-quiescent)
+  private int myOutstandingAlarms = 0; 
 
-  private UnaryPredicate queryRequestPredicate =
+
+  private UnaryPredicate myLineagePredicate =
+    new UnaryPredicate() {
+      public boolean execute(Object o) {
+        return (o instanceof Lineage);
+      }
+  };
+
+  private UnaryPredicate myQueryRequestPredicate =
     new UnaryPredicate() {
       public boolean execute(Object o) {
         if (o instanceof MMQueryRequest) {
@@ -93,80 +107,92 @@ public class MatchmakerStubPlugin extends SimplePlugin {
   public void load() {
     super.load();
 
-    this.log = (LoggingService)
-      getBindingSite().getServiceBroker().getService(this, LoggingService.class, null);
-    if (log == null) {
-      log = LoggingService.NULL;
+    myLoggingService = (LoggingService)
+      getBindingSite().getServiceBroker().getService(this, 
+						     LoggingService.class, 
+						     null);
+    if (myLoggingService == null) {
+      myLoggingService = LoggingService.NULL;
     }
 
-    this.registryQueryService = (RegistryQueryService)
+    myRegistryQueryService = (RegistryQueryService)
       getBindingSite().getServiceBroker().getService(this,
                                                      RegistryQueryService.class,
                                                      null);
+    myAgentIdentificationService = 
+      (AgentIdentificationService) getBindingSite().getServiceBroker().getService(this, AgentIdentificationService.class, null);
 
-    // Set up the QuiescenceReportService so that while waiting for the YP and alarms we
-    // dont go quiescent by mistake
-    this.ais = (AgentIdentificationService) getBindingSite().getServiceBroker().getService(this, AgentIdentificationService.class, null);
-    this.qrs = (QuiescenceReportService) getBindingSite().getServiceBroker().getService(this, QuiescenceReportService.class, null);
+    // Set up the QuiescenceReportService so that while waiting for the YP and
+    // alarms we don't go quiescent by mistake
+    myQuiescenceReportService = 
+      (QuiescenceReportService) getBindingSite().getServiceBroker().getService(this, QuiescenceReportService.class, null);
 
-    if (qrs != null)
-      qrs.setAgentIdentificationService(ais);
+    if (myQuiescenceReportService != null)
+      myQuiescenceReportService.setAgentIdentificationService(myAgentIdentificationService);
 
-    if (registryQueryService == null)
+    if (myRegistryQueryService == null)
       throw new RuntimeException("Unable to obtain RegistryQuery service");
-
   }
 
   public void unload() {
-    if (registryQueryService != null) {
+    if (myRegistryQueryService != null) {
       getBindingSite().getServiceBroker().releaseService(this,
                                                          RegistryQueryService.class,
-                                                         registryQueryService);
-      registryQueryService = null;
+                                                         myRegistryQueryService);
+      myRegistryQueryService = null;
     }
 
-    if (qrs != null) {
+    if (myQuiescenceReportService != null) {
       getBindingSite().getServiceBroker().releaseService(this,
                                                          QuiescenceReportService.class,
-                                                         qrs);
-      qrs = null;
+                                                         myQuiescenceReportService);
+      myQuiescenceReportService = null;
     }
 
-    if (ais != null) {
+    if (myAgentIdentificationService != null) {
       getBindingSite().getServiceBroker().releaseService(this,
                                                          AgentIdentificationService.class,
-                                                         ais);
-      ais = null;
+                                                         myAgentIdentificationService);
+      myAgentIdentificationService = null;
     }
 
-    if ((log != null) && (log != LoggingService.NULL)) {
-      getBindingSite().getServiceBroker().releaseService(this, LoggingService.class, log);
-      log = null;
+    if ((myLoggingService != null) && 
+	(myLoggingService != LoggingService.NULL)) {
+      getBindingSite().getServiceBroker().releaseService(this, 
+							 LoggingService.class,
+							 myLoggingService);
+      myLoggingService = null;
     }
     super.unload();
   }
 
   protected void setupSubscriptions() {
-    agentName = getBindingSite().getAgentIdentifier().toString();
+    myAgentName = getBindingSite().getAgentIdentifier().toString();
 
-    clientRequestSub = (IncrementalSubscription) subscribe(queryRequestPredicate);
+    myClientRequestSubscription = 
+      (IncrementalSubscription) subscribe(myQueryRequestPredicate);
+    myLineageSubscription = 
+      (IncrementalSubscription) subscribe(myLineagePredicate);
+
     Collection params = getDelegate().getParameters();
     if (params.size() > 0) {
-      usingCommunities =
+      myDistributedYPServers =
 	Boolean.valueOf((String) params.iterator().next()).booleanValue();
     } else {
-      usingCommunities = false;
+      myDistributedYPServers = false;
     }
   }
 
  
   protected void execute() {
-    if (clientRequestSub.hasChanged()) {
-      Collection newRequest = clientRequestSub.getAddedCollection();
-      for (Iterator i = newRequest.iterator(); i.hasNext();) {
+    if (myClientRequestSubscription.hasChanged()) {
+
+      for (Iterator i = myClientRequestSubscription.getAddedCollection().iterator();
+	   i.hasNext();) {
         MMQueryRequest queryRequest =  (MMQueryRequest) i.next();
         MMRoleQuery query = (MMRoleQuery) queryRequest.getQuery();
         RegistryQuery rq = new RegistryQueryImpl();
+	RQ r;
 
         // Find all service providers for specifed Role
         ServiceClassification roleSC =
@@ -175,13 +201,19 @@ public class MatchmakerStubPlugin extends SimplePlugin {
 					UDDIConstants.MILITARY_SERVICE_SCHEME);
         rq.addServiceClassification(roleSC);
 
-        RQ r = new RQ(queryRequest, query, rq);
+	if (myDistributedYPServers) {
+	  r = new RQ(queryRequest, query, rq);
+	} else {
+	  r = new RQ(queryRequest, query, rq);
+	}
+
         postRQ(r);
       }
     }
 
+
     RQ r;
-    while ( (r = getPendingRQ()) != null) {
+    while ((r = getPendingRQ()) != null) {
       if (r.exception != null) {
 	handleException(r);
       } else {
@@ -189,28 +221,7 @@ public class MatchmakerStubPlugin extends SimplePlugin {
       }
     }
 
-    // Whenever we submit a query to the YP we go off into the ether
-    // So if there are outstanding YP queries or alarms, then mark the fact that we are not done yet
-    // so that Quiescence stuff doesnt decide we're done prematurely early
-    // Note that pendingRQs should _always_ be empty at this point. And we'll only have oustandingAlarms
-    // if there were exceptions talking to the YP.
-    if (qrs != null) {
-      if (outstandingRQs.isEmpty() && pendingRQs.isEmpty() && outstandingAlarms == 0) {
-	// Nothing on the lists and no outstanding alarmas - so we're done
-	qrs.setQuiescentState();
-	if (log.isInfoEnabled())
-	  log.info(agentName + " finished all YP queries. Now quiescent.");
-      } else {
-	// Some query waiting for an answer, or waiting for this Plugin to handle it
-	// Or waiting to retry a query
-	// We're not done
-	qrs.clearQuiescentState();
-	if (log.isInfoEnabled())
-	  log.info(agentName + " has outstanding YP queries or answers. Not quiescent.");
-	if (log.isDebugEnabled())
-	  log.debug("            YP questions outstanding: " + outstandingRQs.size() + ". YP answers to process: " + pendingRQs.size() + ". Outstanding alarms: " + outstandingAlarms);
-      }
-    }
+    handleQuiescenceReport();
   }
 
   protected void handleException(RQ r) {
@@ -233,48 +244,52 @@ public class MatchmakerStubPlugin extends SimplePlugin {
       new QueryAlarm(r, getAlarmService().currentTimeMillis() + rand);
     getAlarmService().addAlarm(alarm);
     // Alarms silently make us non-quiescent -- so keep track of when we have any
-    outstandingAlarms++;
+    myOutstandingAlarms++;
 
-    if (log.isDebugEnabled()) {
-      log.debug(getAgentIdentifier() + 
+    if (myLoggingService.isDebugEnabled()) {
+      myLoggingService.debug(getAgentIdentifier() + 
 		" adding a QueryAlarm for r.query.getRole()" + 
 		" alarm - " + alarm);
     }
 
-    if(System.currentTimeMillis() > getWarningCutOffTime()) {
+    if(System.currentTimeMillis() > getWarningCutoffTime()) {
       if (e == null)
-	log.error(getAgentIdentifier() + message);
+	myLoggingService.error(getAgentIdentifier() + message);
       else
-	log.error(getAgentIdentifier() + message, e);
-    } else if (log.isDebugEnabled()) {
+	myLoggingService.error(getAgentIdentifier() + message, e);
+    } else if (myLoggingService.isDebugEnabled()) {
       if (e == null)
-	log.debug(getAgentIdentifier() + message);
+	myLoggingService.debug(getAgentIdentifier() + message);
       else
-	log.debug(getAgentIdentifier() + message, e);
+	myLoggingService.debug(getAgentIdentifier() + message, e);
     }
   }
 
   protected void handleResponse(RQ r) {
     MMQueryRequest queryRequest = r.queryRequest;
     MMRoleQuery query = r.query;
+
+    if (query.getObsolete()) {
+      if (myLoggingService.isDebugEnabled()) {
+	myLoggingService.debug(myAgentName + 
+			       " ignoring registry query result for obsolete request - " +
+			       r.query);
+      }
+      return;
+    }
+
     Collection services = r.services;
 
-    if (log.isDebugEnabled()) {
-      log.debug(agentName + " registry query result size is : " + services.size() + " for query: " + query.getRole().toString());
+    
+    if (myLoggingService.isDebugEnabled()) {
+      myLoggingService.debug(myAgentName + 
+			     " registry query result size is : " + 
+			     services.size() + " for query: " + 
+			     query.getRole().toString() + " " +
+			     new Date(query.getTimeSpan().getStartTime()) +
+			     " to " +
+			     new Date(query.getTimeSpan().getEndTime()));
     }
-
-    /*
-    String echelon = query.getEchelon();
-    if ((query.getEchelon() == null) ||
-	(query.getEchelon().equals(""))) {
-      echelon = getRequestedEchelonOfSupport(query.getRole());
-    }
-
-    if (log.isDebugEnabled()) {
-      log.debug(getAgentIdentifier() + " looking for " +
-		query.getRole() + " at " + echelon + " level");
-    }
-    */
 
     ArrayList scoredServiceDescriptions = new ArrayList();
     for (Iterator iter = services.iterator(); iter.hasNext(); ) {
@@ -284,33 +299,41 @@ public class MatchmakerStubPlugin extends SimplePlugin {
       if (score >= 0) {
 	scoredServiceDescriptions.add(new ScoredServiceDescriptionImpl(score,
 								       serviceInfo));
-	if(log.isDebugEnabled()) {
-	  log.debug(agentName + ":execute: adding Provider name: " + serviceInfo.getProviderName() +
-		    " Service name: " + serviceInfo.getServiceName() +
-		    " Service score: " + score);
+	if(myLoggingService.isDebugEnabled()) {
+	  myLoggingService.debug(myAgentName + 
+				 ":execute: adding Provider name: " + 
+				 serviceInfo.getProviderName() +
+				 " Service name: " + 
+				 serviceInfo.getServiceName() +
+				 " Service score: " + score);
 	}
       } else {
-	if (log.isDebugEnabled()) {
-	  log.debug(agentName + ":execute: ignoring Provider name: " + serviceInfo.getProviderName() +
-		      " Service name: " + serviceInfo.getServiceName() +
-		      " Service score: " + score);
+	if (myLoggingService.isDebugEnabled()) {
+	  myLoggingService.debug(myAgentName + 
+				 ":execute: ignoring Provider name: " + 
+				 serviceInfo.getProviderName() +
+				 " Service name: " + 
+				 serviceInfo.getServiceName() +
+				 " Service score: " + score);
 	}
       }
     }
 
     if (scoredServiceDescriptions.isEmpty()) {
-      if ((usingCommunities) &&
+      if ((myDistributedYPServers) &&
 	  (!r.getNextContextFailed)) {
-	  if (log.isDebugEnabled()) {
-	    log.debug(agentName + " no matching provider for " + query.getRole() +
-		      " in " + r.currentYPContext +
-		      " retrying in next context.");
+	  if (myLoggingService.isDebugEnabled()) {
+	    myLoggingService.debug(myAgentName + 
+				   " no matching provider for " + 
+				   query.getRole() +
+				   " in " + r.currentYPContext +
+				   " retrying in next context.");
 	  }
 	  postRQ(r);
       } else {
 	// Couldn't find another YPServer to search
 	retryErrorLog(r, 
-		      agentName + " unable to find provider for " + 
+		      myAgentName + " unable to find provider for " + 
 		      query.getRole() +
 		      ", publishing empty query result. " +
 		      "Will try query again later.");
@@ -325,25 +348,119 @@ public class MatchmakerStubPlugin extends SimplePlugin {
     ((MMQueryRequestImpl) queryRequest).setQueryCount(queryRequest.getQueryCount() + 1);
     getBlackboardService().publishChange(queryRequest);
 
-    if(log.isDebugEnabled()) {
-      log.debug(agentName + ": publishChanged query");
+    if(myLoggingService.isDebugEnabled()) {
+      myLoggingService.debug(myAgentName + ": publishChanged query");
     }
   }
 
-  private long getWarningCutOffTime() {
-    if (warningCutoffTime == 0) {
-      WARNING_SUPPRESSION_INTERVAL = Integer.getInteger(QUERY_GRACE_PERIOD_PROPERTY,
-							WARNING_SUPPRESSION_INTERVAL).intValue();
-      warningCutoffTime = System.currentTimeMillis() + WARNING_SUPPRESSION_INTERVAL*60000;
+  protected void handleQuiescenceReport() {
+    // Whenever we submit a query to the YP we go off into the ether
+    // So if there are outstanding YP queries or alarms, then mark the fact that we are not done yet
+    // so that Quiescence stuff doesnt decide we're done prematurely early
+    // Note that myPendingRQs should _always_ be empty at this point. And we'll only have oustandingAlarms
+    // if there were exceptions talking to the YP.
+
+    if (myQuiescenceReportService != null) {
+      if (myOutstandingRQs.isEmpty() && 
+	  myPendingRQs.isEmpty() && 
+	  myOutstandingAlarms == 0) {
+	// Nothing on the lists and no outstanding alarms - so we're done
+	myQuiescenceReportService.setQuiescentState();
+	if (myLoggingService.isInfoEnabled())
+	  myLoggingService.info(myAgentName + 
+				" finished all YP queries. Now quiescent.");
+      } else {
+	// Some query waiting for an answer, or waiting for this Plugin to 
+	// handle it, or waiting to retry a query
+	// We're not done
+
+	myQuiescenceReportService.clearQuiescentState();
+	if (myLoggingService.isInfoEnabled())
+	  myLoggingService.info(myAgentName + 
+				" has outstanding YP queries or answers. " +
+				"Not quiescent.");
+	if (myLoggingService.isDebugEnabled())
+	  myLoggingService.debug("\tYP questions outstanding: " + 
+				 myOutstandingRQs.size() + 
+				 ". YP answers to process: " + 
+				 myPendingRQs.size() + 
+				 ". Outstanding alarms: " + myOutstandingAlarms);
+      }
+    }
+  }
+
+  protected long getWarningCutoffTime() {
+    if (myWarningCutoffTime == 0) {
+      WARNING_SUPPRESSION_INTERVAL = 
+	Integer.getInteger(QUERY_GRACE_PERIOD_PROPERTY,
+			   WARNING_SUPPRESSION_INTERVAL).intValue();
+      myWarningCutoffTime = System.currentTimeMillis() + 
+	WARNING_SUPPRESSION_INTERVAL*60000;
     }
 
-    return warningCutoffTime;
+    return myWarningCutoffTime;
+  }
+  
+  protected Lineage getLineage(int lineageType, TimeSpan timeSpan) {
+    if (myLoggingService.isDebugEnabled()) {
+      myLoggingService.debug(myAgentName + 
+			     ": getLineage() requested lineage of type " +
+			     Lineage.typeToRole(lineageType) + 
+			     new Date(timeSpan.getStartTime()) + 
+			     " - " +
+			     new Date(timeSpan.getEndTime()));
+    }
+
+    for (Iterator iterator = myLineageSubscription.iterator();
+	 iterator.hasNext();) {
+      Lineage lineage = (Lineage) iterator.next();
+      if (lineage.getType() == lineageType) {
+	Collection lineageTimeSpans = 
+	  lineage.getSchedule().getOverlappingScheduleElements(timeSpan.getStartTime(),
+							       timeSpan.getEndTime());
+
+	if (!lineageTimeSpans.isEmpty()) {
+	  TimeSpan lineageTimeSpan = 
+	    (TimeSpan) lineageTimeSpans.iterator().next();
+	  if ((lineageTimeSpan.getStartTime() <= timeSpan.getStartTime()) &&
+	      (lineageTimeSpan.getEndTime() >= timeSpan.getEndTime())) {
+
+	    if (myLoggingService.isDebugEnabled()) {
+	      myLoggingService.debug(myAgentName + 
+				     ": getLineage() returning " + 
+				     lineage);
+	    }
+	    return lineage;
+	  } else {
+	    myLoggingService.error(myAgentName + 
+				   ": getLineage() requested timeSpan " +
+				   new Date(timeSpan.getStartTime()) + 
+				   " - " +
+				   new Date(timeSpan.getEndTime()) +
+				   " spans more than one lineage.");
+	    return null;
+	  }
+	}
+      }
+    }
+    
+    myLoggingService.error(myAgentName + 
+			   ": getLineage() requested lineage of type " +
+			   Lineage.typeToRole(lineageType) + 
+			   new Date(timeSpan.getStartTime()) + 
+			   " - " +
+			   new Date(timeSpan.getEndTime()) +
+			   " does not match any lineage.\n" +
+			   myLineageSubscription);
+    return null;
   }
 
   private class RQ {
     MMQueryRequest queryRequest;
     MMRoleQuery query;
     RegistryQuery rq;
+    Lineage ypLineage;
+
     Collection services;
     Exception exception;
     boolean complete = false;
@@ -351,46 +468,175 @@ public class MatchmakerStubPlugin extends SimplePlugin {
     Object currentYPContext = null;
     boolean getNextContextFailed = false;
 
+
     RQ(MMQueryRequest queryRequest, MMRoleQuery query, RegistryQuery rq) {
       this.queryRequest = queryRequest;
       this.query = query;
       this.rq = rq;
+      this.ypLineage = null;
     }
   }
 
   // issue a async request
   private void postRQ(final RQ r) {
-    if (log.isDebugEnabled()) {
-      log.debug(getAgentIdentifier() + ": posting "+r+" ("+r.rq+")");
+    if (myLoggingService.isDebugEnabled()) {
+      myLoggingService.debug(getAgentIdentifier() + ": posting " + r + 
+			     " (" + r.rq + ")" );
     }
-    synchronized (outstandingRQs) {
-      outstandingRQs.add(r);
+    synchronized (myOutstandingRQs) {
+      myOutstandingRQs.add(r);
     }
 
-    if (usingCommunities) {
-      registryQueryService.findServiceAndBinding(r.currentYPContext, r.rq,
-						 new RegistryQueryService.CallbackWithContext() {
+    if (myDistributedYPServers) {
+      findServiceWithDistributedYP(r);
+    } else {
+      findServiceWithCentralizedYP(r);
+    }
+  }
+
+  // note an async response and wake the plugin
+  private void pendRQ(RQ r) {
+    if (myLoggingService.isDebugEnabled()) {
+      myLoggingService.debug(getAgentIdentifier() + 
+			     " pending " + r + " (" + r.rq + ")");
+    }
+    r.complete = true;
+    synchronized (myOutstandingRQs) {
+      myOutstandingRQs.remove(r);
+    }
+    synchronized (myPendingRQs) {
+      myPendingRQs.add(r);
+    }
+    wake();                     // tell the plugin to wake up
+  }
+
+  // get a pending RQ (or null) so that we can deal with it
+  private RQ getPendingRQ() {
+    RQ r = null;
+    synchronized (myPendingRQs) {
+      if (!myPendingRQs.isEmpty()) {
+        r = (RQ) myPendingRQs.remove(0); // treat like a fifo
+        if (myLoggingService.isDebugEnabled()) {
+          myLoggingService.debug(getAgentIdentifier() + 
+				 " retrieving " + r + " (" + r.rq + ")");
+        }
+      }
+    }
+    return r;
+  }
+
+  private boolean useYPCommunitySearchPath(final RQ r) {
+    Lineage opconLineage = getLineage(Lineage.OPCON, r.query.getTimeSpan());
+    Lineage adconLineage = getLineage(Lineage.ADCON, r.query.getTimeSpan());
+    
+    if (myLoggingService.isDebugEnabled()) {
+      myLoggingService.debug(getAgentIdentifier() + ": postRQ() " +
+			     " timeSpan = (" +
+			     new Date(r.query.getTimeSpan().getStartTime()) +
+			     ", " + 
+			     new Date(r.query.getTimeSpan().getEndTime()) +
+			     ")  adconLineage = " + adconLineage +
+			     " opconLineage = " + opconLineage);
+      if ((opconLineage != null) && 
+	  (adconLineage != null)) {
+	myLoggingService.debug(getAgentIdentifier() + ": execute() " +
+			       " adconLineage.getList() = " + 
+			       adconLineage.getList() +
+			       " opconLineage.getList() = " + 
+			       opconLineage.getList() + 
+			       " opconLineage.getList().equals(adconLineage.getList()) == " + 
+			       opconLineage.getList().equals(adconLineage.getList()));
+      }
+    }
+    
+    if ((adconLineage == null) || (opconLineage == null)) {
+      if (adconLineage == null) {
+	r.exception = new IllegalStateException(getAgentIdentifier() + 
+						" no Adminstrative lineage.");
+      } else {
+	r.exception = new IllegalStateException(getAgentIdentifier() + 
+						" no Operation lineage for " +
+						new Date(r.query.getTimeSpan().getStartTime()) +
+						" to " +
+						new Date(r.query.getTimeSpan().getEndTime()));
+      }
+      pendRQ(r);
+    }
+    
+    return (opconLineage.getList().equals(adconLineage.getList()));
+  }
+
+  private void findServiceWithCentralizedYP(final RQ r) {
+    if (myLoggingService.isDebugEnabled()) {
+      myLoggingService.debug(getAgentIdentifier() +
+			     " findServiceWithCentralizedYP: r = " + r);
+    }
+  
+    myRegistryQueryService.findServiceAndBinding(r.rq,
+						 new RegistryQueryService.Callback() {
+      public void invoke(Object result) {
+	r.services = (Collection) result;
+	if (myLoggingService.isDebugEnabled()) {
+	  myLoggingService.debug(getAgentIdentifier() + 
+				 " results = " + result + 
+				 " for " + r.currentYPContext);
+	}
+	flush();
+      }
+      public void handle(Exception e) {
+	r.exception = e;
+	if (myLoggingService.isDebugEnabled()) {
+	  myLoggingService.debug(getAgentIdentifier() + 
+				 " failed during query of " +
+				 r.queryRequest, e);
+	}
+	flush();
+      }
+      
+      private void flush() {
+	pendRQ(r);
+      }
+    });
+  }
+
+  private void findServiceWithDistributedYP(final RQ r) {
+    if (useYPCommunitySearchPath(r)) {
+      if (myLoggingService.isDebugEnabled()) {
+	myLoggingService.debug(getAgentIdentifier() +
+			       " findServiceWithDistributedYP: " +
+			       " using YPCommunity search.");
+      }
+
+      r.ypLineage = null;
+      myRegistryQueryService.findServiceAndBinding(r.currentYPContext, r.rq,
+						   new RegistryQueryService.CallbackWithContext() {
 	public void invoke(Object result) {
 	  r.services = (Collection) result;
-	  if (log.isDebugEnabled()) {
-	    log.debug(getAgentIdentifier() + " results = " + result + 
-		      " for " + r.currentYPContext);
+	  if (myLoggingService.isDebugEnabled()) {
+	    myLoggingService.debug(getAgentIdentifier() + 
+				   " results = " + result + 
+				   " for " + r.currentYPContext);
 	  }
 	  flush();
 	}
+	
 	public void handle(Exception e) {
 	  r.exception = e;
-	  if (log.isDebugEnabled()) {
-	    log.debug(getAgentIdentifier() + " failed during query of " +
-		    r.queryRequest + " context =  " + r.currentYPContext, e);
+	  if (myLoggingService.isDebugEnabled()) {
+	    myLoggingService.debug(getAgentIdentifier() + 
+				   " failed during query of " +
+				   r.queryRequest + 
+				   " context =  " + r.currentYPContext, e);
 	  }
 	  flush();
 	}
-
+	
 	public void setNextContext(Object context){
-	  if (log.isDebugEnabled()) {
-	    log.debug(getAgentIdentifier() + " previous YPContext " +
-		      r.currentYPContext + " current YPContext " + context);
+	  if (myLoggingService.isDebugEnabled()) {
+	    myLoggingService.debug(getAgentIdentifier() + 
+				   " previous YPContext " +
+				   r.currentYPContext + 
+				   " current YPContext " + context);
 	  }
 	  r.previousYPContext = r.currentYPContext;
 	  r.currentYPContext = context;
@@ -399,58 +645,85 @@ public class MatchmakerStubPlugin extends SimplePlugin {
 	    r.getNextContextFailed = true;
 	  }
 	}
-
+	
 	private void flush() {
 	  pendRQ(r);
 	}
       });
     } else {
-      registryQueryService.findServiceAndBinding(r.rq,
-						 new RegistryQueryService.Callback() {
+      r.ypLineage = getLineage(Lineage.OPCON, r.query.getTimeSpan());
+      if (myLoggingService.isDebugEnabled()) {
+	myLoggingService.debug(getAgentIdentifier() +
+			       " findServiceWithDistributedYP: " +
+			       " using lineage based search - " +
+			       " r.ypLineage = " + r.ypLineage);
+      }
+
+      List lineageList = r.ypLineage.getList();
+      int listSize = lineageList.size();
+      
+      if (r.currentYPContext == null) {
+	r.currentYPContext = (listSize > 1) ?
+	  (String) lineageList.get(listSize - 2) : 
+	  (String) r.ypLineage.getLeaf();
+      } else {
+	int index = lineageList.indexOf(r.currentYPContext);
+	if (index > 0) {
+	  r.previousYPContext = r.currentYPContext;
+	  r.currentYPContext = (String) lineageList.get(index - 1);
+	} else {
+	  // Reached the top of the lineage. Restart the search.
+	  r.currentYPContext = (listSize > 1) ?
+	    (String) lineageList.get(listSize - 2) : 
+	    (String) r.ypLineage.getLeaf();
+	}
+      }
+      
+      myRegistryQueryService.findServiceAndBinding((String) r.currentYPContext,
+						   r.rq,
+						   new RegistryQueryService.CallbackWithContext() {
 	public void invoke(Object result) {
 	  r.services = (Collection) result;
+	  if (myLoggingService.isDebugEnabled()) {
+	    myLoggingService.debug(getAgentIdentifier() + 
+				   " results = " + result + 
+				   " for " + r.currentYPContext);
+	  }
 	  flush();
 	}
+	
 	public void handle(Exception e) {
 	  r.exception = e;
-	  //log.error("Failed during query of "+r.queryRequest, e);
+	  if (myLoggingService.isDebugEnabled()) {
+	    myLoggingService.debug(getAgentIdentifier() + 
+				   " failed during query of " +
+				   r.queryRequest + " context =  " + 
+				   r.currentYPContext, e);
+	  }
 	  flush();
 	}
-
+	
+	public void setNextContext(Object context){
+	  if (myLoggingService.isDebugEnabled()) {
+	    myLoggingService.debug(getAgentIdentifier() + 
+				   " getNextContext() for " +
+				   r.currentYPContext + " returned " + 
+				   context);
+	  }
+	  
+	  
+	  if (context == null) {
+	    // Restart search
+	    r.currentYPContext = null;
+	    r.getNextContextFailed = true;
+	  }
+	}
+	
 	private void flush() {
-          pendRQ(r);
+	  pendRQ(r);
 	}
       });
     }
-  }
-
-  // note an async response and wake the plugin
-  private void pendRQ(RQ r) {
-    if (log.isDebugEnabled()) {
-      log.debug(getAgentIdentifier() + " pending "+r+" ("+r.rq+")");
-    }
-    r.complete = true;
-    synchronized (outstandingRQs) {
-      outstandingRQs.remove(r);
-    }
-    synchronized (pendingRQs) {
-      pendingRQs.add(r);
-    }
-    wake();                     // tell the plugin to wake up
-  }
-
-  // get a pending RQ (or null) so that we can deal with it
-  private RQ getPendingRQ() {
-    RQ r = null;
-    synchronized (pendingRQs) {
-      if (!pendingRQs.isEmpty()) {
-        r = (RQ) pendingRQs.remove(0); // treat like a fifo
-        if (log.isDebugEnabled()) {
-          log.debug(getAgentIdentifier() + " retrieving "+r+" ("+r.rq+")");
-        }
-      }
-    }
-    return r;
   }
 
   public class QueryAlarm implements Alarm {
@@ -468,7 +741,7 @@ public class MatchmakerStubPlugin extends SimplePlugin {
         expired = true;
 	rq.complete = false;
 	postRQ(rq);
-	--outstandingAlarms;
+	--myOutstandingAlarms;
       }
     }
 
@@ -476,7 +749,7 @@ public class MatchmakerStubPlugin extends SimplePlugin {
     public synchronized boolean cancel() {
       boolean was = expired;
       expired = true;
-      --outstandingAlarms;
+      --myOutstandingAlarms;
       return was;
     }
     public String toString() {

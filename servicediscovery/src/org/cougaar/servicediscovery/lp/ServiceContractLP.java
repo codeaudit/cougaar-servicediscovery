@@ -28,6 +28,7 @@ package org.cougaar.servicediscovery.lp;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Vector;
 
@@ -94,7 +95,7 @@ public class ServiceContractLP implements LogicProvider, EnvelopeLogicProvider {
       Asset provider = relay.getProvider();
       if ((provider != null) &&
         (provider.getClusterPG().getMessageAddress().equals(self))){
-        localProviderUpdate(o, (ServiceContractRelay) obj);
+        localProviderUpdate(o, relay);
       }
 
       // If this the client agent
@@ -105,7 +106,7 @@ public class ServiceContractLP implements LogicProvider, EnvelopeLogicProvider {
         if (logger.isDebugEnabled()) {
 	  logger.debug(self + ": Received " + relay);
 	}
-        localClientUpdate(relay);
+        localClientUpdate(o, relay);
       }
     }
   }
@@ -115,7 +116,7 @@ public class ServiceContractLP implements LogicProvider, EnvelopeLogicProvider {
   private void localProviderUpdate(EnvelopeTuple tuple, ServiceContractRelay relay) {
     Asset provider = logplan.findAsset(relay.getProvider());
     if (provider == null) {
-      logger.error(self + ": unable to process ServiceContractRelay - " +
+      logger.error(self + ": unable to process ServiceContractRelay - " +   
 		   relay.getUID() + " provider - " + relay.getProvider() +
 		   " - is not local to this agent.");
       return;
@@ -130,6 +131,12 @@ public class ServiceContractLP implements LogicProvider, EnvelopeLogicProvider {
     Asset localClient = logplan.findAsset(client);
 
     if (localClient == null) {
+      if (tuple.isRemove()) {
+	logger.error(self + ": unable to process remove of ServiceContractRelay - " +   
+		     relay.getUID() + " client does not already exist on this agent.");
+	return;
+      }
+
       client = ldmf.cloneInstance(client);
       if (related(client)){
         ((HasRelationships)client).setRelationshipSchedule(ldmf.newRelationshipSchedule((HasRelationships)client));
@@ -156,7 +163,8 @@ public class ServiceContractLP implements LogicProvider, EnvelopeLogicProvider {
       }
       updateRelationships = tuple.isAdd() || tuple.isRemove();
 
-      Collection localRelationships =
+      Collection localRelationships = (tuple.isRemove()) ?
+	Collections.EMPTY_LIST :
 	convertToLocalRelationships(relay,
 				    (HasRelationships) provider,
 				    (HasRelationships) client);
@@ -169,7 +177,8 @@ public class ServiceContractLP implements LogicProvider, EnvelopeLogicProvider {
 
       if (logger.isDebugEnabled()) {
 	logger.debug(self + ": localProviderUpdate() updateRelationships = " + 
-		     updateRelationships);
+		     updateRelationships + 
+		     " for " + relay + " uid = " + relay.getUID());
       }
 
       if (updateRelationships) {
@@ -212,7 +221,14 @@ public class ServiceContractLP implements LogicProvider, EnvelopeLogicProvider {
     clearSchedule(relay.getProvider());
   }
 
-  private void localClientUpdate(ServiceContractRelay relay) {
+  private void localClientUpdate(EnvelopeTuple tuple, ServiceContractRelay relay) {
+    if (logger.isDebugEnabled()) {
+      logger.debug(self + ": localClientUpdate() relay = " + relay + 
+		   " tuple.isAdd() = " + tuple.isAdd() +
+		   " tuple.isChange() = " + tuple.isChange() +
+		   " tuple.isRemove() = " + tuple.isRemove());
+    }
+
     Asset client = logplan.findAsset(relay.getClient()); // local client instance
 
     if (client == null) {
@@ -229,12 +245,17 @@ public class ServiceContractLP implements LogicProvider, EnvelopeLogicProvider {
 
     // figure out the asset being transferred
     Asset provider = logplan.findAsset(relay.getProvider());
-    boolean newProvider;
+    boolean newProvider = (provider == null);
 
-    if (provider == null) {
+    if (newProvider) {
+      if (tuple.isRemove()) {
+	logger.error(self + ": unable to process remove of ServiceContractRelay - " +   
+		     relay.getUID() + " provider does not already exist on this agent.");
+	return;
+      }
+
       // Clone to ensure that we don't end up with cross cluster asset
       // references
-      newProvider = true;
       provider = ldmf.cloneInstance(relay.getProvider());
       if (related(provider)) {
 	HasRelationships hasRelationships = (HasRelationships) provider;
@@ -248,11 +269,6 @@ public class ServiceContractLP implements LogicProvider, EnvelopeLogicProvider {
 		     " - references assets in the log plan.");
 	return;
       }
-      newProvider = false;
-    }
-
-    if (logger.isDebugEnabled()) {
-      logger.debug(self + ": localClientUpdate() relay = " + relay);
     }
 
     boolean updateRelationships = false;
@@ -260,11 +276,12 @@ public class ServiceContractLP implements LogicProvider, EnvelopeLogicProvider {
     //Only munge relationships pertinent to the transfer - requires that
     //both receiving and transferring assets have relationship schedules
     if (related(provider) && related(client)) {
-      Collection localRelationships =
+      Collection localRelationships = (tuple.isRemove()) ?
+	Collections.EMPTY_LIST :
 	convertToLocalRelationships(relay,
 				    (HasRelationships) provider,
 				    (HasRelationships) client);
-      updateRelationships = 
+      updateRelationships = (tuple.isRemove()) ||
 	(localScheduleUpdateRequired(localRelationships, 
 				     (HasRelationships) provider) || 
 	 localScheduleUpdateRequired(localRelationships, 
@@ -276,10 +293,12 @@ public class ServiceContractLP implements LogicProvider, EnvelopeLogicProvider {
 				  (HasRelationships) provider,
 				  (HasRelationships) client);
 
-	addRelationships(localRelationships,
-		       (HasRelationships) provider,
-		       (HasRelationships) client);
-	
+	if (!tuple.isRemove()) {
+	  addRelationships(localRelationships,
+			   (HasRelationships) provider,
+			   (HasRelationships) client);
+	}
+
 	if (logger.isInfoEnabled()) {
 	  logger.info(self + ": localClientUpdate() changed client: " + 
 		      client);
@@ -425,6 +444,7 @@ public class ServiceContractLP implements LogicProvider, EnvelopeLogicProvider {
 	return true;
       }
     }
+
     
     return false;
   }

@@ -36,6 +36,7 @@ public class MMRoleQuery implements MMQuery, java.io.Serializable {
   private Role myRole = null;
   private TimeSpan myTimeSpan = null;
   private ServiceInfoScorer myServiceInfoScorer = null;
+  private boolean myObsolete = false;
 
   private static ServiceInfoScorer DEFAULT_SCORER = new ServiceInfoScorer() {
     public int scoreServiceInfo(ServiceInfo serviceInfo) {
@@ -101,9 +102,35 @@ public class MMRoleQuery implements MMQuery, java.io.Serializable {
     }
   }
 
+  public boolean getObsolete() {
+    return myObsolete;
+  }
+
+  public void setObsolete(boolean obsoleteFlag) {
+    if ((myObsolete) && (!obsoleteFlag)) {
+      logger.warn("setObsolete: ignoring attempt to toggle obsolete " +
+		  "back to false." );
+    } else {
+      myObsolete = obsoleteFlag;
+    }
+  }
+
   public String toString() {
     return "Role: " + myRole + " ServiceInfoScorer: " + myServiceInfoScorer +
-      " TimeSpan: " + myTimeSpan;
+      " TimeSpan: " + myTimeSpan + " Obsolete: " + myObsolete;
+  }
+
+  public boolean equals(Object o) {
+    if (o instanceof MMRoleQuery) {
+      MMRoleQuery query = (MMRoleQuery) o;
+      return ((query.getObsolete() == myObsolete) &&
+	      (query.getRole().equals(myRole)) &&
+	      (query.getTimeSpan().getStartTime() == myTimeSpan.getStartTime()) &&
+	      (query.getTimeSpan().getEndTime() == myTimeSpan.getEndTime()) &&
+	      (query.getServiceInfoScorer().equals(myServiceInfoScorer)));
+    } else {
+      return false;
+    }
   }
 }
 

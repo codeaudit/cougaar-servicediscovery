@@ -226,7 +226,7 @@ public class LineageEchelonScorer implements ServiceInfoScorer, java.io.Serializ
       if (classification.getClassificationSchemeName().equals(UDDIConstants.SUPPORT_COMMAND_ASSIGNMENT)) {
 	int hops = 
 	  myCommandLineage.countHops(myAgentName,
-					    classification.getClassificationName());
+				     classification.getClassificationName());
 	if (hops != -1) {
 	  minHops = Math.min(minHops, hops);
 	}
@@ -235,8 +235,10 @@ public class LineageEchelonScorer implements ServiceInfoScorer, java.io.Serializ
 
     if(minHops == Integer.MAX_VALUE) {
       if (logger.isInfoEnabled()) {
-        logger.info(myAgentName + ": in getLineageScore, does not intersect with provider's lineage "+
-                 " for provider " + serviceInfo.getProviderName());
+        logger.info(myAgentName + ": in getLineageScore, local lineage " + 
+		    myCommandLineage + 
+		    " does not intersect with provider's SCA " +
+		    " for provider " + serviceInfo.getProviderName());
       }
       return -1;
     }
@@ -244,7 +246,22 @@ public class LineageEchelonScorer implements ServiceInfoScorer, java.io.Serializ
       return minHops;
   }
 
-;
+  public boolean equals(Object o) {
+    if (o instanceof LineageEchelonScorer) {
+      LineageEchelonScorer scorer = (LineageEchelonScorer) o;
+
+      return ((scorer.getMinimumEchelon().equals(getMinimumEchelon())) &&
+	      (scorer.getRole().equals(getRole())) &&
+	      (scorer.getLineage().equals(getLineage())));
+    } else {
+      return false;
+    }
+  }
+
+  public String toString() {
+    return "Role: " + myRole + " MinimumEchelon: " + myMinimumEchelon +
+      " CommandLineage: " + myCommandLineage;
+  }
 
 }
 

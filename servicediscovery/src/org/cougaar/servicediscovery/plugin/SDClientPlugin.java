@@ -27,11 +27,12 @@
 package org.cougaar.servicediscovery.plugin;
 
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.Map;
 import java.util.HashMap;
@@ -45,16 +46,14 @@ import org.cougaar.glm.ldm.Constants;
 import org.cougaar.glm.ldm.asset.Organization;
 import org.cougaar.mlm.plugin.organization.GLSConstants;
 import org.cougaar.planning.ldm.plan.AllocationResult;
-import org.cougaar.planning.ldm.plan.AspectType;
-import org.cougaar.planning.ldm.plan.AspectValue;
 import org.cougaar.planning.ldm.plan.Disposition;
 import org.cougaar.planning.ldm.plan.PlanElement;
 import org.cougaar.planning.ldm.plan.Preference;
 import org.cougaar.planning.ldm.plan.PrepositionalPhrase;
 import org.cougaar.planning.ldm.plan.Role;
-import org.cougaar.planning.ldm.plan.ScoringFunction;
+import org.cougaar.planning.ldm.plan.Schedule;
+import org.cougaar.planning.ldm.plan.ScheduleElement;
 import org.cougaar.planning.ldm.plan.Task;
-import org.cougaar.planning.ldm.plan.TimeAspectValue;
 import org.cougaar.planning.plugin.legacy.SimplePlugin;
 import org.cougaar.planning.plugin.util.PluginHelper;
 
@@ -71,11 +70,17 @@ import org.cougaar.servicediscovery.description.ServiceContract;
 import org.cougaar.servicediscovery.description.ServiceDescription;
 import org.cougaar.servicediscovery.description.ServiceInfoScorer;
 import org.cougaar.servicediscovery.description.ServiceRequest;
+import org.cougaar.servicediscovery.description.ServiceRequestImpl;
 import org.cougaar.servicediscovery.description.TimeInterval;
 import org.cougaar.servicediscovery.transaction.MMQueryRequest;
 import org.cougaar.servicediscovery.transaction.ServiceContractRelay;
 import org.cougaar.servicediscovery.util.UDDIConstants;
+
+import org.cougaar.util.MutableTimeSpan;
+import org.cougaar.util.NonOverlappingTimeSpanSet;
 import org.cougaar.util.PropertyParser;
+import org.cougaar.util.TimeSpan;
+import org.cougaar.util.TimeSpanSet;
 import org.cougaar.util.UnaryPredicate;
 
 /**
@@ -92,6 +97,13 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
     "org.cougaar.servicediscovery.plugin.ClientGracePeriod"; 
   private long myWarningCutoffTime = -1;
 
+  private static MutableTimeSpan DEFAULT_TIME_SPAN = new MutableTimeSpan();
+  static {
+    DEFAULT_TIME_SPAN.setTimeSpan(SDFactory.DEFAULT_START_TIME,
+				  SDFactory.DEFAULT_END_TIME);
+  }
+
+
   private IncrementalSubscription mySelfOrgSubscription;
   private IncrementalSubscription myMMRequestSubscription;
   protected IncrementalSubscription myServiceContractRelaySubscription;
@@ -102,11 +114,11 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
   private Organization mySelfOrg = null;
 
   protected LoggingService myLoggingService;
-  protected EventService eventService;
+  protected EventService myEventService;
 
   protected SDFactory mySDFactory;
 
-  private boolean myFindingProviders = false;
+  private NonOverlappingTimeSpanSet myOPCONSchedule = null;
 
   private Map myRoles = new HashMap();
   /**
@@ -116,10 +128,13 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
    * potentially causing logistics plugin problems on rehydration.
    * Defaults to false - ie, do not force an early persist.
    **/
-  private static final boolean persistEarly;
+  private static final boolean PERSIST_EARLY;
+
   static {
-    persistEarly = PropertyParser.getBoolean("org.cougaar.servicediscovery.plugin.SDClientPlugin.persistEarly", false);
+    PERSIST_EARLY = PropertyParser.getBoolean("org.cougaar.servicediscovery.plugin.SDClientPlugin.persistEarly", false);
   }
+
+  private boolean myNeedToFindProviders = true;
 
   private static UnaryPredicate mySelfOrgPred = new UnaryPredicate() {
     public boolean execute(Object o) {
@@ -173,71 +188,53 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
     }
   };
 
-
-  private static Calendar myCalendar = Calendar.getInstance();
-
-  protected static long DEFAULT_START_TIME = -1;
-  protected static long DEFAULT_END_TIME = -1;
-
-
-  static {
-    myCalendar.set(1990, 0, 1, 0, 0, 0);
-    myCalendar.set(Calendar.MILLISECOND, 0);
-    DEFAULT_START_TIME = myCalendar.getTime().getTime();
-
-    myCalendar.set(2010, 0, 1, 0, 0, 0);
-    myCalendar.set(Calendar.MILLISECOND, 0);
-    DEFAULT_END_TIME = myCalendar.getTime().getTime();
-  }
-
-
   protected void setupSubscriptions() {
-    mySelfOrgSubscription = (IncrementalSubscription) subscribe(mySelfOrgPred);
-    myMMRequestSubscription = (IncrementalSubscription) subscribe(myMMRequestPred);
-    myServiceContractRelaySubscription = (IncrementalSubscription) subscribe(myServiceContractRelayPred);
-    myFindProvidersTaskSubscription = (IncrementalSubscription) subscribe(myFindProvidersTaskPred);
+    mySelfOrgSubscription = 
+      (IncrementalSubscription) subscribe(mySelfOrgPred);
+    myMMRequestSubscription = 
+      (IncrementalSubscription) subscribe(myMMRequestPred);
+    myServiceContractRelaySubscription = 
+      (IncrementalSubscription) subscribe(myServiceContractRelayPred);
+    myFindProvidersTaskSubscription = 
+      (IncrementalSubscription) subscribe(myFindProvidersTaskPred);
+    myLineageSubscription = 
+      (IncrementalSubscription) subscribe(myLineagePred);
 
     myLoggingService =
       (LoggingService) getBindingSite().getServiceBroker().getService(this, LoggingService.class, null);
 
     // get event service
-    eventService = (EventService)
-      getBindingSite().getServiceBroker().getService(
-          this, EventService.class, null);
+    myEventService = 
+      (EventService) getBindingSite().getServiceBroker().getService(this, EventService.class, null);
 
     mySDFactory = (SDFactory) getFactory(SDDomain.SD_NAME);
 
+    setOPCONSchedule(buildOPCONSchedule());
+
+    setNeedToFindProviders(true);
+
+    initializeNumberOfProvidersPerRole();
+
     if (didRehydrate()) {
-      myFindingProviders = false;
-
-      if ((!myFindProvidersTaskSubscription.isEmpty()) &&
-	   (needToFindProviders())) {
-	myFindingProviders = true;
-        Collection roleparams = parseRoleParams();
-
-	for (Iterator iterator = roleparams.iterator();
-	     iterator.hasNext();) {
-	  Role role = Role.getRole((String) iterator.next());
-	  boolean foundContract = checkProviderCompletelyCoveredOrRequested(role);
-
-	  if (!foundContract) {
-	    queryServices(role);
-	  }
-	}
+      if (needToFindProviders()) {
+	findProviders();
       }
     }
   }
 
   public void execute() {
-    if (myFindProvidersTaskSubscription.hasChanged()) {
-      Collection adds = myFindProvidersTaskSubscription.getAddedCollection();
-
-      if ((adds != null) && (!adds.isEmpty()) &&
-	  (needToFindProviders())) {
-	findProviders();
+    if (needToFindProviders()) {
+      if (myLoggingService.isDebugEnabled()) {
+	myLoggingService.debug(getAgentIdentifier() +
+			       ": execute - needToFindProviders.");
       }
+      
+      findProviders();
+    }
 
-      updateFindProvidersTaskDispositions(myFindProvidersTaskSubscription);
+
+    if (myFindProvidersTaskSubscription.hasChanged()) {
+      updateFindProvidersTaskDispositions();
     }
 
     // If matchmaker has new possible providers, look at options,
@@ -247,7 +244,7 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
     }
 
     //if your relays have changed, check for revokes
-    if(myServiceContractRelaySubscription.hasChanged()) {
+    if (myServiceContractRelaySubscription.hasChanged()) {
       Collection changedRelays =
 	myServiceContractRelaySubscription.getChangedCollection();
 
@@ -261,9 +258,33 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
 				 changedRelays.size() + 
 				 ", updateFindProvidersTaskDispositions");
         }
-	updateFindProvidersTaskDispositions(myFindProvidersTaskSubscription);
+	updateFindProvidersTaskDispositions();
+      }
+
+
+      Collection removed = myServiceContractRelaySubscription.getRemovedCollection();
+      
+      for (Iterator removedIterator = removed.iterator();
+	   removedIterator.hasNext();) {
+	ServiceContract removedContract = 
+	  ((ServiceContractRelay) removedIterator.next()).getServiceContract();
+
+	if (removedContract != null) {
+	  TimeSpan timeSpan = 
+	    mySDFactory.getTimeSpanFromPreferences(removedContract.getServicePreferences());
+
+	  Role role = removedContract.getServiceRole();
+	  if (!checkProviderCompletelyRequested(role, timeSpan)) {
+	    queryServices(role, timeSpan);
+	  }
+	}
       }
     }
+
+    if (myLineageSubscription.hasChanged()) {
+      handleChangedLineage();
+    }
+
   } // end of execute method
 
   /**
@@ -280,7 +301,11 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
       if (relay.getServiceContract().isRevoked()  &&
           relay.getClient().equals(getSelfOrg())) {
         //do a new service query
-        queryServices(relay.getServiceContract().getServiceRole());
+	//What had the contract covered?
+	TimeSpan timeSpan = 
+	  mySDFactory.getTimeSpanFromPreferences(relay.getServiceRequest().getServicePreferences());
+	queryServices(relay.getServiceContract().getServiceRole(), 
+		      timeSpan);
         //publishRemove(relay);
       }
     }
@@ -294,10 +319,10 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
   protected void requestServiceContract(ServiceDescription serviceDescription,
                                         TimeInterval interval) {
     Role role = getRole(serviceDescription);
-    if (role==null) {
+    if (role == null) {
       if (myLoggingService.isWarnEnabled()) {
         myLoggingService.warn(getAgentIdentifier() +
-                               " error requesting service contract: a null role");
+                               ": error requesting service contract: a null role");
       }
     } else {
       String providerName = serviceDescription.getProviderName();
@@ -306,15 +331,17 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
       ServiceRequest request =
           mySDFactory.newServiceRequest(getSelfOrg(),
 					role,
-					getDefaultPreferences(startTime,
-							      endTime));
+					mySDFactory.createTimeSpanPreferences(interval));
 
       ServiceContractRelay relay =
           mySDFactory.newServiceContractRelay(MessageAddress.getMessageAddress(providerName),
 					      request);
-      if (myLoggingService.isInfoEnabled()) {
-        myLoggingService.info(getAgentIdentifier() + " SDClient.requestServiceContract: publish relay to " + providerName +
-                               " asking for role: " + role);
+      if (myLoggingService.isDebugEnabled()) {
+        myLoggingService.debug(getAgentIdentifier() + 
+			      ": requestServiceContract() publish relay to " + providerName +
+			      " asking for role: " + role + 
+			      " from " + new Date(interval.getStartTime()) +
+			      " to " + new Date(interval.getEndTime()));
       }
       publishAdd(relay);
     }
@@ -350,103 +377,163 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
     return LineageEchelonScorer.getMinimumEchelonOfSupport(capabilities, role);
   }
 
-  protected Lineage getCommandLineage() {
-    Collection collection = 
-      getBlackboardService().query(myLineagePred);
+  protected Lineage getCommandLineage(TimeSpan timeSpan) {
+    Collection matches = getOPCONSchedule().intersectingSet(timeSpan);
     
-    if (collection.size() > 0) {
-      Iterator iterator = collection.iterator();
-      Lineage commandLineage = (Lineage) iterator.next();
+    Lineage commandLineage = null;
 
-      if (iterator.hasNext()) {
-	myLoggingService.warn(getAgentIdentifier() + 
-			      " getCommandLineage: multiple COMMAND LineageLists found." +
-			      " Using - " + commandLineage);
-      }
+    switch (matches.size()) {
       
-      return commandLineage;
+      case 0:
+	break;
+
+      case 1:
+	LineageTimeSpan lineageTimeSpan = 
+	  (LineageTimeSpan)(matches.iterator().next());
+	commandLineage = lineageTimeSpan.getLineage();
+	break;
+	
+      default:
+	if (myLoggingService.isDebugEnabled()) {
+	  myLoggingService.debug(getAgentIdentifier() + 
+				 " getCommandLineage: OPCON schedule has " +
+				 matches.size() + " " + matches + 
+				 " elements overlapping " + timeSpan);
+	}
+	break;
     }
 
-    return null;
+    if (myLoggingService.isDebugEnabled()) {
+      myLoggingService.debug(getAgentIdentifier() + 
+			     ": getCommandLineage: returning - " + commandLineage + 
+			     " for " + timeSpan);
+    }
+
+    return commandLineage;
   }
 
-  /**
-   * create and publish a MMQueryRequest for this role
-   */
-  protected void queryServices(Role role) {
-    String minimumEchelon = getMinimumEchelon(role);
-
-    Lineage commandLineage = getCommandLineage();
-
-    if (commandLineage != null) {
-      LineageEchelonScorer scorer = 
-	new LineageEchelonScorer(commandLineage,
-				 minimumEchelon,
-				 role);
-      queryServices(role, scorer);
+  protected TimeSpan getOPCONTimeSpan() {
+    if ((getOPCONSchedule().first() != null) &&
+	(getOPCONSchedule().last() != null)) {
+      MutableTimeSpan opconTimeSpan = new MutableTimeSpan();
+      opconTimeSpan.setTimeSpan(((TimeSpan) getOPCONSchedule().first()).getStartTime(),
+				((TimeSpan) getOPCONSchedule().last()).getEndTime());
+      return opconTimeSpan;
     } else {
-      myLoggingService.error(getAgentIdentifier() + 
-			     " queryServices: no COMMAND Lineage on blackboard." + 
-			     " Unable to generate MMRoleQuery for " + role);
+      return DEFAULT_TIME_SPAN;
     }
+  }
+
+  protected void queryServices(Role role) {
+    queryServices(role, getOPCONTimeSpan());
   }
 
   /**
    * create and publish a MMQueryRequest for this role
    */
-  protected void queryServices(Role role, ServiceInfoScorer scorer) {
+  protected void queryServices(Role role, TimeSpan timeSpan) {
     if (myLoggingService.isDebugEnabled()) {
       myLoggingService.debug(getAgentIdentifier() +
-			     " asking MatchMaker for role : " + role +
-			     " - serviceInfoScorer : " + scorer);
+			     ": queryServices() role = " + role +
+			     " timeSpan = " + new Date(timeSpan.getStartTime()) + 
+			     " to " + new Date(timeSpan.getEndTime()));
     }
-    MMQueryRequest mmRequest =
-        mySDFactory.newMMQueryRequest(new MMRoleQuery(role, scorer));
-    publishAdd(mmRequest);
+
+    String minimumEchelon = getMinimumEchelon(role);
+
+    Collection opconLineages = getOPCONSchedule().intersectingSet(timeSpan);
+    if (myLoggingService.isDebugEnabled()) {
+      myLoggingService.debug(getAgentIdentifier() +
+			     ": queryServices() OPCON schedule = " + getOPCONSchedule() +
+			     " OPCON schedule intersectingSet = " + opconLineages);
+    }
+    
+    
+    if (opconLineages.size() == 0) {
+      myLoggingService.error(getAgentIdentifier() + 
+			     ": queryServices: no OPCON Lineage on blackboard" +
+			     "for requested time span - " + 
+			     timeSpan.getStartTime() + " to " +
+			     timeSpan.getEndTime() +
+			     ". Unable to generate MMRoleQuery for " + role);
+    }
+    
+    for (Iterator iterator = opconLineages.iterator();
+	 iterator.hasNext();) {
+      LineageTimeSpan opconTimeSpan = (LineageTimeSpan) iterator.next();
+
+      LineageEchelonScorer scorer = 
+	new LineageEchelonScorer(opconTimeSpan.getLineage(),
+				 minimumEchelon,
+				 role);
+      queryServices(role, scorer, opconTimeSpan);
+    }
   }
 
   /**
-   * Return a Collection of Preferences containing a corresponding
-   * start time and end timed preference.
+   * create and publish a MMQueryRequest for this role
    */
-  protected Collection getDefaultPreferences(long startTime, long endTime) {
-    ArrayList preferences = new ArrayList(2);
+  protected void queryServices(Role role, ServiceInfoScorer scorer, 
+			       TimeSpan timeSpan) {
+    boolean outstandingQuery = false;
+    
+    // Check to make sure we don't already have an outstanding request for this time span
+    for (Iterator queryIterator = myMMRequestSubscription.iterator(); 
+	 queryIterator.hasNext();) {
+      MMQueryRequest request = (MMQueryRequest) queryIterator.next();
+      
+      if (matchingRequest(request, role, timeSpan, scorer)) {
+	outstandingQuery = true;
+	
+	if (myLoggingService.isDebugEnabled()) {
+	  myLoggingService.debug(getAgentIdentifier() +
+				 " ignoring call to ask for MatchMaker for role : " + role +
+				 " - serviceInfoScorer : " + scorer + 
+				 " - timeSpan : " + timeSpan +
+				 ". Outstanding MMQuery  - " + request.getQuery() + 
+				 " - already exists.");
+	}
+	break;
+      }
+    }
+    
+    if (!outstandingQuery) {
+      if (myLoggingService.isDebugEnabled()) {
+	myLoggingService.debug(getAgentIdentifier() +
+			       " asking MatchMaker for role : " + role +
+			       " - serviceInfoScorer : " + scorer + 
+			       " - timeSpan : " + timeSpan);
+      }
+      MMQueryRequest mmRequest =
+        mySDFactory.newMMQueryRequest(new MMRoleQuery(role, scorer, timeSpan));
+      publishAdd(mmRequest);
+    }
+  }
 
-    AspectValue startTAV = TimeAspectValue.create(AspectType.START_TIME, startTime);
-    ScoringFunction startScoreFunc =
-      ScoringFunction.createStrictlyAtValue(startTAV);
-    Preference startPreference =
-      getFactory().newPreference(AspectType.START_TIME, startScoreFunc);
-
-    AspectValue endTAV = TimeAspectValue.create(AspectType.END_TIME, endTime);
-    ScoringFunction endScoreFunc =
-      ScoringFunction.createStrictlyAtValue(endTAV);
-    Preference endPreference =
-      getFactory().newPreference(AspectType.END_TIME, endScoreFunc );
-
-    preferences.add(startPreference);
-    preferences.add(endPreference);
-
-    return preferences;
+  protected void setNeedToFindProviders(boolean flag) {
+    myNeedToFindProviders = flag;
   }
 
   // If we have not yet created the service requests, and we're
   // in an OPLAN stage where we should do work, return true
-  private boolean needToFindProviders() {
-    return (!(myFindingProviders) && (isActive()));
+  protected boolean needToFindProviders() {
+    return ((myNeedToFindProviders) && (!myFindProvidersTaskSubscription.isEmpty()));
   }
 
   // For each role in parameters, generate a MMQueryRequest
   protected void findProviders() {
-    myFindingProviders = true;
-    Collection roleparams = parseRoleParams();
-    getNumberOfProvidersPerRole();
-
-    for (Iterator iterator = roleparams.iterator();
+    Collection roleParams = parseRoleParams();
+    
+    for (Iterator iterator = roleParams.iterator();
 	 iterator.hasNext();) {
       Role role = Role.getRole((String)iterator.next());
-      queryServices(role);
+      
+      if (!checkProviderCompletelyRequested(role, getOPCONTimeSpan())) {
+	queryServices(role);
+
+      }
     }
+    setNeedToFindProviders(false);
   }
 
   protected Collection parseRoleParams() {
@@ -466,7 +553,7 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
     return roleparams;
   }
 
-  protected void getNumberOfProvidersPerRole() {
+  protected void initializeNumberOfProvidersPerRole() {
     Collection params = getDelegate().getParameters();
 
     for (Iterator iterator = params.iterator();
@@ -475,14 +562,16 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
       int endRoleIndex;
       if (fullParam.indexOf(":") > 0) {
         endRoleIndex = fullParam.indexOf(":");
-        String desiredRole = fullParam.substring(0,endRoleIndex);
-        String numProviders = fullParam.substring(endRoleIndex+1, fullParam.length());
+        Role desiredRole = Role.getRole(fullParam.substring(0, endRoleIndex));
+        String numProviders = 
+	  fullParam.substring(endRoleIndex + 1, fullParam.length());
         if (myLoggingService.isInfoEnabled()) {
-          myLoggingService.info("numProviders desired for role "+desiredRole +" is " +numProviders);
+          myLoggingService.info("numProviders desired for role " +
+				desiredRole + " is " + numProviders);
         }
         Integer i = new Integer(numProviders);
         if (i != null) {
-          myRoles.put(desiredRole,i);
+          myRoles.put(desiredRole, i);
         }
       }
     }
@@ -498,162 +587,145 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
     for (Iterator iterator = mmRequests.iterator();
          iterator.hasNext();) {
       MMQueryRequest mmRequest = (MMQueryRequest) iterator.next();
+      MMRoleQuery query = (MMRoleQuery) mmRequest.getQuery();
+
 
       if (myLoggingService.isDebugEnabled()) {
-        myLoggingService.debug(getAgentIdentifier() + ": execute: MMQueryRequest has changed: " + mmRequest);
+        myLoggingService.debug(getAgentIdentifier() + 
+			       ": generateServiceRequests() MMQueryRequest " +
+			       " has changed: " + mmRequest.getUID() + 
+			       " query = " + query);
       }
+
+      if (query.getObsolete()) {
+	if (myLoggingService.isDebugEnabled()) {
+	  myLoggingService.debug(getAgentIdentifier() + 
+				 ": generateServiceRequests() ignoring obsolete request - " +
+				 mmRequest.getUID());
+	}
+	continue;
+      }
+      
 
       // Only do anything if the query has a result
       Collection services = mmRequest.getResult();
-      if (services != null) {
-	if (services.size() == 0) {
-	  // MMPlugin said no one matched?
-	  if(System.currentTimeMillis() > getWarningCutoffTime()) {
-	    myLoggingService.error(getAgentIdentifier() + 
-				  " got 0 results for query " + mmRequest.getQuery());
-	  } else if (myLoggingService.isWarnEnabled()) {
-	    myLoggingService.warn(getAgentIdentifier() + 
-				  " got 0 results for query " + mmRequest.getQuery());
-	  }
-	  continue; // on to next changed mmRequest
+      
+      if ((services == null) ||
+	  (services.size() == 0)) {
+	// MMPlugin said no one matched?
+	if (System.currentTimeMillis() > getWarningCutoffTime()) {
+	  myLoggingService.error(getAgentIdentifier() + 
+				 ": generateServiceRequests() got 0 results" +
+				 " for query - " + 
+				 query);
+	} else if (myLoggingService.isDebugEnabled()) {
+	  myLoggingService.debug(getAgentIdentifier() + 
+				 ": generateServiceRequests() got 0 results" +
+				 " for query - " + 
+				 query);
 	}
-
-        Role role = null;
-        Collection intervals = null;
+      } else {
+        Role role = query.getRole();
+	TimeSpan timeSpan = query.getTimeSpan();
 
         if (myLoggingService.isDebugEnabled()) {
-          myLoggingService.debug(getAgentIdentifier() + ": Results for query " +
-                                 mmRequest.getQuery().toString());
-          myLoggingService.debug("    number of avail providers: " +
+          myLoggingService.debug(getAgentIdentifier() + 
+				 ": generateServiceRequests() results for " +
+				 "query - " +
+                                 query + " for role = " + role +
+				 ", time span = " + query.getTimeSpan() + 
+				 " - number of avail providers - " +
                                  services.size());
         }
 
-        //make sure any ties are resolved in a reliable & consistent order
-        ArrayList servicesList = new ArrayList();
-        servicesList.addAll(services);
-        reorderAnyTiedServiceDescriptions(servicesList);
-        
-        int numDesiredProviders = 1;  //default is to look for only one provider
-        //Look through the service descriptions to
-        //just figure out the role & time intervals you need to ask for
-        for (Iterator serviceIterator = servicesList.iterator();
-             serviceIterator.hasNext();) {
-          ScoredServiceDescription serviceDescription =
-            (ScoredServiceDescription) serviceIterator.next();
-          if (myLoggingService.isDebugEnabled()) {
-            myLoggingService.debug(getAgentIdentifier() +
-                                   " execute: - provider: " +
-                                   serviceDescription.getProviderName() +
-                                   " score: " + serviceDescription.getScore());
-          }
-          if (role == null) {
-	    // Find the role out of the service classifications in the desc
-            role = getRole(serviceDescription);
-	    // Then use that to get the outstanding intervals
-	    // If we have a service request for this role, expect
-	    // intervals to be null
-            intervals = getCurrentlyUncoveredIntervalsWithoutOutstandingRequests(
-                DEFAULT_START_TIME, DEFAULT_END_TIME, role);
-            // Then use role again to find out how many providers we want for this role
-            Integer desiredProviders = ((Integer)myRoles.get(role.toString()));
-            if (desiredProviders !=null){
-              numDesiredProviders = desiredProviders.intValue();
-              if (myLoggingService.isDebugEnabled()) {
-                myLoggingService.debug(getAgentIdentifier() +
-                                       " wants " +numDesiredProviders +" providers for role: " + role);
-              }
-            } 
-          }
-        } //end loop finding role & intervals needed & num providers needed
-
-        if (role == null || intervals == null) {
-          //error state, log a message
-          if (myLoggingService.isWarnEnabled()) {
-            myLoggingService.warn(getAgentIdentifier() +
-                                   " error generating service requests: a null role or time interval: " +
-                                   "role is " + role +
-                                   " and time intervals are " + intervals + ", and services.size was " + services.size());
-          }
+        Collection intervals = 
+	      getCurrentlyUncoveredIntervalsWithoutOutstandingRequests(
+                timeSpan.getStartTime(),
+		timeSpan.getEndTime(), 
+		role);
+	if (intervals.size() == 0) {
+	  if (myLoggingService.isDebugEnabled()) {
+	    myLoggingService.debug(getAgentIdentifier() +
+				   ": generateServiceRequests() no " +
+				   " uncovered time periods for - " + role +
+				   ". Will not generate a service request.");
+	  }
 	  continue; // on to the next changed MMRequest
-	  //    return;
-        }
+	}
+    
+	int desiredNumberOfProviders = getDesiredNumberOfProviders(role);
+	
+        //make sure any ties are resolved in a reliable & consistent order
+        Collection servicesList = 
+	  reorderAnyTiedServiceDescriptions(new ArrayList(services));
+	
+	//now, for each interval, pick a provider (service description) and
+	//request a contract
+	for (Iterator neededIntervals = intervals.iterator();
+	     neededIntervals.hasNext();) {
+	  TimeInterval currentInterval = (TimeInterval) neededIntervals.next();
+	  
+	  boolean madeNewRequest = false;
+	  int numProviderFound = 0;
+	  
+	  for (Iterator serviceIterator = servicesList.iterator();         
+	       serviceIterator.hasNext() &&
+		 numProviderFound < desiredNumberOfProviders;) {
+	    ScoredServiceDescription sd = 
+	      (ScoredServiceDescription) serviceIterator.next();
+	    //if you have already asked this provider, skip it
+	    if (alreadyAskedForContractWithProvider(role, 
+						    sd.getProviderName(), 
+						    currentInterval)) {
+	      if (myLoggingService.isDebugEnabled()) {
+		myLoggingService.debug(getAgentIdentifier() +
+				       " skipping " + 
+				       sd.getProviderName() + 
+				       " for role: " + role);
+	      }
+	    } else {
+	      //remember that you found a provider to request from
+	      madeNewRequest = true;
+	      numProviderFound++;
+	      //do the request
+	      if (myLoggingService.isDebugEnabled()) {
+		myLoggingService.debug(getAgentIdentifier() +
+				       " requesting contract with " + 
+				       sd.getProviderName() + 
+				       " for role - " + 
+				       role + ", time - " + 
+				       currentInterval);
+	      }
+	      requestServiceContract(sd, currentInterval);
+	    }
+	  }  // end of for loop for number of desired providers
 
-        if (myLoggingService.isDebugEnabled()) {
-          myLoggingService.debug(getAgentIdentifier() +
-                                 " execute: want a provider for role: " + role);
-        }
-
-        //now, for each interval, pick a provider (service description) and
-        //request a contract
-        Iterator neededIntervals = intervals.iterator();
-        if(!neededIntervals.hasNext()) {
-          if (myLoggingService.isDebugEnabled()) {
-            myLoggingService.debug(getAgentIdentifier() +
-                                   " empty needed intervals for role: " + role);
-          }
-        }
-
-        while(neededIntervals.hasNext()) {
-          TimeInterval currentInterval = (TimeInterval) neededIntervals.next();
-          Iterator serviceIterator = servicesList.iterator();
-          boolean madeNewRequest = false;
-
-          for (int i =0; i < numDesiredProviders; i++) {
-         
-            // Loop over providers who might cover the interval
-            if(serviceIterator.hasNext()) {
-            //while(serviceIterator.hasNext()) {
-              ScoredServiceDescription sd = (ScoredServiceDescription) serviceIterator.next();
-              //if you have already asked this provider, skip it
-              if(alreadyAskedForContractWithProvider(role, sd.getProviderName(), currentInterval)) {
-                if (myLoggingService.isDebugEnabled()) {
-                  myLoggingService.debug(getAgentIdentifier() +
-                                         " skipping " + sd.getProviderName() + " for role: " + role);
-                }
-                continue;
-              } else {
-                //remember that you found a provider to request from
-                madeNewRequest = true;
-                //do the request
-                if (myLoggingService.isDebugEnabled()) {
-                  myLoggingService.debug(getAgentIdentifier() +
-                                         " requesting contract with " + sd.getProviderName() + " for role " + role);
-                }
-                requestServiceContract(sd, currentInterval);
-
-                //stop looking for providers for this interval, since we found one
-                //break;
-              }
-            }
-          } // end of for loop for number of desired providers
-
-          
-            //if you were not able to find a provider to request from
-            //for this interval, take appropriate action
-          if(!madeNewRequest) {
-            handleRequestWithNoRemainingProviderOption(role, currentInterval);
-          }
-        } // end of loop over intervals
-      } // end of check that the request had results
-      // Done with the query so clean up
-      // publishRemove(mmRequest);
-    }//end looping through changed mm requests
-}
+	  //if you were not able to find a provider to request from
+	  //for this interval, take appropriate action
+	  if (!madeNewRequest) {
+	    handleRequestWithNoRemainingProviderOption(role, currentInterval);
+	  } 
+	}// end of for loop over uncovered intervals
+      } // end of loop over MMRequests 
+    }
+  }
 
   /**
-   * Modify the order of scoredServiceDescriptions so that ties are in the order
-   * you want them to be
+   * Modify the order of scoredServiceDescriptions so that ties are in the 
+   * order you want them to be
    */
-  protected void reorderAnyTiedServiceDescriptions(ArrayList scoredServiceDescriptions) {
+  protected Collection reorderAnyTiedServiceDescriptions(ArrayList scoredServiceDescriptions) {
+    return scoredServiceDescriptions;
     //do nothing, trust the matchmaker ordering
   }
 
   /**
-   * return true if you already have a service contract relay with this provider
+   * return true if you already have a service contract relay with this 
+   * provider
    */
-  protected boolean alreadyAskedForContractWithProvider(Role role, String providerName,
-      TimeInterval timeInterval) {
-
+  protected boolean alreadyAskedForContractWithProvider(Role role, 
+                                                        String providerName,
+                                                        TimeInterval timeInterval) {
     boolean foundContract = false;
     for (Iterator relayIterator = myServiceContractRelaySubscription.iterator();
          relayIterator.hasNext();) {
@@ -662,11 +734,13 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
       if (relay.getProviderName().equals(providerName) &&
           relay.getClient().equals(getSelfOrg()) &&
           relay.getServiceRequest().getServiceRole().equals(role)) {
-        foundContract = true;
-        break;
+	// Did we ask for the same time period?
+	TimeSpan requestedTimeSpan = 
+	  mySDFactory.getTimeSpanFromPreferences(relay.getServiceRequest().getServicePreferences());
+	return (requestedTimeSpan.equals(timeInterval));
       }
     }
-    return foundContract;
+    return false;
   }
 
   /**
@@ -677,7 +751,7 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
     //providers. Log a warning.
     if (myLoggingService.isWarnEnabled()) {
       myLoggingService.warn(getAgentIdentifier() +
-                            " failed to get contract for " + role.toString() +
+                            " failed to get contract for " + role +
                             " for time period from " + new java.util.Date(currentInterval.getStartTime()) +
                             " to " + new java.util.Date(currentInterval.getEndTime()));
     }
@@ -693,8 +767,9 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
       long desiredStart, long desiredEnd, Role role) {
 
     ArrayList ret = new ArrayList();
-    if(!checkProviderCompletelyCoveredOrRequested(role)) {
-      ret.add(new TimeInterval(desiredStart, desiredEnd));
+    TimeInterval timeInterval = new TimeInterval(desiredStart, desiredEnd);
+    if (!checkProviderCompletelyRequested(role, timeInterval)) {
+      ret.add(timeInterval);
     }
     return ret;
   }
@@ -703,171 +778,275 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
    * return true if you have a non-revoked service contract for
    * this role or if you have an unanswered request
    */
-  protected boolean checkProviderCompletelyCoveredOrRequested(Role role) {
-    boolean foundContract = false;
-    for (Iterator relayIterator = myServiceContractRelaySubscription.iterator();
-         relayIterator.hasNext();) {
-      ServiceContractRelay relay =
-        (ServiceContractRelay) relayIterator.next();
-
-      // We're good if we have a valid contract,
-      // or at least a valid servicerequest
-      if (relay.getServiceContract() != null &&
-          !relay.getServiceContract().isRevoked() &&
-          relay.getClient().equals(getSelfOrg()) &&
-          relay.getServiceContract().getServiceRole().toString().equals(role.toString())) {
-        foundContract = true;
-        break;
-      } else if(relay.getServiceContract() == null &&
-              relay.getClient().equals(getSelfOrg()) &&
-              relay.getServiceRequest().getServiceRole().toString().equals(role.toString())) {
-        foundContract = true;
-        break;
-      }
+  protected boolean checkProviderCompletelyRequested(Role role,
+						     TimeSpan timeSpan) {
+    if (timeSpan == null) {
+      return false;
     }
-    return foundContract;
+
+    return requested(role, timeSpan);
   }
 
+
   /**
-   * return true if you have a non-revoked service contract for this role
+   * return true if you have a non-revoked service contract for
+   * this role or if you have an unanswered request
    */
-  protected boolean checkProviderCompletelyCovered(Role role) {
-    boolean foundContract = false;
+  protected boolean checkProviderCompletelyCovered(Role role,
+						   TimeSpan timeSpan) {
+    if (timeSpan == null) {
+      return false;
+    }
+
+    return covered(role, timeSpan);
+  }
+
+  protected boolean covered(Role role,
+			    TimeSpan timeSpan) {
+
+    TimeSpanSet contractTimeSpanSet = new TimeSpanSet();
+
     for (Iterator relayIterator = myServiceContractRelaySubscription.iterator();
          relayIterator.hasNext();) {
       ServiceContractRelay relay =
         (ServiceContractRelay) relayIterator.next();
 
-      // We're good only if we have a valid contract
-      if (relay.getServiceContract() != null &&
-          !relay.getServiceContract().isRevoked() &&
-          relay.getClient().equals(getSelfOrg()) &&
-          relay.getServiceContract().getServiceRole().toString().equals(role.toString())) {
-        foundContract = true;
-        break;
+      ServiceContract contract = relay.getServiceContract();
+      if ((contract != null) &&
+	  (!contract.isRevoked()) &&
+	  (relay.getClient().equals(getSelfOrg())) &&
+	  (contract.getServiceRole().equals(role))) {
+	TimeSpan contractTimeSpan = 
+	  mySDFactory.getTimeSpanFromPreferences(contract.getServicePreferences());
+	contractTimeSpanSet.add(contractTimeSpan);
       }
     }
-    return foundContract;
+
+    return continuousCoverage(timeSpan, contractTimeSpanSet);
+
+  }
+
+  protected boolean requested(Role role,
+			      TimeSpan timeSpan) {
+    
+    TimeSpanSet requestTimeSpanSet = new TimeSpanSet();
+
+    for (Iterator relayIterator = myServiceContractRelaySubscription.iterator();
+         relayIterator.hasNext();) {
+      ServiceContractRelay relay =
+        (ServiceContractRelay) relayIterator.next();
+
+      ServiceRequest request = relay.getServiceRequest();
+      
+      if (relay.getClient().equals(getSelfOrg()) &&
+	  request.getServiceRole().equals(role)) {
+	TimeSpan requestTimeSpan = 
+	  mySDFactory.getTimeSpanFromPreferences(request.getServicePreferences());
+	requestTimeSpanSet.add(requestTimeSpan);
+      }
+    }
+
+    return continuousCoverage(timeSpan, requestTimeSpanSet);
+  }
+
+  protected boolean continuousCoverage(TimeSpan targetTimeSpan, TimeSpanSet timeSpanSet) {
+    if (timeSpanSet.isEmpty()) {
+      return false;
+    }
+
+    long currentEarliest = -1;
+    long currentLatest = -1;
+    for (Iterator timeSpanIterator = timeSpanSet.iterator();
+	 timeSpanIterator.hasNext();) {
+      TimeSpan timeSpan = (TimeSpan) timeSpanIterator.next();
+      if (currentEarliest == -1) {
+	currentEarliest = timeSpan.getStartTime();
+      } else {
+	currentEarliest = Math.min(currentEarliest, timeSpan.getStartTime());
+      }
+
+      if (currentLatest == -1) {
+	currentLatest = timeSpan.getEndTime();
+      } else {
+	if (currentLatest < timeSpan.getStartTime()) {
+	  // Missing coverage
+	  if (myLoggingService.isDebugEnabled()) {
+	    myLoggingService.debug(getAgentIdentifier() + 
+				   ":  continuousCoverage() returning false for timeSpan = " + 
+				   new Date(timeSpan.getStartTime()) + 
+				   " to " + new Date(timeSpan.getEndTime()) + 
+				   ". Gap in coverage detected at " + new Date(currentLatest));
+	  }
+	  return false;
+	} else {
+	  currentLatest = Math.max(currentLatest, timeSpan.getEndTime());
+	}
+      }
+    }
+
+    return (currentEarliest <= targetTimeSpan.getStartTime() &&
+	    currentLatest >= targetTimeSpan.getEndTime());
+  }
+
+  protected void handleChangedLineage() {
+    
+    NonOverlappingTimeSpanSet currentOPCONSchedule = buildOPCONSchedule();
+    
+    
+    if (currentOPCONSchedule.equals(getOPCONSchedule())) {
+      if (myLoggingService.isDebugEnabled()) {
+	myLoggingService.debug(getAgentIdentifier() + ": handleChangedLineage() " +
+			       " change in lineage subscription - no change in OPCON schedule. " +
+			       " currentOPCONSchedule = " + currentOPCONSchedule + 
+			       " previous OPCON schedule = " + getOPCONSchedule());
+      }
+    } else {
+      if (myLoggingService.isDebugEnabled()) {
+	myLoggingService.debug(getAgentIdentifier() + ": handleChangedLineage() " + 
+			       " change in OPCON schedule - " +
+			       " currentOPCONSchedule = " + currentOPCONSchedule + 
+			       " previous OPCON schedule = " + getOPCONSchedule());
+      }
+     
+      verifyOutstandingRequests(currentOPCONSchedule);
+      verifyServiceContracts(currentOPCONSchedule);
+    
+      setOPCONSchedule(currentOPCONSchedule);
+      
+      // Ping execute so that we query for missing services
+      setNeedToFindProviders(true);
+      wake();
+    }
   }
 
   // Log helper: Where have we gotten to?
   private String stateMessage() {
-    String ret = getAgentIdentifier() + " SDClient.updateFindProvidersTaskDispositions: State of plugin ";
+    String message = "State of plugin - ";
 
     //what is the status of the find providers task
     for (Iterator iterator = myFindProvidersTaskSubscription.iterator();
          iterator.hasNext();) {
       Task task = (Task) iterator.next();
       PlanElement pe = task.getPlanElement();
-      if(pe != null && pe.getEstimatedResult()!=null) {
-        ret = ret.concat("\n     FindProviders conf: " + pe.getEstimatedResult().getConfidenceRating());
-      }
-      else {
-        ret = ret.concat("\n     FindProviders task has no result yet");
+      if ((pe != null) && 
+	  (pe.getEstimatedResult() != null)) {
+        message = message.concat("\n     FindProviders conf: " + 
+			 pe.getEstimatedResult().getConfidenceRating());
+      } else {
+        message = message.concat("\n     FindProviders task has no result yet");
       }
     }
+
     //which roles do we need?
-    ret = ret.concat("\n     The roles needed are: ");
+    message = message.concat("\n     The roles needed are: ");
     Collection roleparams = parseRoleParams();
     for (Iterator iterator = roleparams.iterator();
          iterator.hasNext();) {
       Role role = Role.getRole((String) iterator.next());
-      ret = ret.concat(role + " ");
+      message = message.concat(role + " ");
     }
-    //what service contracts relays do we have, and which have contracts (replies)?
+
+    //what service contracts relays do we have, and which have contracts 
+    // (replies)?
     for (Iterator relayIterator = myServiceContractRelaySubscription.iterator();
          relayIterator.hasNext();) {
       ServiceContractRelay relay =
         (ServiceContractRelay) relayIterator.next();
 
-      if(relay.getClient().equals(getSelfOrg())) {
-        ret = ret.concat("\n     Sent a service contract relay to " + relay.getProviderName() + " for the role " +
-              relay.getServiceRequest().getServiceRole().toString());
+      if (relay.getClient().equals(getSelfOrg())) {
+        message = message.concat("\n     Sent a service contract relay to " + 
+				 relay.getProviderName() + " for the role " +
+				 relay.getServiceRequest().getServiceRole());
       }
       if (relay.getServiceContract() != null &&
           relay.getClient().equals(getSelfOrg())) {
-        ret = ret.concat(", and the provider has answered.");
+        message = message.concat(", and the provider has answered.");
       }
-      else if(relay.getServiceContract() == null &&
+      else if (relay.getServiceContract() == null &&
               relay.getClient().equals(getSelfOrg())) {
-        ret = ret.concat(", but no answer yet from the provider.");
+        message = message.concat(", but no answer yet from the provider.");
       }
     }
 
     // Now look to see what roles we have asked the MM for
-    for(Iterator queryIterator = myMMRequestSubscription.iterator(); queryIterator.hasNext();) {
+    for (Iterator queryIterator = myMMRequestSubscription.iterator(); 
+	queryIterator.hasNext();) {
       MMQueryRequest request = (MMQueryRequest) queryIterator.next();
-      ret = ret.concat("\n     MMQueryRequest exists for " + ((MMRoleQuery)request.getQuery()).getRole());
-      if(request.getResult() == null) {
-        ret = ret.concat(", but no reply.");
+      message = message.concat("\n     MMQueryRequest exists for " + 
+			       ((MMRoleQuery)request.getQuery()).getRole());
+      if (request.getResult() == null) {
+        message = message.concat(", but no reply.");
       }
       else {
-        ret = ret.concat(", and reply exists with " + request.getResult().size() + " possible providers.");
+        message = message.concat(", and reply exists with " + 
+				 request.getResult().size() + 
+				 " possible providers.");
       }
     }
-    return ret;
+    return message;
   }
 
   // See if we have all contracts for all the roles we need. If so, set
   // FindProviders conf to 1. Otherwise, to 0.
-  private void updateFindProvidersTaskDispositions(Collection findProvidersTasks) {
+  private void updateFindProvidersTaskDispositions() {
     // Print verbose status of all requests
     if (myLoggingService.isInfoEnabled()) {
-      myLoggingService.info(stateMessage());
+      myLoggingService.info(getAgentIdentifier() + 
+      ": updateFindProvidersTaskDispositions() " + stateMessage());
     }
 
+    if (myFindProvidersTaskSubscription.isEmpty()) {
+      // Nothing to update
+      return;
+    }
     double conf = 1.0;
 
     // First determine whether we have found all our providers
-    if (isActive()) {
-      if (myLoggingService.isDebugEnabled()) {
-        myLoggingService.debug(getAgentIdentifier() +
-                               " isActiveTrue ");
-      }
 
-      // Look to see if we've got all our contracts for roles
-      // specified as plugin parameters. If any one is missing,
-      // then overall confidence stays 0
-      Collection roleparams = parseRoleParams();
-
+    // Look to see if we've got all our contracts for roles
+    // specified as plugin parameters. If any one is missing,
+    // then overall confidence stays 0
+    Collection roleParams = parseRoleParams();
+    
+    if (myLoggingService.isInfoEnabled()) {
+      myLoggingService.info(getAgentIdentifier() +
+			    ": updateFindProvidersTaskDispositions: contracts found - ");
+    }
+    
+    for (Iterator iterator = roleParams.iterator();
+	 iterator.hasNext();) {
+      Role role = Role.getRole((String) iterator.next());
+      boolean foundContract = 
+	checkProviderCompletelyCovered(role,
+				       getOPCONTimeSpan());
+      
       if (myLoggingService.isInfoEnabled()) {
-	myLoggingService.info(getAgentIdentifier() +
-			      " SDClient.updateFindProvidersTaskDispositions: contracts found - ");
+	myLoggingService.info("     " + foundContract + " for role " + role);
       }
-
-      for (Iterator iterator = roleparams.iterator();
-	   iterator.hasNext();) {
-	Role role = Role.getRole((String) iterator.next());
-	boolean foundContract = checkProviderCompletelyCovered(role);
-
-        if (myLoggingService.isInfoEnabled()) {
-          myLoggingService.info("     " + foundContract + " for role " + role);
-        }
-
-	if (!foundContract) {
-	  conf = 0.0;
-	  break;
-	} // end of block where found no contract for a Role
-      } // end of loop over Roles passed in as parameters
-    } // end of isActive() check block
+      
+      if (!foundContract) {
+	conf = 0.0;
+	break;
+      } // end of block where found no contract for a Role
+    } // end of loop over Roles passed in as parameters
 
     // Did we just find our providers? This will signal
     // whether the agent should persiste
     boolean justFoundProviders = false;
-
+    
     //Only request persist if in initial FindProviders stage
     boolean doingInitialFindProviders = true;
     
     // Now update the confidence on the FindProviders task
-    for (Iterator iterator = findProvidersTasks.iterator();
+    for (Iterator iterator = myFindProvidersTaskSubscription.iterator();
 	 iterator.hasNext();) {
       Task task = (Task) iterator.next();
       Set oStages = getOplanStages(task);
       if (oStages == null || oStages.size() != 1)
 	doingInitialFindProviders = false;
-	
+      
       PlanElement pe = task.getPlanElement();
-
+      
       AllocationResult estResult =
 	PluginHelper.createEstimatedAllocationResult(task,
 						     theLDMF,
@@ -877,27 +1056,31 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
 	Disposition disposition =
 	  theLDMF.createDisposition(task.getPlan(), task, estResult);
         if (myLoggingService.isInfoEnabled()) {
-          myLoggingService.info(getAgentIdentifier() 
-                                + " updateFindProvidersTaskDispositions: Create disposition with conf " 
+          myLoggingService.info(getAgentIdentifier() +
+                                ": updateFindProvidersTaskDispositions: Create disposition with conf " 
                                 + conf);
         }
 	publishAdd(disposition);
 
-	// Are we in the first findProviders stage? Then if conf=1, justFoundProviders
-	// isActive says this is at least the findProviders.
+	// Are we in the first findProviders stage? Then if conf = 1, 
+	// justFoundProviders
+	// needToFindProviders() says we've received the FindProvider task.
 	// but I don't want to persist with every oplan stage change
-	if (persistEarly && doingInitialFindProviders && conf == 1.0) {
+	if ((PERSIST_EARLY) && 
+	    (doingInitialFindProviders) && 
+	    (conf == 1.0)) {
 	  justFoundProviders = true;
-	  if (myLoggingService.isInfoEnabled())
+	  if (myLoggingService.isInfoEnabled()) {
 	    myLoggingService.info(getAgentIdentifier() 
-                                  + " just added a conf 1.0 dispo to findProviders while doingInitialFindProviders - going to request persistence.");
+                                  + ": updateFindProvidersTaskDispositions: " +
+				  " Just added a conf 1.0 disposition to findProviders while doingInitialFindProviders - going to request persistence.");
+	  }
 	}
-
       } else {
 	if (conf != pe.getEstimatedResult().getConfidenceRating()) {
 	  if (myLoggingService.isInfoEnabled()) {
             myLoggingService.info(getAgentIdentifier() + 
-				  " updateFindProvidersTaskDispositions: Changed conf from " +
+				  ": updateFindProvidersTaskDispositions() Changed conf from " +
 				  pe.getEstimatedResult().getConfidenceRating() +
 				  " to " + conf);
 	  } // end if logging block
@@ -907,9 +1090,11 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
 	  
 	  // if conf = 1.0 and we're in the first findProviders stage
 	  // then justFoundProviders
-	  // isActive says this is at least the findProviders,
+	  // needToFindProviders says this is at least the findProviders,
 	  // but I don't want to persist with every oplan stage change
-	  if (persistEarly && doingInitialFindProviders && conf == 1.0) {
+	  if ((PERSIST_EARLY) && 
+	      (doingInitialFindProviders) && 
+	      (conf == 1.0)) {
 	    justFoundProviders = true;
 	    if (myLoggingService.isInfoEnabled())
 	      myLoggingService.info(getAgentIdentifier() 
@@ -920,51 +1105,9 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
       } // end of block to change PE conf
     } // end of loop over FindProviders tasks
 
-    // If the agent just finished finding providers, force a persistence now
-    // that way, if the agent dies anytime after this, it will come
-    // back with its providers intact
-    if (persistEarly && justFoundProviders) {
-      try {
-	// Bug 3282: Persistence doesn't put in the correct reasons for blocking in SchedulableStatus
-	getBlackboardService().persistNow();
-	
-	// Now send a Cougaar event indicating the agent has its providers
-	// and has persisted them.
-	if (eventService != null &&
-	    eventService.isEventEnabled()) {
-	  eventService.event(getAgentIdentifier() + " persisted after finding providers.");
-	} else {
-	  myLoggingService.info(getAgentIdentifier() + " (no event service): persisted after finding providers.");
-	}
-      } catch (PersistenceNotEnabledException nope) {
-	if (eventService != null &&
-	    eventService.isEventEnabled()) {
-	  eventService.event(getAgentIdentifier() + " finished finding providers (persistence not enabled).");
-	} else {
-	  myLoggingService.info(getAgentIdentifier() + " (no event service): finished finding providers (persistence not enabled).");
-	}
-      } // try/catch block
-    } // if we just found our providers
+    handlePersistEarly(justFoundProviders);
 
   } // end of method
-
-  // Is this agent active currently in the OPLAN (based on stages)
-  private boolean isActive() {
-    /*
-    Oplan oplan = null;
-    for (Iterator iterator = myOplanSubscription.iterator();
-	 iterator.hasNext();) {
-      oplan = (Oplan) iterator.next();
-      break;
-    }
-
-    return ((oplan != null) &&
-	    (oplan.isActive()));
-	    */
-
-    // For now always true if we have a FindProviders task
-    return (!myFindProvidersTaskSubscription.isEmpty());
-  }
 
   protected Role getRole(ServiceDescription serviceDescription) {
 
@@ -1007,43 +1150,440 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
     return myWarningCutoffTime;
   }
 
-  /**
-   * Returns true iff the role and preferences of the service contract
-   * are a subset of the service request.
-   *
-   * @param serviceContract the ServiceContract proposed for this relay.
-   * @return boolean true iff the service contract is a subset of the
-   * service request.
-   */
-  public boolean isContractCompatibleWithRequest(ServiceContractRelay relay, ServiceContract serviceContract) {
-    boolean compatible = relay.getServiceRequest().getServiceRole().equals(serviceContract.getServiceRole());
-    if (compatible) {
-      Collection requestPreferences = relay.getServiceRequest().getServicePreferences();
-      Collection contractPreferences = serviceContract.getServicePreferences();
-      double requestEnd = SDFactory.getPreference(requestPreferences, Preference.END_TIME);
-      double contractEnd = SDFactory.getPreference(contractPreferences, Preference.END_TIME);
-      
-      // Must specify end time preference
-      if ((requestEnd == -1) && (contractEnd == -1)) {
-	return false;
-      }
-
-      compatible = compatible && contractEnd <= requestEnd;
-
-      if(compatible) {
-        double requestStart = SDFactory.getPreference(requestPreferences, Preference.START_TIME);
-        double contractStart = SDFactory.getPreference(contractPreferences, Preference.START_TIME);
-
-	// Must specify start time preference
-	if ((requestStart == -1) && (contractStart == -1)) {
-	  return false;
-	}
-	
-        compatible = compatible && contractStart >= requestStart;
-      }
+  protected int getDesiredNumberOfProviders(Role role) {
+    Integer desiredProviders = ((Integer) myRoles.get(role));
+    if (desiredProviders != null) {
+      return desiredProviders.intValue();
+    } else {
+      return 1;
     }
-    return compatible;
+  }
+ 
+  protected NonOverlappingTimeSpanSet getOPCONSchedule() {
+    return myOPCONSchedule;
   }
 
+  protected void setOPCONSchedule(NonOverlappingTimeSpanSet opconSchedule) {
+    myOPCONSchedule = opconSchedule;
+  }
+
+  protected NonOverlappingTimeSpanSet buildOPCONSchedule() {
+    NonOverlappingTimeSpanSet opconSchedule = new NonOverlappingTimeSpanSet();
+    
+    for (Iterator iterator = myLineageSubscription.iterator();
+	 iterator.hasNext();) {
+      Lineage lineage = (Lineage) iterator.next();
+      
+      if (lineage.getType() == Lineage.OPCON) {
+	List lineageSchedule = new ArrayList(lineage.getSchedule());
+	
+	if (myLoggingService.isDebugEnabled()) {
+	  myLoggingService.debug(getAgentIdentifier() + 
+				 " buildOPCONSchedule() - " +
+				 " found OPCON lineage " + lineage);
+	}
+	
+	for (Iterator scheduleIterator = lineageSchedule.iterator();
+	     scheduleIterator.hasNext();) {
+	  ScheduleElement element = (ScheduleElement) scheduleIterator.next();
+	    opconSchedule.add(new LineageTimeSpan(lineage, 
+						  element.getStartTime(),
+						  element.getEndTime()));
+	}
+      }
+    }
+
+    if (myLoggingService.isDebugEnabled()) {
+      myLoggingService.debug(getAgentIdentifier() + " buildOPCONSchedule() " +
+			     " current schedule - " + opconSchedule);
+    }
+
+    return opconSchedule;
+  }
+
+  protected boolean matchingRequest(MMQueryRequest request,
+				    Role role,
+				    TimeSpan timeSpan,
+				    ServiceInfoScorer scorer) {
+    if (!(request.getQuery() instanceof MMRoleQuery)) {
+      return false;
+    }
+    
+    MMRoleQuery query = (MMRoleQuery) request.getQuery();
+
+    if (query.getObsolete()) {
+      return false;
+    }
+
+    MMRoleQuery newQuery = new MMRoleQuery(role, scorer, timeSpan);
+
+    if (request.getResult() == null) {
+      return (query.equals(newQuery));
+    } else {
+      return false;
+    }
+  }
+
+      
+  private void handlePersistEarly(boolean justFoundProviders) {
+    // If the agent just finished finding providers, force a persistence now
+    // that way, if the agent dies anytime after this, it will come
+    // back with its providers intact
+    if (PERSIST_EARLY && justFoundProviders) {
+      try {
+	// Bug 3282: Persistence doesn't put in the correct reasons for 
+	// blocking in SchedulableStatus
+	getBlackboardService().persistNow();
+	
+	// Now send a Cougaar event indicating the agent has its providers
+	// and has persisted them.
+	if (myEventService != null &&
+	    myEventService.isEventEnabled()) {
+	  myEventService.event(getAgentIdentifier() + 
+			     " persisted after finding providers.");
+	} else {
+	  myLoggingService.info(getAgentIdentifier() + 
+				" (no event service): persisted after finding providers.");
+	}
+      } catch (PersistenceNotEnabledException nope) {
+	if (myEventService != null &&
+	    myEventService.isEventEnabled()) {
+	  myEventService.event(getAgentIdentifier() + 
+			     " finished finding providers (persistence not enabled).");
+	} else {
+	  myLoggingService.info(getAgentIdentifier() + 
+				" (no event service): finished finding providers (persistence not enabled).");
+	}
+      } // try/catch block
+    } // if we just found our providers
+  }
+
+  public void verifyOutstandingRequests(TimeSpanSet currentOPCONSchedule) {
+    for (Iterator requestIterator = myMMRequestSubscription.iterator();
+	 requestIterator.hasNext();) {
+      MMQueryRequest request =
+	(MMQueryRequest) requestIterator.next();
+      MMRoleQuery query = (MMRoleQuery) request.getQuery();
+      boolean obsolete = false;
+      
+      if (myLoggingService.isDebugEnabled()) {
+	myLoggingService.debug(getAgentIdentifier() + 
+			       ": verifyOutstandingRequests() " + 
+			       " iterating over MMQueryRequests, request = " +
+			       request.getUID() + 
+			       " query = " + query);
+      }
+    
+      if (query.getObsolete()) {
+	if (myLoggingService.isDebugEnabled()) {
+	  myLoggingService.debug(getAgentIdentifier() + 
+				 ": verifyOutstandingRequests() " + 
+				 " request = " + request.getUID() +
+				 " already marked as obsolete");
+	}
+	continue;
+      }
+
+      TimeSpan requestTimeSpan = query.getTimeSpan();
+      Lineage requestLineage = getCommandLineage(requestTimeSpan);
+
+      if (requestLineage == null) {
+	if (myLoggingService.isDebugEnabled()) {
+	  myLoggingService.debug(getAgentIdentifier() + 
+				 ": verifyOutstandingRequests() " + 
+				 " request = " + request.getUID() +
+				 " no longer matches the command lineage." +
+				 "Marking as obsolete");
+	}
+	obsolete = true;
+      } else {
+	TimeSpanSet currentMatches = 
+	  new TimeSpanSet(currentOPCONSchedule.intersectingSet(requestTimeSpan));
+	
+	
+	if ((currentMatches.isEmpty()) || 
+	    (((TimeSpan) currentMatches.first()).getStartTime() > 
+	     requestTimeSpan.getStartTime())) {
+	  if (myLoggingService.isDebugEnabled()) {
+	    myLoggingService.debug(getAgentIdentifier() + 
+				   ": verifyOutstandingRequest() " + 
+				   " iterating over MMQueryRequest, " +
+				   " request = " + request.getUID() +
+				   " for " + 
+				   new Date(requestTimeSpan.getStartTime()) + 
+				   " - " +
+				   new Date(requestTimeSpan.getEndTime()) + 
+				   " no longer has an OPCON. Marking as obsolete");
+	  }
+	  obsolete = true;
+	} else {
+	  long currentLatest = TimeSpan.MAX_VALUE;
+	  
+	  // check for lineage change
+	  for (Iterator currentIterator = currentMatches.iterator();
+	       currentIterator.hasNext();) {
+	    LineageTimeSpan currentTimeSpan = 
+	      (LineageTimeSpan) currentIterator.next();
+	    
+	    // Check that OPCONs are continguous
+	    if (currentTimeSpan.getStartTime() > currentLatest) {
+	      //opcon gap 
+	      if (myLoggingService.isDebugEnabled()) {
+		myLoggingService.debug(getAgentIdentifier() + 
+				       ": verifyOutstandingRequests() " + 
+				       " OPCON gap starting at " + 
+				       new Date(currentLatest) +
+				       " - marking MMQueryRequest = " +
+				       request.getUID() + " as obsolete.");
+	      }
+	      
+	      obsolete = true;
+	      break;
+	    }
+	    
+	    if (!requestLineage.getList().equals(currentTimeSpan.getLineage().getList())) {
+	      if (myLoggingService.isDebugEnabled()) {
+		myLoggingService.debug(getAgentIdentifier() + 
+				       ": verifyOutstandingRequest() " + 
+				       " marking MMQueryRequest = " + 
+				       request.getUID() +
+				       " as obsolete." +
+				       "Request lineage = " + 
+				       requestLineage.getList() +
+				       " does not equal current lineage = " +
+				       currentTimeSpan.getLineage().getList());
+	      }
+	      
+	      obsolete = true;
+	      break;
+	    }
+	  }
+	}
+      }
+
+      if (obsolete) {
+	query.setObsolete(true);
+	publishChange(request);
+      }
+    }
+  }
+	
+
+
+  public void verifyServiceContracts(TimeSpanSet currentOPCONSchedule) {
+    for (Iterator relayIterator = myServiceContractRelaySubscription.iterator();
+	 relayIterator.hasNext();) {
+      ServiceContractRelay relay =
+	(ServiceContractRelay) relayIterator.next();
+      
+      if (myLoggingService.isDebugEnabled()) {
+	myLoggingService.debug(getAgentIdentifier() + 
+			       ": verifyServiceContracts() " + 
+			       " iterating over service contract relays, relay = " +
+			       relay);
+      }
+      
+      ServiceContract contract = relay.getServiceContract();
+      if ((contract != null) &&
+	  (!contract.isRevoked()) &&
+	  (relay.getClient().equals(getSelfOrg()))) {
+	
+	// Look at request for lineage because that shows what we asked for.
+	ServiceRequest request = relay.getServiceRequest();
+	TimeSpan requestTimeSpan = 
+	  mySDFactory.getTimeSpanFromPreferences(request.getServicePreferences());
+	
+	Lineage requestLineage = getCommandLineage(requestTimeSpan);
+	
+	if (requestLineage == null) {
+	  if (myLoggingService.isDebugEnabled()) {
+	    myLoggingService.debug(getAgentIdentifier() + 
+				   ": verifyServiceContracts() " +
+				   " unable to find original lineage for request = " + 
+				   request);
+	  }
+	  publishRemove(relay);
+	  continue;
+	} 
+	
+	TimeSpanSet currentMatches = 
+	  new TimeSpanSet(currentOPCONSchedule.intersectingSet(requestTimeSpan));
+	
+	if ((currentMatches.isEmpty()) || 
+	    (((TimeSpan) currentMatches.first()).getStartTime() > 
+	     requestTimeSpan.getStartTime())) {
+	  if (myLoggingService.isDebugEnabled()) {
+	    myLoggingService.debug(getAgentIdentifier() + 
+				   ": verifyServiceContracts() " + 
+				   " iterating over service contract relays, removing relay = " +
+				   relay + 
+				   " requestTimeSpan = " + requestTimeSpan +
+				   " no longer has an OPCON.");
+	  }
+	  publishRemove(relay);
+	  continue;
+	}
+	
+	
+	Collection timeSpanPreferences = null;
+	MutableTimeSpan newRequestTimeSpan = null;
+	
+	long currentLatest = TimeSpan.MAX_VALUE;
+	
+	// check for lineage change
+	for (Iterator currentIterator = currentMatches.iterator();
+	     currentIterator.hasNext();) {
+	  LineageTimeSpan currentTimeSpan = 
+	    (LineageTimeSpan) currentIterator.next();
+	  
+	  // Check that OPCONs are continguous
+	  if (currentTimeSpan.getStartTime() > currentLatest) {
+	    //opcon gap 
+	    if (myLoggingService.isDebugEnabled()) {
+	      myLoggingService.debug(getAgentIdentifier() + 
+				     ": verifyServiceContracts() " + 
+				     " OPCON gap starting at " + 
+				     new Date(currentLatest) +
+				     " - resetting contract end to " + 
+				     new Date(currentLatest));
+	    }
+	    
+	    //change pref/, end time = currentTimeSpan.getStartTime();
+	    newRequestTimeSpan = new MutableTimeSpan();
+	    newRequestTimeSpan.setTimeSpan(requestTimeSpan.getStartTime(),
+					   currentLatest);
+	    timeSpanPreferences = 
+	      mySDFactory.createTimeSpanPreferences(newRequestTimeSpan);
+	    break;
+	  } else {
+	    currentLatest = currentTimeSpan.getEndTime();
+	  }
+	  
+	  if (!requestLineage.getList().equals(currentTimeSpan.getLineage().getList())) {
+	    // adjust contract if possible
+	    if (currentTimeSpan.getStartTime() > 
+		requestTimeSpan.getStartTime()) {
+	      if (myLoggingService.isDebugEnabled()) {
+		myLoggingService.debug(getAgentIdentifier() + 
+				       ": verifyServiceContracts() " + 
+				       " resetting contract end to " + 
+				       currentTimeSpan.getStartTime());
+	      }
+	      
+	      //change pref/, end time = currentTimeSpan.getStartTime();
+	      newRequestTimeSpan = new MutableTimeSpan();
+	      newRequestTimeSpan.setTimeSpan(requestTimeSpan.getStartTime(),
+					     currentTimeSpan.getStartTime());
+
+		timeSpanPreferences = 
+		  mySDFactory.createTimeSpanPreferences(newRequestTimeSpan);
+		break;
+	      } else {
+		if (myLoggingService.isDebugEnabled()) {
+		  myLoggingService.debug(getAgentIdentifier() + 
+					 ": verifyServiceContracts() " + 
+					 " iterating over service contract relays, removing relay = " +
+					 relay + 
+					 " requestLineage - " + 
+					 requestLineage.getList() + 
+					 " - != currentLineage - " + 
+					 currentTimeSpan.getLineage().getList());
+		}
+		publishRemove(relay);
+	      }
+	    break;
+	  }
+	}
+	
+	if (timeSpanPreferences != null) {
+	  HashMap requestPreferences = 
+	    copyPreferences(request.getServicePreferences());
+	  
+	  for (Iterator timeSpanIterator = timeSpanPreferences.iterator();
+	       timeSpanIterator.hasNext();) {
+	    
+	    Preference timeSpanPreference = 
+	      (Preference) timeSpanIterator.next();
+	    requestPreferences.put(new Integer(timeSpanPreference.getAspectType()),
+				   timeSpanPreference);
+	  }
+	  
+	  if (myLoggingService.isDebugEnabled()) {
+	    TimeSpan timeSpan = 
+	      mySDFactory.getTimeSpanFromPreferences(requestPreferences.values());
+	    myLoggingService.debug(getAgentIdentifier() + 
+				   ": changing time span on service request - " +
+				   relay + " to " + 
+				   new Date(timeSpan.getStartTime()) + 
+				   " - " + new Date(timeSpan.getEndTime()));
+	  }
+	  
+	  ((ServiceRequestImpl) request).setServicePreferences(requestPreferences.values());
+	  publishChange(relay);
+	}
+      }
+    }
+  }
+    
+  private HashMap copyPreferences(Collection preferences) {
+    HashMap preferenceMap = new HashMap(preferences.size());
+
+    for (Iterator iterator = preferences.iterator();
+	 iterator.hasNext();) {
+      Preference original = (Preference) iterator.next();
+      
+      Preference copy =
+	getFactory().newPreference(original.getAspectType(),
+				   original.getScoringFunction(),
+				   original.getWeight());
+      preferenceMap.put(new Integer(copy.getAspectType()), copy);
+    }
+
+    return preferenceMap;
+  }
+    
+  private static class LineageTimeSpan extends MutableTimeSpan {
+    Lineage myLineage = null;
+
+    public LineageTimeSpan(Lineage lineage, TimeSpan timeSpan) {
+      this(lineage, timeSpan.getStartTime(), timeSpan.getEndTime());
+    }
+
+    public LineageTimeSpan(Lineage lineage, long startTime, long endTime) {
+      super();
+
+      setTimeSpan(startTime, endTime);
+      myLineage = lineage;
+    }
+
+    public Lineage getLineage() {
+      return myLineage;
+    }
+
+    public boolean equals(Object o) {
+      if (o instanceof LineageTimeSpan) {
+	LineageTimeSpan lineageTimeSpan = (LineageTimeSpan) o;
+	return ((lineageTimeSpan.getStartTime() == getStartTime()) &&
+		(lineageTimeSpan.getEndTime() == getEndTime()) &&
+		(lineageTimeSpan.getLineage().equals(getLineage())));
+      } else {
+	return false;
+      }
+    }
+
+    public String toString() {
+      StringBuffer buf = new StringBuffer();
+      buf.append("start=" + new Date(getStartTime()) +
+		 ", end=" + new Date(getEndTime()));
+      
+      buf.append(", lineage=" + myLineage);
+      buf.append("]");
+      
+      return buf.toString();
+    }
+  }
 }
+
+
+
 

@@ -154,19 +154,7 @@ public class LineageImpl extends Lineage {
    * Returns -1 if the agents are not linked.
    */ 
   public int countHops(String startingAgent, String endingAgent) {
-    if (startingAgent.equals(getLeaf()) &&
-	endingAgent.equals(getRoot())) {
-      return myList.size() - 1;
-    }
-
-    int start = myList.indexOf(startingAgent);
-    int end = myList.indexOf(endingAgent);
-
-    if ((start == -1) || (end == -1) || (end > start)) {
-      return -1;
-    } else {
-      return start - end;
-    }
+    return Lineage.countHops(getList(), startingAgent, endingAgent);
   }
 
 
@@ -233,7 +221,16 @@ public class LineageImpl extends Lineage {
 
   public boolean equals(Object o) {
     if (o instanceof LineageImpl) {
-      return ((LineageImpl) o).getUID().equals(getUID());
+      LineageImpl otherLineage = (LineageImpl) o;
+      if ((getUID() == null) ||
+	  (otherLineage.getUID() == null)) {
+	return ((otherLineage.getUID() == null) &&
+		(getUID() == null) &&
+		(getList().equals(otherLineage.getList())) &&
+		(getSchedule().equals(otherLineage.getSchedule())));
+      } else {
+	return (otherLineage.getUID().equals(getUID()));
+      }
     } else {
       return false;
     }
