@@ -33,7 +33,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Vector;
 
-import org.cougaar.core.component.BindingSite;
 import org.cougaar.core.component.Component;
 import org.cougaar.core.component.ServiceBroker;
 import org.cougaar.core.component.ServiceProvider;
@@ -101,9 +100,8 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
   private RegistryQueryServiceProviderImpl mySP;
   private ServiceBroker sb;
 
-  public void setBindingSite(BindingSite bs) {
-    // only care about the service broker
-    this.sb = bs.getServiceBroker();
+  public void setServiceBroker(ServiceBroker sb) {
+    this.sb = sb;
   }
 
   public void load() {
