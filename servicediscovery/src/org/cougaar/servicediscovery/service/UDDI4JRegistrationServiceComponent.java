@@ -22,46 +22,46 @@
 
 package org.cougaar.servicediscovery.service;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.Iterator;
+import java.util.Vector;
+
 import org.cougaar.core.component.ServiceBroker;
 import org.cougaar.core.component.ServiceProvider;
 import org.cougaar.core.mts.MessageAddress;
 import org.cougaar.core.plugin.ComponentPlugin;
-import org.cougaar.core.service.community.Community;
 import org.cougaar.core.service.LoggingService;
 import org.cougaar.core.service.ThreadService;
-import org.cougaar.core.service.AgentIdentificationService;
-
+import org.cougaar.core.service.community.Community;
 import org.cougaar.servicediscovery.description.AdditionalQualificationRecord;
 import org.cougaar.servicediscovery.description.BusinessCategory;
 import org.cougaar.servicediscovery.description.ProviderDescription;
 import org.cougaar.servicediscovery.description.ServiceCategory;
 import org.cougaar.servicediscovery.description.ServiceClassification;
 import org.cougaar.servicediscovery.description.ServiceProfile;
-import org.cougaar.util.UnaryPredicate;
+import org.cougaar.servicediscovery.service.YPServiceAdapter.Callback;
 import org.cougaar.util.log.Logger;
 import org.cougaar.util.log.Logging;
-
-//import org.cougaar.yp.*;
+import org.cougaar.yp.YPFuture;
 import org.cougaar.yp.YPProxy;
 import org.cougaar.yp.YPService;
-import org.cougaar.yp.OneShotMachine;
 import org.cougaar.yp.YPStateMachine;
-import org.cougaar.yp.YPFuture;
-
-import org.uddi4j.response.*;
-import org.uddi4j.UDDIException;
-import org.uddi4j.util.*;
+import org.uddi4j.datatype.Name;
+import org.uddi4j.datatype.binding.BindingTemplates;
+import org.uddi4j.datatype.binding.TModelInstanceDetails;
 import org.uddi4j.datatype.business.BusinessEntity;
 import org.uddi4j.datatype.service.BusinessService;
 import org.uddi4j.datatype.service.BusinessServices;
-import org.uddi4j.datatype.binding.*;
-import org.uddi4j.client.*;
-import org.uddi4j.datatype.Name;
-import org.uddi4j.datatype.binding.*;
-import org.uddi4j.datatype.business.*;
-import org.uddi4j.datatype.service.*;
-
-import java.util.*;
+import org.uddi4j.response.BusinessInfo;
+import org.uddi4j.response.BusinessList;
+import org.uddi4j.response.ServiceDetail;
+import org.uddi4j.response.ServiceInfo;
+import org.uddi4j.util.CategoryBag;
+import org.uddi4j.util.FindQualifier;
+import org.uddi4j.util.FindQualifiers;
+import org.uddi4j.util.KeyedReference;
 
 /**
  * This component provides access to the Registration Service

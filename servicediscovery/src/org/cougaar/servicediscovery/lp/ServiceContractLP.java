@@ -22,32 +22,31 @@
 
 package org.cougaar.servicediscovery.lp;
 
-import org.cougaar.core.blackboard.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Vector;
+
+import org.cougaar.core.blackboard.EnvelopeTuple;
 import org.cougaar.core.domain.EnvelopeLogicProvider;
 import org.cougaar.core.domain.LogicProvider;
 import org.cougaar.core.domain.RootPlan;
 import org.cougaar.core.mts.MessageAddress;
-
+import org.cougaar.planning.ldm.LogPlan;
+import org.cougaar.planning.ldm.PlanningFactory;
 import org.cougaar.planning.ldm.asset.Asset;
 import org.cougaar.planning.ldm.asset.LocalPG;
 import org.cougaar.planning.ldm.asset.PropertyGroup;
 import org.cougaar.planning.ldm.asset.PropertyGroupSchedule;
-
-import org.cougaar.planning.ldm.plan.Preference;
 import org.cougaar.planning.ldm.plan.HasRelationships;
+import org.cougaar.planning.ldm.plan.Preference;
 import org.cougaar.planning.ldm.plan.RelationshipSchedule;
-import org.cougaar.planning.ldm.PlanningFactory;
-import org.cougaar.planning.ldm.LogPlan;
-
-import org.cougaar.util.UnaryPredicate;
-import org.cougaar.util.log.Logger;
-import org.cougaar.util.log.Logging;
-
 import org.cougaar.servicediscovery.SDFactory;
 import org.cougaar.servicediscovery.description.ServiceContractRelationship;
 import org.cougaar.servicediscovery.transaction.ServiceContractRelay;
-
-import java.util.*;
+import org.cougaar.util.UnaryPredicate;
+import org.cougaar.util.log.Logger;
+import org.cougaar.util.log.Logging;
 
 /** ServiceContractLP is a "LogPlan Logic Provider":
  *
