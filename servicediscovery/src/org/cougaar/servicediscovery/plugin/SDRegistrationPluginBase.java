@@ -98,7 +98,7 @@ public abstract class SDRegistrationPluginBase extends ComponentPlugin {
   protected boolean rehydrated;
 
   protected ProviderDescription provD = null;
-  protected boolean publishProviderCapabilities = true;
+  protected boolean publishProviderCapabilities;
 
 
   private UnaryPredicate supportLineagePredicate = new UnaryPredicate() {
@@ -228,6 +228,15 @@ public abstract class SDRegistrationPluginBase extends ComponentPlugin {
     }
 
     rehydrated = getBlackboardService().didRehydrate();
+
+    if (rehydrated) {
+      Collection pcCollection = 
+	getBlackboardService().query(providerCapabilitiesPredicate);
+      
+      publishProviderCapabilities = (pcCollection.isEmpty());
+    } else {
+      publishProviderCapabilities = true;
+    }
   }
 
   protected void execute () {
