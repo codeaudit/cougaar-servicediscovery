@@ -351,8 +351,10 @@ public class SimpleSDRegistrationPlugin extends ComponentPlugin {
     retryErrorLog(message, null);
   }
   
-  // When an error occurs, but we'll be retrying later, treat it as a DEBUG
-  // at first. After a while it becomes an error.
+  /**
+   * When an error occurs, but we'll be retrying later, treat it as a DEBUG
+   * at first. After a while it becomes an error.
+   */
   private void retryErrorLog(String message, Throwable e) {
     
     // Note that we want this to be random because.. FIXME!!!!!
