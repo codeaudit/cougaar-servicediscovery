@@ -1,0 +1,515 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- This file is the configuration file for a simple 4 agent society. -->
+<!-- To run, use bin/Cougaar[.bat] MiniNode.xml MiniNode -->
+<!-- The current configuration places all 4 agents on a single node (MiniNode). -->
+<!-- If you would like to break the agents up across different nodes, or hosts, -->
+<!-- create a new <node name=name_here> section within the host element.  -->
+<!-- Then remove the desired <agent>'s from the current <node> and place them -->
+<!-- in the new <node>.  -->
+<!-- The same can be done for adding a new <host>:  Add the new <host> to the -->
+<!-- <society>, add a new <node> on the new <host> and then place agents on new node -->
+<society 
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+  name="ACME-UL-SOCIETY" 
+  xsi:noNamespaceSchemaLocation="http://www.cougaar.org/2003/society.xsd">
+  <host name="localhost">
+    <node name="MiniNode">
+      <class>org.cougaar.bootstrap.Bootstrapper</class>
+      <prog_parameter>org.cougaar.core.node.Node</prog_parameter>
+      <!-- vm_parameters, for use by $COUGAAR_INSTALL_PATH/bin/XSLNode -->
+      <!-- Make sure these MiniNode references match: -->
+      <vm_parameter>-Dorg.cougaar.node.name=MiniNode</vm_parameter>
+      <vm_parameter>-Dorg.cougaar.society.file="MiniNode.xml"</vm_parameter>
+      <!-- The following parameters are standard -->
+      <vm_parameter>-Djava.class.path="$COUGAAR_INSTALL_PATH/lib/bootstrap.jar"</vm_parameter>
+      <vm_parameter>-Dorg.cougaar.class.path=</vm_parameter>
+      <vm_parameter>-Dorg.cougaar.config.path="$COUGAAR_INSTALL_PATH/configs/common\;$COUGAAR_INSTALL_PATH/configs/glmtrans\;" </vm_parameter>
+      <vm_parameter>-Dorg.cougaar.core.agent.startTime="08/10/2005 00:05:00"</vm_parameter>
+      <vm_parameter>-Dorg.cougaar.core.node.InitializationComponent=XML</vm_parameter>
+      <vm_parameter>-Dorg.cougaar.install.path="$COUGAAR_INSTALL_PATH"</vm_parameter>
+      <vm_parameter>-Dorg.cougaar.system.path="$COUGAAR_INSTALL_PATH/sys"</vm_parameter>
+      <vm_parameter>-Dorg.cougaar.workspace=$COUGAAR_INSTALL_PATH/workspace</vm_parameter>
+      <vm_parameter>-Duser.timezone=GMT</vm_parameter>
+      <vm_parameter>-Xbootclasspath/p:"$COUGAAR_INSTALL_PATH/lib/javaiopatch.jar"</vm_parameter>
+      <vm_parameter>-Xms100m</vm_parameter>
+      <vm_parameter>-Xmx300m</vm_parameter>
+      <component 
+        name="org.cougaar.community.CommunityPlugin()"
+        class="org.cougaar.community.CommunityPlugin"
+        priority="COMPONENT"
+        insertionpoint="Node.AgentManager.Agent.PluginManager.Plugin">
+      </component>
+      <agent name="1BDE">
+        <facet org_id="1BDE"/>
+        <facet orig_org_id="1BDE"/>
+        <facet superior_org_id="3ID"/>
+        <facet subordinate_org_id="3-69-ARBN"/>
+        <facet home_location="BBNV"/>
+        <facet uic="WAQNA1"/>
+        <facet combat_support="CMD"/>
+        <facet echelon="BRIGADE"/>
+        <facet echelon_group="DIVISION"/>
+        <facet echelon_of_support="BRIGADE" role="Headquarters"/>
+        <component class="org.cougaar.core.servlet.SimpleServletComponent">
+          <argument>org.cougaar.planning.servlet.PlanViewServlet</argument>
+          <argument>/tasks</argument>
+        </component>
+        <component class="org.cougaar.glm.servlet.GLMCompletionServlet">
+          <argument>/completion</argument>
+        </component>
+        <component class="org.cougaar.core.servlet.SimpleServletComponent">
+          <argument>org.cougaar.planning.servlet.HierarchyServlet</argument>
+          <argument>/hierarchy</argument>
+        </component>
+        <component class="org.cougaar.mlm.servlet.InventoryServletComponent">
+          <argument>org.cougaar.mlm.servlet.InventoryServlet</argument>
+          <argument>/inventory</argument>
+        </component>
+        <component class="org.cougaar.planning.servlet.LoaderServletComponent">
+          <argument>/load</argument>
+        </component>
+        <component class="org.cougaar.core.servlet.SimpleServletComponent">
+          <argument>org.cougaar.tools.csmart.ui.servlet.AgentInfoServlet</argument>
+          <argument>/CSMART_AgentInfoServlet</argument>
+        </component>
+        <component class="org.cougaar.core.servlet.SimpleServletComponent">
+          <argument>org.cougaar.tools.csmart.ui.servlet.CommunityProviderServlet</argument>
+          <argument>/CSMART_CommunityProviderServlet</argument>
+        </component>
+        <component class="org.cougaar.core.servlet.SimpleServletComponent">
+          <argument>org.cougaar.tools.csmart.ui.servlet.MetricsServlet</argument>
+          <argument>/CSMART_MetricsServlet</argument>
+        </component>
+        <component class="org.cougaar.core.servlet.SimpleServletComponent">
+          <argument>org.cougaar.tools.csmart.ui.servlet.SearchServlet</argument>
+          <argument>/CSMART_SearchServlet</argument>
+        </component>
+        <component class="org.cougaar.core.servlet.SimpleServletComponent">
+          <argument>org.cougaar.tools.csmart.ui.servlet.PlanServlet</argument>
+          <argument>/CSMART_PlanServlet</argument>
+        </component>
+        <component class="org.cougaar.core.wp.WhitePagesServlet">
+          <argument>/wp</argument>
+        </component>
+	<!-- Note Minitest uses the Simple OrgData because it has no OpCon or AdCon -->
+	<!-- Most users can use AssetDataPlugin. Otherse will use this SimpleOrgData. -->
+	<!-- You probably don"t need OrgDataPlugin. -->
+        <component class="org.cougaar.mlm.plugin.organization.SimpleOrgDataParamPlugin">
+          <argument>Prototype:Organization</argument>
+          <argument>ClusterPG:MessageAddress:MessageAddress:1BDE</argument>
+          <argument>ItemIdentificationPG:ItemIdentification:String:1BDE</argument>
+          <argument>ItemIdentificationPG:Nomenclature:String:1BDE</argument>
+          <argument>TypeIdentificationPG:TypeIdentification:String:UTC/RTOrg</argument>
+          <argument>TypeIdentificationPG:Nomenclature:String:1BDE</argument>
+          <argument>MilitaryOrgPG:UTC:String:1BDE</argument>
+          <argument>MilitaryOrgPG:UIC:String:WAQNA1</argument>
+          <argument>MilitaryOrgPG:IsReserve:boolean:false</argument>
+          <argument>Relationship:MessageAddress=3ID,ItemIdentification=3ID,TypeIdentification=UTC/RTOrg,Role=AdministrativeSubordinate,StartTime=01/01/2000 12:00 am,EndTime=</argument>
+          <argument>Relationship:MessageAddress=3ID,ItemIdentification=3ID,TypeIdentification=UTC/RTOrg,Role=OperationalSubordinate,StartTime=01/01/2000 12:00 am,EndTime=</argument>
+        </component>
+        <component class="org.cougaar.mlm.plugin.organization.OrgReportPlugin"/>
+        <component class="org.cougaar.mlm.plugin.organization.GLSMiniExpanderPlugin">
+          <argument>StrategicTransportation</argument>
+        </component>
+        <component class="org.cougaar.mlm.plugin.organization.GLSMiniAllocatorPlugin"/>
+        <component class="org.cougaar.mlm.plugin.generic.PropagationPlugin">
+          <argument>forward.xml</argument>
+        </component>
+        <component class="org.cougaar.community.CommunityPlugin"/>
+        <component class="org.cougaar.yp.YPServer"/>
+        <component class="org.cougaar.servicediscovery.util.yp.PublishTaxonomy"/>
+        <component class="org.cougaar.yp.YPClientComponent"
+          insertionpoint="Node.AgentManager.Agent.YPService">
+        </component>
+        <component class="org.cougaar.servicediscovery.service.UDDI4JRegistrationServiceComponent"/>
+        <component class="org.cougaar.servicediscovery.service.UDDI4JRegistryQueryServiceComponent"/>
+        <component class="org.cougaar.servicediscovery.plugin.LineagePlugin"/>
+        <component class="org.cougaar.servicediscovery.plugin.SDCommunityBasedRegistrationPlugin">
+          <argument>
+            1
+          </argument>
+        </component>
+        <component class="org.cougaar.servicediscovery.servlet.MatchMakerQueryServletComponent">
+          <argument>
+            org.cougaar.servicediscovery.servlet.MatchMakerQueryServlet
+          </argument>
+          <argument>
+            /matchmaker_query
+          </argument>
+        </component>
+        <component class="org.cougaar.servicediscovery.plugin.SDMiniClientPlugin"
+          priority="LOW"
+          insertionpoint="Node.AgentManager.Agent.PluginManager.Plugin">
+          <argument>
+            StrategicTransportationProvider
+          </argument>
+        </component>
+        <component class="org.cougaar.servicediscovery.plugin.MatchmakerStubPlugin">
+          <argument>
+            true
+          </argument>
+        </component>
+        <component class="org.cougaar.servicediscovery.plugin.SDProviderPlugin"/>
+        <component class='org.cougaar.yp.YPClientComponent'
+          insertionpoint='Node.AgentManager.Agent.YPService'>
+        </component>
+      </agent>
+      <agent name="3-69-ARBN">
+        <facet org_id="3-69-ARBN"/>
+        <facet orig_org_id="3-69-ARBN"/>
+        <facet superior_org_id="1BDE"/>
+        <facet home_location="BBNV"/>
+        <facet uic="WAQ1AA"/>
+        <facet combat_support="CMD"/>
+        <facet echelon="BATTALION"/>
+        <facet echelon_group="DIVISION"/>
+        <facet is_deployable="T"/>
+        <facet has_physical_assets="T"/>
+        <facet has_equipment_assets="T"/>
+        <facet echelon_of_support="BRIGADE" role="Combat"/>
+        <component class="org.cougaar.core.servlet.SimpleServletComponent">
+          <argument>org.cougaar.planning.servlet.PlanViewServlet</argument>
+          <argument>/tasks</argument>
+        </component>
+        <component class="org.cougaar.glm.servlet.GLMCompletionServlet">
+          <argument>/completion</argument>
+        </component>
+        <component class="org.cougaar.core.servlet.SimpleServletComponent">
+          <argument>org.cougaar.planning.servlet.HierarchyServlet</argument>
+          <argument>/hierarchy</argument>
+        </component>
+        <component class="org.cougaar.mlm.servlet.InventoryServletComponent">
+          <argument>org.cougaar.mlm.servlet.InventoryServlet</argument>
+          <argument>/inventory</argument>
+        </component>
+        <component class="org.cougaar.planning.servlet.LoaderServletComponent">
+          <argument>/load</argument>
+        </component>
+        <component class="org.cougaar.core.servlet.SimpleServletComponent">
+          <argument>org.cougaar.tools.csmart.ui.servlet.AgentInfoServlet</argument>
+          <argument>/CSMART_AgentInfoServlet</argument>
+        </component>
+        <component class="org.cougaar.core.servlet.SimpleServletComponent">
+          <argument>org.cougaar.tools.csmart.ui.servlet.CommunityProviderServlet</argument>
+          <argument>/CSMART_CommunityProviderServlet</argument>
+        </component>
+        <component class="org.cougaar.core.servlet.SimpleServletComponent">
+          <argument>org.cougaar.tools.csmart.ui.servlet.MetricsServlet</argument>
+          <argument>/CSMART_MetricsServlet</argument>
+        </component>
+        <component class="org.cougaar.core.servlet.SimpleServletComponent">
+          <argument>org.cougaar.tools.csmart.ui.servlet.SearchServlet</argument>
+          <argument>/CSMART_SearchServlet</argument>
+        </component>
+        <component class="org.cougaar.core.servlet.SimpleServletComponent">
+          <argument>org.cougaar.tools.csmart.ui.servlet.PlanServlet</argument>
+          <argument>/CSMART_PlanServlet</argument>
+        </component>
+        <component class="org.cougaar.core.wp.WhitePagesServlet">
+          <argument>/wp</argument>
+        </component>
+        <component class="org.cougaar.mlm.plugin.organization.SimpleOrgDataParamPlugin">
+          <argument>Prototype:Organization</argument>
+          <argument>ClusterPG:MessageAddress:MessageAddress:3-69-ARBN</argument>
+          <argument>ItemIdentificationPG:ItemIdentification:String:3-69-ARBN</argument>
+          <argument>ItemIdentificationPG:Nomenclature:String:3-69-ARBN</argument>
+          <argument>TypeIdentificationPG:TypeIdentification:String:UTC/RTOrg</argument>
+          <argument>TypeIdentificationPG:Nomenclature:String:3-69-ARBN</argument>
+          <argument>MilitaryOrgPG:UTC:String:3-69-ARBN</argument>
+          <argument>MilitaryOrgPG:UIC:String:WAQ1AA</argument>
+          <argument>MilitaryOrgPG:IsReserve:boolean:false</argument>
+          <argument>Relationship:MessageAddress=1BDE,ItemIdentification=1BDE,TypeIdentification=UTC/RTOrg,Role=AdministrativeSubordinate,StartTime=01/01/2000 12:00 am,EndTime=</argument>
+          <argument>Relationship:MessageAddress=1BDE,ItemIdentification=1BDE,TypeIdentification=UTC/RTOrg,Role=OperationalSubordinate,StartTime=01/01/2000 12:00 am,EndTime=</argument>
+        </component>
+        <component class="org.cougaar.mlm.plugin.organization.OrgReportPlugin"/>
+        <component class="org.cougaar.mlm.plugin.organization.GLSMiniExpanderPlugin">
+          <argument>StrategicTransportation</argument>
+        </component>
+        <component class="org.cougaar.mlm.plugin.organization.GLSMiniAllocatorPlugin"/>
+        <component class="org.cougaar.mlm.plugin.ldm.GetOplanPlugin"/>
+        <component class="org.cougaar.mlm.plugin.sample.AllocationAssessorPlugin"/>
+        <component class="org.cougaar.mlm.plugin.sample.StrategicTransportProjectionExpanderPlugin"/>
+        <component class="org.cougaar.mlm.plugin.strategictransport.TaskStrategicTransportAllocatorPlugin"/>
+        <component class="org.cougaar.mlm.plugin.generic.PropagationPlugin">
+          <argument>forward.xml</argument>
+        </component>
+        <component class="org.cougaar.mlm.plugin.ldm.LDMXMLComponentPlugin">
+          <argument>3-69-ARBN.ldm.xml</argument>
+        </component>
+        <component class="org.cougaar.community.CommunityPlugin"/>
+        <component class="org.cougaar.yp.YPClientComponent"
+          insertionpoint="Node.AgentManager.Agent.YPService">
+        </component>
+        <component class="org.cougaar.servicediscovery.service.UDDI4JRegistrationServiceComponent"/>
+        <component class="org.cougaar.servicediscovery.service.UDDI4JRegistryQueryServiceComponent"/>
+        <component class="org.cougaar.servicediscovery.plugin.LineagePlugin"/>
+        <component class="org.cougaar.servicediscovery.plugin.SDCommunityBasedRegistrationPlugin">
+          <argument>
+            1
+          </argument>
+        </component>
+        <component class="org.cougaar.servicediscovery.servlet.MatchMakerQueryServletComponent">
+          <argument>
+            org.cougaar.servicediscovery.servlet.MatchMakerQueryServlet
+          </argument>
+          <argument>
+            /matchmaker_query
+          </argument>
+        </component>
+        <component class="org.cougaar.servicediscovery.plugin.SDMiniClientPlugin"
+          priority="LOW"
+          insertionpoint="Node.AgentManager.Agent.PluginManager.Plugin">
+          <argument>
+            StrategicTransportationProvider
+          </argument>
+        </component>
+        <component class="org.cougaar.servicediscovery.plugin.MatchmakerStubPlugin"
+          insertionpoint="Node.AgentManager.Agent.PluginManager.Plugin">
+          <argument>
+            true
+          </argument>
+        </component>
+        <component class="org.cougaar.servicediscovery.plugin.SDProviderPlugin"/>
+        <component class='org.cougaar.yp.YPClientComponent'
+          insertionpoint='Node.AgentManager.Agent.YPService'>
+        </component>
+      </agent>
+      <agent name="3ID">
+        <facet org_id="3ID"/>
+        <facet orig_org_id="3ID"/>
+        <facet superior_org_id=""/>
+        <facet subordinate_org_id="1BDE"/>
+        <facet home_location="BBNV"/>
+        <facet uic="WAQJA1"/>
+        <facet combat_support="CMD"/>
+        <facet echelon="DIVISION"/>
+        <facet echelon_group="DIVISION"/>
+        <facet mechanism="PassThrough" echelon_of_support="DIVISION" role="StrategicTransportationProvider"/>
+        <facet echelon_of_support="DIVISION" role="LogisticsCommanderInChief"/>
+        <component class="org.cougaar.core.servlet.SimpleServletComponent">
+          <argument>org.cougaar.planning.servlet.PlanViewServlet</argument>
+          <argument>/tasks</argument>
+        </component>
+        <component class="org.cougaar.glm.servlet.GLMCompletionServlet">
+          <argument>/completion</argument>
+        </component>
+        <component class="org.cougaar.core.servlet.SimpleServletComponent">
+          <argument>org.cougaar.planning.servlet.HierarchyServlet</argument>
+          <argument>/hierarchy</argument>
+        </component>
+        <component class="org.cougaar.mlm.servlet.InventoryServletComponent">
+          <argument>org.cougaar.mlm.servlet.InventoryServlet</argument>
+          <argument>/inventory</argument>
+        </component>
+        <component class="org.cougaar.planning.servlet.LoaderServletComponent">
+          <argument>/load </argument>
+        </component>
+        <component class="org.cougaar.core.servlet.SimpleServletComponent">
+          <argument>org.cougaar.tools.csmart.ui.servlet.AgentInfoServlet</argument>
+          <argument>/CSMART_AgentInfoServlet</argument>
+        </component>
+        <component class="org.cougaar.core.servlet.SimpleServletComponent">
+          <argument>org.cougaar.tools.csmart.ui.servlet.CommunityProviderServlet</argument>
+          <argument>/CSMART_CommunityProviderServlet</argument>
+        </component>
+        <component class="org.cougaar.core.servlet.SimpleServletComponent">
+          <argument>org.cougaar.tools.csmart.ui.servlet.MetricsServlet</argument>
+          <argument>/CSMART_MetricsServlet</argument>
+        </component>
+        <component class="org.cougaar.core.servlet.SimpleServletComponent">
+          <argument>org.cougaar.tools.csmart.ui.servlet.SearchServlet</argument>
+          <argument>/CSMART_SearchServlet</argument>
+        </component>
+        <component class="org.cougaar.core.servlet.SimpleServletComponent">
+          <argument>org.cougaar.tools.csmart.ui.servlet.PlanServlet</argument>
+          <argument>/CSMART_PlanServlet</argument>
+        </component>
+        <component class="org.cougaar.core.wp.WhitePagesServlet">
+          <argument>/wp</argument>
+        </component>
+        <component class="org.cougaar.mlm.plugin.organization.SimpleOrgDataParamPlugin">
+          <argument>Prototype:Organization</argument>
+          <argument>ClusterPG:MessageAddress:MessageAddress:3ID</argument>
+          <argument>ItemIdentificationPG:ItemIdentification:String:3ID</argument>
+          <argument>ItemIdentificationPG:Nomenclature:String:3ID</argument>
+          <argument>TypeIdentificationPG:TypeIdentification:String:UTC/RTOrg</argument>
+          <argument>TypeIdentificationPG:Nomenclature:String:3ID</argument>
+          <argument>MilitaryOrgPG:UTC:String:3ID</argument>
+          <argument>MilitaryOrgPG:UIC:String:WAQJA1</argument>
+          <argument>MilitaryOrgPG:IsReserve:boolean:false</argument>
+          <argument>Relationship:MessageAddress=3ID,ItemIdentification=3ID,TypeIdentification=UTC/RTOrg,Role=OperationalSubordinate,StartTime=01/01/2000 12:00 am,EndTime=</argument>
+          <argument>Relationship:MessageAddress=3ID,ItemIdentification=3ID,TypeIdentification=UTC/RTOrg,Role=SupportSubordinate,StartTime=01/01/2000 12:00 am,EndTime=</argument>
+        </component>
+        <component class="org.cougaar.mlm.plugin.organization.OrgReportPlugin"/>
+        <component class="org.cougaar.mlm.plugin.organization.GLSGUIInitPlugin"/>
+        <component class="org.cougaar.mlm.plugin.organization.GLSRescindPlugin"/>
+        <component class="org.cougaar.mlm.plugin.ldm.OPlanPlugin">
+          <argument>oplan.xml</argument>
+        </component>
+        <component class="org.cougaar.mlm.plugin.organization.GLSMiniExpanderPlugin">
+          <argument>StrategicTransportation</argument>
+        </component>
+        <component class="org.cougaar.mlm.plugin.organization.GLSMiniAllocatorPlugin"/>
+        <component class="org.cougaar.mlm.plugin.strategictransport.TaskStrategicTransportAllocatorPlugin"/>
+        <component class="org.cougaar.mlm.plugin.generic.PropagationPlugin">
+          <argument>forward.xml</argument>
+        </component>
+        <component class="org.cougaar.community.CommunityPlugin"/>
+        <component class="org.cougaar.yp.YPServer"/>
+        <component class="org.cougaar.servicediscovery.util.yp.PublishTaxonomy"/>
+        <component class="org.cougaar.yp.YPClientComponent"
+          insertionpoint="Node.AgentManager.Agent.YPService">
+        </component>
+        <component class="org.cougaar.servicediscovery.service.UDDI4JRegistrationServiceComponent"/>
+        <component class="org.cougaar.servicediscovery.service.UDDI4JRegistryQueryServiceComponent"/>
+        <component class="org.cougaar.servicediscovery.plugin.LineagePlugin"/>
+        <component class="org.cougaar.servicediscovery.plugin.SDCommunityBasedRegistrationPlugin">
+          <argument>
+            1
+          </argument>
+        </component>
+        <component class="org.cougaar.servicediscovery.servlet.MatchMakerQueryServletComponent">
+          <argument>
+            org.cougaar.servicediscovery.servlet.MatchMakerQueryServlet
+          </argument>
+          <argument>
+            /matchmaker_query
+          </argument>
+        </component>
+        <component class="org.cougaar.servicediscovery.plugin.SDMiniClientPlugin"
+          priority="LOW"
+          insertionpoint="Node.AgentManager.Agent.PluginManager.Plugin">
+          <argument>
+            StrategicTransportationProvider
+          </argument>
+        </component>
+        <component class="org.cougaar.servicediscovery.plugin.MatchmakerStubPlugin">
+          <argument>
+            true
+          </argument>
+        </component>
+        <component class="org.cougaar.servicediscovery.plugin.SDProviderPlugin"/>
+        <component class='org.cougaar.yp.YPClientComponent'
+          insertionpoint='Node.AgentManager.Agent.YPService'>
+        </component>
+      </agent>
+      <agent name="MCCGlobalMode">
+        <facet org_id="MCCGlobalMode"/>
+        <facet orig_org_id="MCCGlobalMode"/>
+        <facet superior_org_id=""/>
+        <facet home_location="VDYD"/>
+        <facet uic="WAQJA1"/>
+        <facet combat_support="CMD"/>
+        <facet echelon="JOINT"/>
+        <facet echelon_group="JOINT"/>
+        <facet has_physical_assets="T"/>
+        <facet has_equipment_assets="T"/>
+        <facet mechanism="ModeSelector" echelon_of_support="JOINT" role="TransportationProvider"/>
+        <facet mechanism="ModeSelector" echelon_of_support="JOINT" role="StrategicTransportationProvider"/>
+        <component class="org.cougaar.core.servlet.SimpleServletComponent">
+          <argument>org.cougaar.planning.servlet.PlanViewServlet</argument>
+          <argument>/tasks</argument>
+        </component>
+        <component class="org.cougaar.glm.servlet.GLMCompletionServlet">
+          <argument>/completion</argument>
+        </component>
+        <component class="org.cougaar.core.servlet.SimpleServletComponent">
+          <argument>org.cougaar.planning.servlet.HierarchyServlet</argument>
+          <argument>/hierarchy</argument>
+        </component>
+        <component class="org.cougaar.mlm.servlet.InventoryServletComponent">
+          <argument>org.cougaar.mlm.servlet.InventoryServlet</argument>
+          <argument>/inventory</argument>
+        </component>
+        <component class="org.cougaar.planning.servlet.LoaderServletComponent">
+          <argument>/load</argument>
+        </component>
+        <component class="org.cougaar.core.servlet.SimpleServletComponent">
+          <argument>org.cougaar.tools.csmart.ui.servlet.AgentInfoServlet</argument>
+          <argument>/CSMART_AgentInfoServlet</argument>
+        </component>
+        <component class="org.cougaar.core.servlet.SimpleServletComponent">
+          <argument>org.cougaar.tools.csmart.ui.servlet.CommunityProviderServlet</argument>
+          <argument>/CSMART_CommunityProviderServlet</argument>
+        </component>
+        <component class="org.cougaar.core.servlet.SimpleServletComponent">
+          <argument>org.cougaar.tools.csmart.ui.servlet.MetricsServlet</argument>
+          <argument>/CSMART_MetricsServlet</argument>
+        </component>
+        <component class="org.cougaar.core.servlet.SimpleServletComponent">
+          <argument>org.cougaar.tools.csmart.ui.servlet.SearchServlet</argument>
+          <argument>/CSMART_SearchServlet</argument>
+        </component>
+        <component class="org.cougaar.core.servlet.SimpleServletComponent">
+          <argument>org.cougaar.tools.csmart.ui.servlet.PlanServlet</argument>
+          <argument>/CSMART_PlanServlet</argument>
+        </component>
+        <component class="org.cougaar.core.wp.WhitePagesServlet">
+          <argument>/wp</argument>
+        </component>
+        <component class="org.cougaar.mlm.plugin.organization.SimpleOrgDataParamPlugin">
+          <argument>Prototype:Organization</argument>
+          <argument>ClusterPG:MessageAddress:MessageAddress:MCCGlobalMode</argument>
+          <argument>ItemIdentificationPG:ItemIdentification:String:MCCGlobalMode</argument>
+          <argument>ItemIdentificationPG:Nomenclature:String:MCCGlobalMode</argument>
+          <argument>TypeIdentificationPG:TypeIdentification:String:UTC/RTOrg</argument>
+          <argument>TypeIdentificationPG:Nomenclature:String:MCCGlobalMode</argument>
+          <argument>MilitaryOrgPG:UTC:String:MCCGlobalMode</argument>
+          <argument>MilitaryOrgPG:UIC:String:WAQJA1</argument>
+          <argument>MilitaryOrgPG:IsReserve:boolean:false</argument>
+          <argument>Relationship:MessageAddress=3ID,ItemIdentification=3ID,TypeIdentification=UTC/RTOrg,Role=SupportSubordinate,StartTime=01/01/2000 12:00 am,EndTime=</argument>
+        </component>
+        <component class="org.cougaar.mlm.plugin.organization.OrgReportPlugin"/>
+        <component class="org.cougaar.mlm.plugin.organization.GLSMiniExpanderPlugin">
+          <argument>StrategicTransportation</argument>
+        </component>
+        <component class="org.cougaar.mlm.plugin.organization.GLSMiniAllocatorPlugin"/>
+        <component class="org.cougaar.mlm.plugin.sample.MCCTriggerCreatorPlugin"/>
+        <component class="org.cougaar.planning.ldm.trigger.TriggerManagerPlugin"/>
+        <component class="org.cougaar.mlm.plugin.sample.MCCPredictorPlugin"/>
+        <component class="org.cougaar.mlm.plugin.sample.MCCAggregatorPlugin"/>
+        <component class="org.cougaar.mlm.plugin.sample.MCCAllocatorPlugin"/>
+        <component class="org.cougaar.mlm.plugin.sample.PolicyPlugin"/>
+        <component class="org.cougaar.mlm.plugin.ldm.XMLPolicyPlugin">
+          <argument>policy.ldm.xml</argument>
+        </component>
+        <component class="org.cougaar.mlm.plugin.generic.PropagationPlugin">
+          <argument>forward.xml</argument>
+        </component>
+        <component class="org.cougaar.mlm.plugin.ldm.LDMXMLComponentPlugin">
+          <argument>MCCGlobalMode.ldm.xml</argument>
+        </component>
+        <component class="org.cougaar.community.CommunityPlugin"/>
+        <component class="org.cougaar.servicediscovery.service.UDDI4JRegistrationServiceComponent"/>
+        <component class="org.cougaar.servicediscovery.service.UDDI4JRegistryQueryServiceComponent"/>
+        <component class="org.cougaar.servicediscovery.plugin.LineagePlugin"/>
+        <component class="org.cougaar.servicediscovery.plugin.SDCommunityBasedRegistrationPlugin">
+          <argument>
+            1
+          </argument>
+        </component>
+        <component class="org.cougaar.servicediscovery.servlet.MatchMakerQueryServletComponent">
+          <argument>
+            org.cougaar.servicediscovery.servlet.MatchMakerQueryServlet
+          </argument>
+          <argument>
+            /matchmaker_query
+          </argument>
+        </component>
+        <component class="org.cougaar.servicediscovery.plugin.SDMiniClientPlugin"
+          priority="LOW"
+          insertionpoint="Node.AgentManager.Agent.PluginManager.Plugin">
+        </component>
+        <component class="org.cougaar.servicediscovery.plugin.MatchmakerStubPlugin">
+          <argument>
+            true
+          </argument>
+        </component>
+        <component class="org.cougaar.servicediscovery.plugin.SDProviderPlugin"/>
+        <component class='org.cougaar.yp.YPClientComponent'
+          insertionpoint='Node.AgentManager.Agent.YPService'>
+        </component>
+      </agent>
+    </node>
+  </host>
+</society>

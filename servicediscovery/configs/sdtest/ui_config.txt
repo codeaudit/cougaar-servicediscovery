@@ -1,0 +1,12 @@
+"GLSInitPlugin"                                 0   0 400 170
+"GLSRescindPlugin"                              0 170 400  85
+"OplanPlugin"                                 400   0 400  85
+"AllocationAssessorPlugin for 3ID"              0 255 400 400
+"MCCTriggerCreatorPlugin"                     400  85 400  85
+"PolicyPlugin"                                400 170 400  85
+"AllocationAssessorPlugin for 3-69-ARBN"      400 255 400 400
+"AllocationAssessorPlugin for MCCGlobalMode"  400 655 400 400
+"3ID Completion Assessor"                       0 255 400 400
+"1BDE Completion Assessor"                      0 655 400 400
+"3-69-ARBN Completion Assessor"               400 255 400 400
+"MCCGlobalMode Completion Assessor"           400 655 400 400

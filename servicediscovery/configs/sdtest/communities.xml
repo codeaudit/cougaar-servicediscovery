@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Communities [
+<!ELEMENT Communities (Community+)>
+<!ELEMENT Community (Attribute+, Entity*)>
+<!ATTLIST Community Name CDATA #REQUIRED>
+<!ELEMENT AttributeID EMPTY>
+<!ATTLIST AttributeID ID CDATA #REQUIRED>
+<!ATTLIST AttributeID Access (manager|member|associate|world) #IMPLIED>
+<!ELEMENT Entity (Attribute*)>
+<!ATTLIST Entity Name CDATA #REQUIRED>
+<!ELEMENT Attribute EMPTY>
+<!ATTLIST Attribute ID CDATA #REQUIRED>
+<!ATTLIST Attribute Value CDATA #REQUIRED>
+]>
+<Communities>
+  <Community Name='3ID-YPCOMMUNITY' >
+    <Attribute ID='CommunityType' Value='Domain' />
+    <Attribute ID='CommunityType' Value='YPCommunity' />
+    <Attribute ID='YPServerAgent' Value='3ID' />
+    <Attribute ID='CommunityManager' Value='3ID' />
+    <Entity Name='3ID' >
+      <Attribute ID='EntityType' Value='Agent' />
+      <Attribute ID='Role' Value='Member' />
+      <Attribute ID='Role' Value='YPServer' />
+    </Entity>
+    <Entity Name='1BDE-YPCOMMUNITY' >
+      <Attribute ID='EntityType' Value='Community' />
+      <Attribute ID='Role' Value='Member' />
+    </Entity>
+  </Community>
+  <Community Name='1BDE-YPCOMMUNITY' >
+    <Attribute ID='CommunityType' Value='Domain' />
+    <Attribute ID='CommunityType' Value='YPCommunity' />
+    <Attribute ID='YPServerAgent' Value='1BDE' />
+    <Attribute ID='CommunityManager' Value='1BDE' />
+    <Entity Name='1BDE' >
+      <Attribute ID='EntityType' Value='Agent' />
+      <Attribute ID='Role' Value='Member' />
+      <Attribute ID='Role' Value='YPServer' />
+    </Entity>
+    <Entity Name='3-69-ARBN' >
+      <Attribute ID='EntityType' Value='Agent' />
+      <Attribute ID='Role' Value='Member' />
+    </Entity>
+  </Community>
+</Communities>
