@@ -1,0 +1,42 @@
+[Prototype]     Organization
+
+[Relationship]
+StrategicTransportationProvider "UIC/3ID" "UTC/RTOrg" "3ID" "" ""
+CorpsSupportSubordinate "UIC/3ID" "UTC/RTOrg" "3ID" "" ""
+
+[ItemIdentificationPG]
+ItemIdentification String "123-MSB"
+Nomenclature String "123-MSB"
+AlternateItemIdentification String "123-MSB"
+
+[TypeIdentificationPG]                      
+TypeIdentification              String               "Organization"
+Nomenclature                    String               "123-MSB Cluster"
+AlternateTypeIdentification     String               "SRC/87004L100100"
+
+[ClusterPG]
+MessageAddress MessageAddress "123-MSB"
+
+[CommunityPG]
+TimeSpan             TimeSpan   "startTime=03/25/1989 11:00 am, endTime=06/30/2010 4:00 pm" 
+Communities          Collection<String> "Alpine Demo"
+
+
+[OrganizationPG]
+Roles                    Collection<Role>       "TransportationProvider, StrategicTransportationProvider"
+
+[MilitaryOrgPG]
+UIC                   String   "WAQJA1"
+Echelon                     String  "08"
+UTC                   String   ""
+SRC                         String   "87004L100100"
+Hierarchy2525 String "1.X.3.1.3"
+IsReserve boolean false
+HomeLocation GeolocLocation "GeolocCode=HCML, InstallationTypeCode=AIN, CountryStateCode=13, CountryStateName=GEORGIA, Name=FT_BENNING, Latitude=Latitude 32.3833degrees, Longitude=Longitude -84.8833degrees"
+
+
+
+
+
+
+

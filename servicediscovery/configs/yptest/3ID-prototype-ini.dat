@@ -1,0 +1,34 @@
+[Prototype]     Organization
+        
+[Relationship]
+StrategicTransportationProvider "UIC/1BDE" "UTC/RTOrg" "1BDE" "" ""
+StrategicTransportationProvider "UIC/3-69-ARBN" "UTC/RTOrg" "3-69-ARBN" "" ""
+
+[ItemIdentificationPG]
+ItemIdentification String "UIC/3ID"
+Nomenclature String "3ID"
+AlternateItemIdentification String "3ID"
+
+        
+[TypeIdentificationPG]                      
+TypeIdentification          String  "UTC/RTOrg"
+Nomenclature                String  "3rd Infantry Division"
+AlternateTypeIdentification String  "SRC/87004L200"
+
+[ClusterPG]
+MessageAddress	MessageAddress "3ID"
+
+[OrganizationPG]
+Roles                Collection<Role>   "StrategicTransportationProvider"
+
+[MilitaryOrgPG]
+UIC                   String   "WAQJA1"
+Echelon               String   "08"
+UTC                   String   ""
+SRC                         String   "87004L200"
+IsReserve		boolean	"false"
+HomeLocation GeolocLocation "GeolocCode=HKUZ, InstallationTypeCode=AIN, CountryStateCode=13, CountryStateName=GEORGIA, Name=FT_STEWART, Latitude=Latitude 31.8500degrees, Longitude=Longitude -81.6000degrees"
+
+
+[CSSCapabilityPG]
+Capabilities	Collection<CSSCapability> "MOS/36E Count=20units Duration=1days, Transportation Mass=100tons Duration=1weeks"

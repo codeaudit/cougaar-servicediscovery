@@ -1,0 +1,22 @@
+[Prototype]     Organization
+
+[Relationship]
+
+[ItemIdentificationPG]
+ItemIdentification String "UIC/DAML"
+Nomenclature String "DAML"
+AlternateItemIdentification String "DAML"
+
+[TypeIdentificationPG]                      
+TypeIdentification              String               "UTC/RTOrg"
+Nomenclature                    String               "DAML Cluster"
+AlternateTypeIdentification     String               "SRC/87004L100100"
+
+[ClusterPG]
+MessageAddress	MessageAddress "DAML"
+
+[CommunityPG]
+TimeSpan             TimeSpan   "startTime=03/25/1989 11:00 am, endTime=06/30/2010 4:00 pm" 
+Communities          Collection<String> "Alpine Demo"
+
+

@@ -1,0 +1,15 @@
+<?xml version="1.0"  encoding="US-ASCII"?>
+
+<!DOCTYPE Propagation SYSTEM "Forward.dtd" []>
+
+<Propagations>
+  <TransferablePropagation class="org.cougaar.glm.ldm.policy.StockageLevelPolicy">
+	<role> StrategicTransportationProvider </role>
+  </TransferablePropagation>
+  <TransferablePropagation class="org.cougaar.glm.ldm.oplan.OplanCoupon">
+	<role> Subordinate </role>
+  </TransferablePropagation>
+  <TransferablePropagation class="org.cougaar.glm.ldm.oplan.OplanCoupon">
+	<role> AdministrativeSubordinate </role>
+  </TransferablePropagation>
+</Propagations>
