@@ -819,10 +819,10 @@ public final class UDDI4JRegistrationServiceComponent
         addYPQ("dbLoop1", "dbLoop", new YPQ() {
             public YPFuture get(Frame f) {
               serviceKeys = new Vector();
-              for (Enumeration enum = businessInfo.getServiceInfos().getServiceInfoVector().elements(); 
-                   enum.hasMoreElements();
+              for (Enumeration e = businessInfo.getServiceInfos().getServiceInfoVector().elements(); 
+                   e.hasMoreElements();
                    ) {
-                serviceKeys.add(((ServiceInfo) enum.nextElement()).getServiceKey());
+                serviceKeys.add(((ServiceInfo) e.nextElement()).getServiceKey());
               }
               return getYPProxy().delete_service(getAuthToken().getAuthInfoString(), serviceKeys);
             }

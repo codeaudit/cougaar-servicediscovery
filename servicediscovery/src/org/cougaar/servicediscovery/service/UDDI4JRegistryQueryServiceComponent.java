@@ -919,10 +919,10 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
     
     /** find the service in the vector with the correct name **/
     private BusinessService getBusinessService(Vector services, String serviceName) {
-      Enumeration enum = services.elements();
+      Enumeration e = services.elements();
       BusinessService businessService = null;
-      while (enum.hasMoreElements()) {
-        BusinessService bs = (BusinessService) enum.nextElement();
+      while (e.hasMoreElements()) {
+        BusinessService bs = (BusinessService) e.nextElement();
         if (bs.getDefaultNameString().equals(serviceName)) {
           businessService = bs;
         }
@@ -936,7 +936,7 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
 
       final Collection serviceInfos = new ArrayList();
       class State { 
-	Enumeration enum; 
+	Enumeration e; 
 	Callback step2, step3, step4, step5, step6; 
 	ServiceInfo serviceInfo; 
 	BusinessService bs;
@@ -951,7 +951,7 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
       state.step2 = new CallbackDelegate(callback) {
           public void invoke(Object result) {
             ServiceDetail sd = (ServiceDetail) result;
-            state.enum = sd.getBusinessServiceVector().elements();
+            state.e = sd.getBusinessServiceVector().elements();
             state.step3.invoke(null);
           }};
 
@@ -964,8 +964,8 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
               state.serviceInfo.setServiceBindings(sbs);
               serviceInfos.add(state.serviceInfo);
             }
-            if (state.enum.hasMoreElements()) {
-              state.bs = (BusinessService) state.enum.nextElement();
+            if (state.e.hasMoreElements()) {
+              state.bs = (BusinessService) state.e.nextElement();
               state.serviceInfo = new ServiceInfo();
               state.serviceInfo.setServiceId(state.bs.getServiceKey());
               state.serviceInfo.setServiceName(state.bs.getDefaultNameString());
@@ -1030,7 +1030,7 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
 					  YPProxy proxy) {
       final Collection serviceInfos = new ArrayList();
       class State {
-	Enumeration enum; 
+	Enumeration e; 
 	Callback step2, step3, step4; 
 	ServiceInfo serviceInfo; 
 	BusinessService bs;
@@ -1045,7 +1045,7 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
       state.step2 = new CallbackDelegate(callback) {
 	public void invoke(Object result) {
 	  ServiceDetail sd = (ServiceDetail) result;
-	  state.enum = sd.getBusinessServiceVector().elements();
+	  state.e = sd.getBusinessServiceVector().elements();
 	  state.step3.invoke(null);
 	}};
 
@@ -1057,8 +1057,8 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
 	    state.serviceInfo.setServiceBindings(sbs);
 	    serviceInfos.add(state.serviceInfo);
 	  }
-	  if (state.enum.hasMoreElements()) {
-	    state.bs = (BusinessService) state.enum.nextElement();
+	  if (state.e.hasMoreElements()) {
+	    state.bs = (BusinessService) state.e.nextElement();
 	    state.serviceInfo = new ServiceInfo();
 	    state.serviceInfo.setServiceId(state.bs.getServiceKey());
 	    state.serviceInfo.setServiceName(state.bs.getDefaultNameString());
@@ -1088,7 +1088,7 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
 				    final Collection bzClass, 
 				    Callback callback,
 				    YPProxy proxy)  {
-      final Enumeration enum = bs.getBusinessServiceVector().elements();
+      final Enumeration e = bs.getBusinessServiceVector().elements();
       final Collection serviceInfos = new ArrayList();
       class State {
 	BusinessService svc;
@@ -1117,9 +1117,9 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
               serviceInfos.add(serviceInfo);
             } // else first time through - nothing to do here
 
-            if (enum.hasMoreElements()) {
+            if (e.hasMoreElements()) {
               // more work to do - ho hum
-              state.svc = (BusinessService) enum.nextElement(); // grab svc
+              state.svc = (BusinessService) e.nextElement(); // grab svc
               getServiceClassifications(state.svc.getCategoryBag(), 
 					state.chain2, state.proxy); // continue in chain2
             } else {
@@ -1181,14 +1181,14 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
     private void getServiceBindings(BindingTemplates bindingTemplates, 
 				    Callback callback, final YPProxy proxy) {
       final Collection serviceBindings = new ArrayList();
-      final Enumeration enum = bindingTemplates.getBindingTemplateVector().elements();
+      final Enumeration e = bindingTemplates.getBindingTemplateVector().elements();
 
       // this iterates via tail-recursion... shouldn't be a problem, but we could unwind it 
       Callback chain = new CallbackDelegate(callback) {
           public void invoke(Object result) {
             if (result != null) { serviceBindings.add(result); } // first call is null to get the loop going
-            if (enum.hasMoreElements()) {
-              BindingTemplate binding = (BindingTemplate) enum.nextElement();
+            if (e.hasMoreElements()) {
+              BindingTemplate binding = (BindingTemplate) e.nextElement();
               getServiceBinding(binding, this, proxy); // (heh heh heh)
             } else {
               super.invoke(serviceBindings);
@@ -1203,12 +1203,12 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
 					   Callback callback, 
 					   final YPProxy proxy) {
       final Collection serviceClassifications = new ArrayList();
-      final Enumeration enum = bag.getKeyedReferenceVector().elements();
+      final Enumeration e = bag.getKeyedReferenceVector().elements();
       Callback chain = new CallbackDelegate(callback) {
           public void invoke(Object result) {
             if (result != null) { serviceClassifications.add(result); }
-            if (enum.hasMoreElements()) {
-              KeyedReference kr = (KeyedReference) enum.nextElement();
+            if (e.hasMoreElements()) {
+              KeyedReference kr = (KeyedReference) e.nextElement();
               createClassification( new ServiceClassificationImpl(), kr, 
 				    this, proxy);
             } else {
@@ -1223,13 +1223,13 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
     private void getBusinessClassifications(CategoryBag bag, Callback callback,
 					    final YPProxy proxy) {
       final Collection businessClassifications = new ArrayList();
-      final Enumeration enum = bag.getKeyedReferenceVector().elements();
+      final Enumeration e = bag.getKeyedReferenceVector().elements();
 
       Callback chain = new CallbackDelegate(callback) {
           public void invoke(Object result) {
             if (result != null) { businessClassifications.add(result); }
-            if (enum.hasMoreElements()) {
-              KeyedReference kr = (KeyedReference) enum.nextElement();
+            if (e.hasMoreElements()) {
+              KeyedReference kr = (KeyedReference) e.nextElement();
               createClassification(new BusinessClassificationImpl(), kr, 
 				   this, proxy);
             } else {
@@ -1265,13 +1265,13 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
     private void getServiceBinding(final BindingTemplate binding, 
 				   Callback callback, 
 				   YPProxy proxy) {
-      Enumeration enum = binding.getTModelInstanceDetails().getTModelInstanceInfoVector().elements();
-      if (!enum.hasMoreElements()) {
+      Enumeration e = binding.getTModelInstanceDetails().getTModelInstanceInfoVector().elements();
+      if (!e.hasMoreElements()) {
         callback.handle(new RuntimeException("No service binding for "+binding));
         return;
       }
 
-      final TModelInstanceInfo tio = (TModelInstanceInfo) enum.nextElement();
+      final TModelInstanceInfo tio = (TModelInstanceInfo) e.nextElement();
       findTModelName(proxy,
                      tio.getTModelKey(),
                      new CallbackDelegate(callback) {
