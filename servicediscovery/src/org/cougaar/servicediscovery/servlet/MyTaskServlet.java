@@ -54,6 +54,7 @@ import org.cougaar.planning.ldm.asset.PropertyGroupSchedule;
 
 import org.cougaar.planning.ldm.plan.*;
 import org.cougaar.planning.ldm.PlanningFactory;
+import org.cougaar.planning.plugin.util.PluginHelper;
 
 
 /**
@@ -61,7 +62,7 @@ import org.cougaar.planning.ldm.PlanningFactory;
  * http://&lt;hostname&gt;:&lt;port&gt;/$Agent/taskServlet
  *
  *@author    HSingh
- *@version   $Id: MyTaskServlet.java,v 1.2 2003-01-22 17:30:44 mthome Exp $
+ *@version   $Id: MyTaskServlet.java,v 1.3 2003-01-23 13:36:05 lgoldsto Exp $
  */
 public class MyTaskServlet extends BaseServletComponent implements BlackboardClient {
 
@@ -196,12 +197,8 @@ public class MyTaskServlet extends BaseServletComponent implements BlackboardCli
     out.println("Published task : " + true);
 		Organization org = createOrganization(providerName);
 
-		int[] aspects = {AspectType.END_TIME};
-		double[] results = {DEFAULT_END_TIME};
 		boolean isSuccess = true;
-		AllocationResult estAR = planFactory.newAllocationResult(0.5,
-			isSuccess, aspects, results);
-
+    AllocationResult estAR = PluginHelper.createEstimatedAllocationResult(task, planFactory, 0.5, isSuccess);
 		Allocation allocation = planFactory.createAllocation(task.getPlan(), task,
 			org, estAR, Role.ASSIGNED);
 
