@@ -27,13 +27,6 @@
 package org.cougaar.servicediscovery.description;
 
 
-/**
- * <p>Title: </p>
- * <p>Description: </p>
- * <p>Copyright: Copyright (c) 2002</p>
- * <p>Company: </p>
- */
-
 public class ServiceClassificationImpl implements ServiceClassification, java.io.Serializable {
 
   private String code;
