@@ -165,7 +165,6 @@ public class UDDI4JUtility
     /* Disable for distributed YP - see RFE 
      */
     if (cacheEnabled) {
-      System.out.println("Caching");
       synchronized (cachedKeys) {
 	return (String) cachedKeys.get(name);
       }
