@@ -3,140 +3,216 @@
 # on Linux: congaarInstallPath=/opt/cougaar
 # on Windows: C:/projects/cougaar
 # Note: On windows be sure that your drive letter is CAPS!!!
-cougaarInstallPath=C:/cougaar #this is your cougaar install path. Use capital letter for drive.
+cougaarInstallPath=C:/cougaar10 #this is your cougaar install path. Use capital letter for drive.
 profileDirectory=servicediscovery/data/serviceprofiles  #you shouldn't need to change this.
 groundingDirectory=servicediscovery/data/servicegroundings  #you shouldn't need to change this.
 cougaarDAMLSFilename=cougaar.daml #you shouldn't need to change this.
 
 [AgentInfo]
 
-agentName=102-POL-SUPPLYCO
-roleName=FuelSupplyProvider
----
-roleName=PackagedPOLSupplyProvider
+agentName = 1-AD.ARMY.MIL
+roleName = StrategicTransportationProvider,Division
 
-agentName=106-TCBN
-roleName=FuelTransportProvider
+agentName = 102-POL-SUPPLYCO.16-CSG.5-CORPS.ARMY.MIL
+roleName = FuelSupplyProvider,Corps
 ---
-roleName=MaterielTransportProvider
+roleName = PackagedPOLSupplyProvider,Corps
 
-agentName=106-TCBN
-roleName=FuelTransportProvider
+agentName = 106-TCBN.16-CSG.5-CORPS.ARMY.MIL
+roleName = FuelTransportProvider,Corps
 ---
-roleName=MaterielTransportProvider
+roleName = MaterielTransportProvider,Corps
 
-agentName=110-POL-SUPPLYCO
-roleName=FuelSupplyProvider
+agentName = 110-POL-SUPPLYCO.37-TRANSGP.21-TSC.ARMY.MIL
+roleName = FuelSupplyProvider,Theater
 ---
-roleName=PackagedPOLSupplyProvider
+roleName = PackagedPOLSupplyProvider,Theater
 
-agentName=123-MSB
-roleName=AmmunitionProvider
+agentName = 123-MSB.DISCOM.1-AD.ARMY.MIL
+roleName = AmmunitionProvider,Division
 ---
-roleName=FuelSupplyProvider
+roleName = FuelSupplyProvider,Division
 ---
-roleName=PackagedPOLSupplyProvider
+roleName = PackagedPOLSupplyProvider,Division
 ---
-roleName=SparePartsProvider
+roleName = SparePartsProvider,Division
 ---
-roleName=SubsistenceSupplyProvider
----
-roleName=AircraftMaintenanceProvider
+roleName = SubsistenceSupplyProvider,Division
 
-agentName=125-FSB
-roleName=AmmunitionProvider
+agentName = 125-FSB.DISCOM.1-AD.ARMY.MIL
+roleName = AmmunitionProvider,Brigade
 ---
-roleName=FuelSupplyProvider
+roleName = FuelSupplyProvider,Brigade
 ---
-roleName=PackagedPOLSupplyProvider
+roleName = PackagedPOLSupplyProvider,Brigade
 ---
-roleName=SparePartsProvider
+roleName = SparePartsProvider,Brigade
 ---
-roleName=SubsistenceSupplyProvider
+roleName = SubsistenceSupplyProvider,Brigade
 
-agentName=127-DASB
-roleName=AmmunitionProvider
+agentName = 125-ORDBN.7-CSG.5-CORPS.ARMY.MIL
+roleName = AmmunitionProvider,Corps
+
+agentName = 127-DASB.DISCOM.1-AD.ARMY.MIL
+roleName = AmmunitionProvider,Brigade
 ---
-roleName=FuelSupplyProvider
+roleName = FuelSupplyProvider,Brigade
 ---
-roleName=PackagedPOLSupplyProvider
+roleName = PackagedPOLSupplyProvider,Brigade
 ---
-roleName=SparePartsProvider
+roleName = SparePartsProvider,Brigade
 ---
-roleName=SubsistenceSupplyProvider
+roleName = SubsistenceSupplyProvider,Brigade
+
+agentName = 181-TCBN.7-CSG.5-CORPS.ARMY.MIL
+roleName = MaterielTransportProvider,Corps
+
+agentName = 191-ORDBN.29-SPTGP.21-TSC.ARMY.MIL
+roleName = AmmunitionProvider,Theater
+
+agentName = 200-MMC.21-TSC.ARMY.MIL
+roleName = SparePartsProvider,Theater
+
+agentName = 21-TSC-HQ.ARMY.MIL
+roleName = StrategicTransportationProvider,Theater
+
+agentName = 226-MAINTCO.16-CSG.5-CORPS.ARMY.MIL
+roleName = SparePartsProvider,Division
+
+agentName = 227-SUPPLYCO.16-CSG.5-CORPS.ARMY.MIL
+roleName = SubsistenceSupplyProvider,Corps
+
+agentName = 240-SSCO.7-CSG.5-CORPS.ARMY.MIL
+roleName = FuelSupplyProvider,Division
 ---
-roleName=AircraftMaintenanceProvider
-
-agentName=191-ORDBN
-roleName=AmmunitionProvider
-
-agentName=1-AD
-roleName=StrategicTransportationProvider
-
-agentName=21-TSC-HQ
-roleName=StrategicTransportationProvider
-
-agentName=227-SUPPLYCO
-roleName=SubsistenceSupplyProvider
-
-agentName=28-TCBN
-roleName=MaterielTransportProvider
-
-agentName=343-SUPPLYCO
-roleName=SubsistenceSupplyProvider
-
-agentName=3-SUPCOM-HQ
-roleName=StrategicTransportationProvider
-
-agentName=501-FSB
-roleName=AmmunitionProvider
+roleName = PackagedPOLSupplyProvider,Division
 ---
-roleName=FuelSupplyProvider
+roleName = SubsistenceSupplyProvider,Division
+
+agentName = 26-SSCO.16-CSG.5-CORPS.ARMY.MIL
+roleName = FuelSupplyProvider,Division
 ---
-roleName=PackagedPOLSupplyProvider
+roleName = PackagedPOLSupplyProvider,Division
 ---
-roleName=SparePartsProvider
+roleName = SubsistenceSupplyProvider,Division
+
+agentName = 28-TCBN.37-TRANSGP.21-TSC.ARMY.MIL
+roleName = MaterielTransportProvider,Theater
+
+agentName = 3-SUPCOM-HQ.5-CORPS.ARMY.MIL
+roleName = StrategicTransportationProvider,Corps
+
+agentName = 316-POL-SUPPLYBN.7-CSG.5-CORPS.ARMY.MIL
+roleName = FuelTransportProvider,Corps
+
+agentName = 343-SUPPLYCO.29-SPTGP.21-TSC.ARMY.MIL
+roleName = SubsistenceSupplyProvider,Theater
+
+agentName = 406-SUPPLYCO.7-CSG.5-CORPS.ARMY.MIL
+roleName = SubsistenceSupplyProvider,Corps
+
+agentName = 47-FSB.DISCOM.1-AD.ARMY.MIL
+roleName = AmmunitionProvider,Brigade
 ---
-roleName=SubsistenceSupplyProvider
-
-agentName=565-RPRPTCO
-roleName=SparePartsProvider
-
-agentName=592-ORDCO
-roleName=AmmunitionProvider
-
-agentName=6-TCBN
-roleName=FuelTransportProvider
-
-agentName=AWR-2
-roleName=AmmunitionProvider
+roleName = FuelSupplyProvider,Brigade
 ---
-roleName=SparePartsProvider
+roleName = PackagedPOLSupplyProvider,Brigade
 ---
-roleName=SubsistenceSupplyProvider
-
-### I think XSB is writing CCAD by hand
-### so I'll comment it out for now
-#
-#agentName=CCAD
-#roleName=SparePartsProvider
-#
-
-agentName=DLAHQ
-roleName=SparePartsProvider
+roleName = SparePartsProvider,Brigade
 ---
-roleName=SubsistenceSupplyProvider
+roleName = SubsistenceSupplyProvider,Brigade
 
-agentName=HNS
-roleName=FuelSupplyProvider
+agentName = 501-FSB.DISCOM.1-AD.ARMY.MIL
+roleName = AmmunitionProvider,Brigade
 ---
-roleName=PackagedPOLSupplyProvider
+roleName = FuelSupplyProvider,Brigade
+---
+roleName = PackagedPOLSupplyProvider,Brigade
+---
+roleName = SparePartsProvider,Brigade
+---
+roleName = SubsistenceSupplyProvider,Brigade
 
-agentName=OSC
-roleName=AmmunitionProvider
+agentName = 52-ENGBN-CBTHVY.5-CORPS.ARMY.MIL
+roleName = ConstructionProvider,Corps
 
-agentName=TRANSCOM
-roleName=StrategicTransportationProvider
+agentName = 565-RPRPTCO.7-CSG.5-CORPS.ARMY.MIL
+roleName = SparePartsProvider,Corps
 
-agentName=18-MAINTBN
-roleName=AircraftMaintenanceProvider
+agentName = 574-SSCO.29-SPTGP.21-TSC.ARMY.MIL
+roleName = FuelSupplyProvider,Division
+---
+roleName = PackagedPOLSupplyProvider,Division
+---
+roleName = SubsistenceSupplyProvider,Division
+
+agentName = 592-ORDCO.16-CSG.5-CORPS.ARMY.MIL
+roleName = AmmunitionProvider,Corps
+
+agentName = 597-MAINTCO.7-CSG.5-CORPS.ARMY.MIL
+roleName = SparePartsProvider,Division
+
+agentName = 6-TCBN.37-TRANSGP.21-TSC.ARMY.MIL
+roleName = FuelTransportProvider,Theater
+
+agentName = 632-MAINTCO.37-TRANSGP.21-TSC.ARMY.MIL
+roleName = SparePartsProvider,Division
+
+agentName = 900-POL-SUPPLYCO.7-CSG.5-CORPS.ARMY.MIL
+roleName = FuelSupplyProvider,Corps
+---
+roleName = PackagedPOLSupplyProvider,Corps
+
+agentName = AMC.TRANSCOM.MIL
+roleName = AirTransportationProvider,Joint
+
+agentName = AWR-2.21-TSC.ARMY.MIL
+roleName = AmmunitionProvider,Joint
+---
+roleName = SparePartsProvider,Joint
+---
+roleName = SubsistenceSupplyProvider,Joint
+
+agentName = CONUSGround.TRANSCOM.MIL
+roleName = CONUSGroundTransportationProvider,Joint
+
+agentName = CORPS-ARTY.5-CORPS.ARMY.MIL
+roleName = StrategicTransportationProvider,Corps
+
+agentName = CORPS-REAR.5-CORPS.ARMY.MIL
+roleName = StrategicTransportationProvider,Corps
+
+agentName = DLAHQ.MIL
+roleName = ConstructionSupplyProvider,Joint
+---
+roleName = SparePartsProvider,Joint
+---
+roleName = SubsistenceSupplyProvider,Joint
+
+agentName = HNS.MIL
+roleName = FuelSupplyProvider,Joint
+---
+roleName = PackagedPOLSupplyProvider,Joint
+
+agentName = MSC.TRANSCOM.MIL
+roleName = SeaTransportationProvider,Joint
+
+agentName = OSC.MIL
+roleName = AmmunitionProvider,Joint
+
+agentName = OSD.GOV
+roleName = LogisticsCommanderInChief,Joint
+---
+roleName = OperationalCommanderInChief,Joint
+
+agentName = PlanePacker.TRANSCOM.MIL
+roleName = OrganicAirTransportationProvider,Joint
+
+agentName = ShipPacker.TRANSCOM.MIL
+roleName = ShipPackingTransportationProvider,Joint
+
+agentName = TRANSCOM.MIL
+roleName = StrategicTransportationProvider,Joint
+
+agentName = TheaterGround.TRANSCOM.MIL
+roleName = TheaterStrategicTransportationProvider,Joint
