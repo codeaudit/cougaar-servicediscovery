@@ -445,7 +445,8 @@ public class PublishTaxonomy extends ComponentSupport {
     public String toString() {
       return "<PublishAlarm " + expiresAt +
         (expired ? "(Expired) " : " ") +
-        "for " + this.toString() + ">";
+        "for PublishTaxonomy at "  + 
+	getAgentIdentificationService().getName() + ">";
     }
   }
 }
