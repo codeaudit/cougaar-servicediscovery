@@ -100,7 +100,7 @@ agentName = 28-TCBN
 roleName = MaterielTransportProvider,Theater
 
 agentName = 3-SUPCOM-HQ
-roleName = StrategicTransportationProvider,Corps
+roleName = StrategicTransportationProvider,Division
 
 agentName = 316-POL-SUPPLYBN
 roleName = FuelTransportProvider,Corps
@@ -166,21 +166,14 @@ roleName = PackagedPOLSupplyProvider,Corps
 agentName = GlobalAir
 roleName = AirTransportationProvider,Joint
 
-agentName = AWR-2
-roleName = AmmunitionProvider,Joint
----
-roleName = SparePartsProvider,Joint
----
-roleName = SubsistenceSupplyProvider,Joint
-
 agentName = CONUSGround
 roleName = CONUSGroundTransportationProvider,Joint
 
 agentName = 5-CORPS-ARTY
-roleName = StrategicTransportationProvider,Corps
+roleName = StrategicTransportationProvider,Division
 
 agentName = 5-CORPS-REAR
-roleName = StrategicTransportationProvider,Corps
+roleName = StrategicTransportationProvider,Division
 
 agentName = DLAHQ
 roleName = ConstructionSupplyProvider,Joint
@@ -200,7 +193,7 @@ roleName = SeaTransportationProvider,Joint
 agentName = OSC
 roleName = AmmunitionProvider,Joint
 
-agentName = NCO
+agentName = NCA
 roleName = LogisticsCommanderInChief,Joint
 ---
 roleName = OperationalCommanderInChief,Joint
