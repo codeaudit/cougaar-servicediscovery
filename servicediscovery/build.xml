@@ -147,7 +147,7 @@
     
     <!-- jarfiles required by this module, relative to various other paths -->
     <!-- WARNING: Only relative paths work here. -->
-    <property name="compile.jarlist" value="${target.lib}/core.jar,${target.lib}/yp.jar,${target.lib}/util.jar,${target.lib}/glm.jar,${target.lib}/planning.jar,${target.lib}/yp.jar,${target.sys}/xerces.jar,${target.sys}/jena.jar,${target.sys}/interprolog.jar,${target.sys}/juddi.jar,${target.sys}/soap.jar,${target.sys}/servlet.jar,${target.sys}/uddi4j.jar"/>
+    <property name="compile.jarlist" value="${target.lib}/core.jar,${target.lib}/yp.jar,${target.lib}/util.jar,${target.lib}/glm.jar,${target.lib}/planning.jar,${target.lib}/yp.jar,${target.sys}/xerces.jar,${target.sys}/jena.jar,${target.sys}/interprolog.jar,${target.sys}/wasp.jar,${target.sys}/uddiclient.jar,${target.sys}/soap.jar,${target.sys}/servlet.jar,${target.sys}/uddi4j.jar"/>
     <!-- Put absolute paths on this list, in the form of a path. -->
     <property name="compile.abs.jarlist" value=""/>
 
