@@ -39,6 +39,7 @@ import com.hp.hpl.jena.shared.JenaException;
 import com.hp.hpl.jena.vocabulary.RDF;
 
 import org.cougaar.servicediscovery.Constants;
+import org.cougaar.util.Configuration;
 import org.cougaar.util.log.Logger;
 import org.cougaar.util.log.Logging;
 
@@ -129,6 +130,11 @@ public class ProviderDescriptionImpl implements ProviderDescription {
   }
 
   public boolean parseOWL(String owlFileName) {
+    return parseOWL(Constants.getServiceProfileURL(), owlFileName);
+  }
+
+  public boolean parseOWL(URL serviceProfileURL, String owlFileName) {
+
     synchronized (LOCKED) {
       if (logger.isDebugEnabled()) {
 	logger.debug("ProviderDescription.parseOWL for " + 
@@ -150,9 +156,7 @@ public class ProviderDescriptionImpl implements ProviderDescription {
 
     InputStream in = null;
     try {
-
-      URL inURL = new URL(Constants.getServiceProfileURL(), owlFileName);
-
+      URL inURL = new URL(serviceProfileURL, owlFileName);
       in = inURL.openStream();
 
     } catch (java.net.MalformedURLException mue) {

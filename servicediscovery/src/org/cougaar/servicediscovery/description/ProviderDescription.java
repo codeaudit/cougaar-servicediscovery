@@ -26,6 +26,7 @@
 
 package org.cougaar.servicediscovery.description;
 
+import java.net.URL;
 import java.util.Collection;
 
 /**
@@ -78,4 +79,5 @@ public interface ProviderDescription {
    */
 
   public boolean parseOWL(String fileName);
+  public boolean parseOWL(URL serviceProfileURL, String fileName);
 }
