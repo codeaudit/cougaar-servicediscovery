@@ -1,8 +1,9 @@
 @echo OFF
 
 REM "<copyright>"
-REM " Copyright 2002 BBNT Solutions, LLC"
-REM " under sponsorship of the Defense Advanced Research Projects Agency (DARPA)."
+REM " Copyright 2002-2003 BBNT Solutions, LLC"
+REM " under sponsorship of the Defense Advanced Research Projects Agency (DARPA)"
+REM " and the Defense Logistics Agency (DLA)."
 REM ""
 REM " This program is free software; you can redistribute it and/or modify"
 REM " it under the terms of the Cougaar Open Source License as published by"
