@@ -66,7 +66,7 @@ COMPONENT_LIB_ID,AGENT_LIB_NAME,AGENT_ORG_CLASS,BLANK
 "226-MAINTCO","226-MAINTCO","MilitaryOrganization",
 "263-FLDSVC-CO","263-FLDSVC-CO","MilitaryOrganization",
 "227-SUPPLYCO","227-SUPPLYCO","MilitaryOrganization",
-"406-SUPPLYCO","227-SUPPLYCO","MilitaryOrganization",
+"406-SUPPLYCO","406-SUPPLYCO","MilitaryOrganization",
 "106-TCBN","106-TCBN","MilitaryOrganization",
 "594-MDM-TRKCO","594-MDM-TRKCO","MilitaryOrganization",
 "372-CGO-TRANSCO","372-CGO-TRANSCO","MilitaryOrganization",
