@@ -264,29 +264,6 @@ public class SDClientPlugin extends SimplePlugin {
     return null;
   }
 
-  protected String getRequestedSupportEchelon() {
-    Organization selfOrg = getSelfOrg();
-
-    if (selfOrg == null) {
-      myLoggingService.error("getRequestedSupportEchelon(): Agent does not " +
-			     " have a local Organization Asset.");
-      return "";
-    } else {
-      MilitaryOrgPG militaryOrgPG = selfOrg.getMilitaryOrgPG();
-      if (militaryOrgPG != null) {
-	String echelon = militaryOrgPG.getRequestedEchelonOfSupport();
-
-	if (echelon != null) {
-	  echelon = Constants.MilitaryEchelon.mapToMilitaryEchelon(echelon);
-	  if (echelon != Constants.MilitaryEchelon.UNDEFINED) {
-	    return echelon;
-	  }
-	}
-      }
-      return Constants.MilitaryEchelon.BRIGADE;
-    }
-  }
-
   protected void queryServices(Role role) {
 
     String clientName=null;
@@ -297,11 +274,12 @@ public class SDClientPlugin extends SimplePlugin {
     }
 
     MMQueryRequest mmRequest;
+
     if (myLoggingService.isDebugEnabled()) {
-      myLoggingService.debug(clientName + " asking MatchMaker for : " + role + " at " + getRequestedSupportEchelon());
+      myLoggingService.debug(clientName + " asking MatchMaker for : " + role);
     }
       mmRequest =
-        mySDFactory.newMMQueryRequest(new MMRoleQuery(role, getRequestedSupportEchelon()));
+        mySDFactory.newMMQueryRequest(new MMRoleQuery(role, null));
     publishAdd(mmRequest);
   }
 

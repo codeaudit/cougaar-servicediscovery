@@ -134,10 +134,16 @@ public final class MatchmakerStubPlugin extends SimplePlugin {
           log.debug("Registry query result size is : " + services.size() + " for query: " + query.getRole().toString());
         }
 
+	String echelon = query.getEchelon();
+	if ((query.getEchelon() == null) ||
+	    (query.getEchelon().equals(""))) {
+	  echelon = getRequestedEchelonOfSupport(services);
+	}
+
         ArrayList scoredServiceDescriptions = new ArrayList();
         for (Iterator iter = services.iterator(); iter.hasNext(); ) {
           ServiceInfo serviceInfo = (ServiceInfo) iter.next();
-	  float score = scoreServiceProvider(serviceInfo, query.getEchelon());
+	  float score = scoreServiceProvider(serviceInfo, echelon);
 	  
 	  if (score >= 0) {
 	    scoredServiceDescriptions.add(new ScoredServiceDescriptionImpl(score,
@@ -171,11 +177,18 @@ public final class MatchmakerStubPlugin extends SimplePlugin {
   protected float scoreServiceProvider(ServiceInfo serviceInfo, 
 				       String requestedEchelonOfSupport) {
     int echelonScore = getEchelonScore(serviceInfo, requestedEchelonOfSupport);
+    
+    if (log.isDebugEnabled()) {
+      log.debug("scoreServiceProvider: echelon score " + echelonScore);
+    }
     if (echelonScore < 0) {
       return -1;
     } 
 
     int lineageScore = getLineageScore(serviceInfo);
+    if (log.isDebugEnabled()) {
+      log.debug("scoreServiceProvider: lineage score " + lineageScore);
+    }
     if (lineageScore < 0) {
       return -1;
     } else { 
@@ -191,6 +204,8 @@ public final class MatchmakerStubPlugin extends SimplePlugin {
       Constants.MilitaryEchelon.echelonOrder(requestedEchelonOfSupport);
 
     if (requestedEchelonOrder == -1) {
+      if (log.isDebugEnabled())
+	log.debug("getEchelonScore() - invalid echelon " + requestedEchelonOfSupport);
       return 0;
     }
 
@@ -216,6 +231,10 @@ public final class MatchmakerStubPlugin extends SimplePlugin {
       }
       return -1;
     } if (serviceEchelonOrder < requestedEchelonOrder) {
+      if (log.isDebugEnabled()) {
+	log.debug(agentName + ": Ignoring service with a lower echelon of support: " + 
+		  serviceEchelonOrder);
+      }
       return -1;
     } else {
       return (serviceEchelonOrder - requestedEchelonOrder);
@@ -246,6 +265,51 @@ public final class MatchmakerStubPlugin extends SimplePlugin {
 
     return -1;
   }
+
+  protected String getRequestedEchelonOfSupport(Collection services) {
+    int serviceEchelonOrder = -1;
+    String agentName = getAgentIdentifier().toString();
+
+    for (Iterator iter = services.iterator(); iter.hasNext(); ) {
+      ServiceInfo serviceInfo = (ServiceInfo) iter.next();
+      
+      if (serviceInfo.getProviderName().equals(agentName)) {
+	for (Iterator iterator = serviceInfo.getServiceClassifications().iterator();
+	     iterator.hasNext();) {
+	  ServiceClassification classification = 
+	    (ServiceClassification) iterator.next();
+	  if (classification.getClassificationSchemeName().equals(UDDIConstants.MILITARY_ECHELON_SCHEME)) {
+	    
+	    String serviceEchelon = classification.getClassificationCode();
+	    serviceEchelonOrder = 
+	      Constants.MilitaryEchelon.echelonOrder(serviceEchelon);
+	    break;
+	  }
+	  break;
+	}
+      }
+    }
+     
+    if (serviceEchelonOrder == -1) {
+      return Constants.MilitaryEchelon.ECHELON_ORDER[0];
+    } else if (serviceEchelonOrder < 
+	       Constants.MilitaryEchelon.MAX_ECHELON_INDEX) {
+	return Constants.MilitaryEchelon.ECHELON_ORDER[serviceEchelonOrder + 1];
+    } else {
+      return Constants.MilitaryEchelon.ECHELON_ORDER[Constants.MilitaryEchelon.MAX_ECHELON_INDEX];
+    }
+  }
 }
+
+
+
+
+
+
+
+
+
+
+
 
 

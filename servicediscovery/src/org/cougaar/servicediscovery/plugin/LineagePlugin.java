@@ -129,6 +129,8 @@ public class LineagePlugin extends SimplePlugin
 
 	  if (role.equals(Constants.Role.SUPPORTSUBORDINATE)) {
 	    addSupportLineage(task);
+	  } else {
+	    querySuperior(task);
 	  }
 	}
       }
