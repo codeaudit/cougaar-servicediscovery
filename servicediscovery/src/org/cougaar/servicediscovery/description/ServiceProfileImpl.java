@@ -3,11 +3,11 @@
  *  Copyright 2002-2003 BBNT Solutions, LLC
  *  under sponsorship of the Defense Advanced Research Projects Agency (DARPA)
  *  and the Defense Logistics Agency (DLA).
- * 
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the Cougaar Open Source License as published by
  *  DARPA on the Cougaar Open Source Website (www.cougaar.org).
- * 
+ *
  *  THE COUGAAR SOFTWARE AND ANY DERIVATIVE SUPPLIED BY LICENSOR IS
  *  PROVIDED 'AS IS' WITHOUT WARRANTIES OF ANY KIND, WHETHER EXPRESS OR
  *  IMPLIED, INCLUDING (BUT NOT LIMITED TO) ALL IMPLIED WARRANTIES OF
@@ -76,6 +76,24 @@ public class ServiceProfileImpl implements ServiceProfile {
     ret = serviceProfile.getURI();
     ret = ret.substring(1);
     return ret;
+  }
+
+  public String getEchelonOfSupport(){
+    String echelonOfSupport = "";
+    try {
+      //get the text description
+      if(serviceProfile.hasProperty(Profile.ECHELONOFSUPPORT)){
+        StmtIterator echelon = serviceProfile.listProperties(Profile.ECHELONOFSUPPORT);
+        while(echelon.hasNext()) {
+          //should only be one string in this property
+          echelonOfSupport = echelon.next().getString();
+        }
+      }
+    }
+    catch(RDFException e) {
+      System.out.println("Failed: " + e);
+    }
+    return echelonOfSupport;
   }
 
   public String getTextDescription() {
