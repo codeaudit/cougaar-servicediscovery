@@ -225,6 +225,22 @@ public class MatchmakerStubPlugin extends SimplePlugin {
   }
 
   protected void handleException(RQ r) {
+
+    // If we had an error handling a query, but that query is now
+    // marked obsolete by the SDClientPlugin, no need to try again.
+    MMQueryRequest queryRequest = r.queryRequest;
+    MMRoleQuery query = r.query;
+
+    if (query.getObsolete()) {
+      if (myLoggingService.isDebugEnabled()) {
+	myLoggingService.debug(myAgentName + 
+			       " ignoring registry query that had exception for obsolete request - " +
+			       query);
+      }
+      return;
+    }
+
+    // In general however, log the error and try again later
     retryErrorLog(r, getAgentIdentifier() +
       " Exception querying registry for " +
       r.query.getRole().toString() +
@@ -398,10 +414,10 @@ public class MatchmakerStubPlugin extends SimplePlugin {
 	  String outRQs = "";
 	  String pendRQs = "";
 	  synchronized (myOutstandingRQs) {
-	    outRQs = myOutstandingRQs.toString();
+	    outRQs = myOutstandingRQs.size() + ". " + myOutstandingRQs.toString();
 	  }
 	  synchronized (myPendingRQs) {
-	    pendRQs = myPendingRQs.toString();
+	    pendRQs = myPendingRQs.size() + ". " + myPendingRQs.toString();
 	  }
 
 	  myLoggingService.debug("\tYP questions outstanding: " + 
@@ -699,12 +715,12 @@ public class MatchmakerStubPlugin extends SimplePlugin {
 	  new Date(r.query.getTimeSpan().getStartTime()) +
 	  " to " +
 	  new Date(r.query.getTimeSpan().getEndTime());
-	IllegalStateException ise = new IllegalStateException();
+	IllegalStateException ise = new IllegalStateException(errorMessage);
 	// AMH: Don't retry here. Instead, let the while in execute()
 	// call handleException to do this.
 	r.exception = ise;
 	if (myLoggingService.isDebugEnabled())
-	  myLoggingService.debug(getAgentIdentifier() + "AMH: findServiceWithDistributedYP had no Operation Lineage, doing pendRQ with an IllegalStateException for RQ " + r);
+	  myLoggingService.debug(getAgentIdentifier() + ": findServiceWithDistributedYP had no Operation Lineage, doing pendRQ with an IllegalStateException for " + r);
 	pendRQ(r);
 	//	retryErrorLog(r,errorMessage, ise);
 	return;
