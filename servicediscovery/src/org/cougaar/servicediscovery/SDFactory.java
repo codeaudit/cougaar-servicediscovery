@@ -236,7 +236,7 @@ public class SDFactory implements Factory {
   /**
    * revoke a service contract
    */
-  public void revokeServiceContract(ServiceContract contract) {
+  public static void revokeServiceContract(ServiceContract contract) {
     ServiceContractImpl revokedContract = (ServiceContractImpl) contract;
     revokedContract.revoke();
   }
@@ -267,16 +267,24 @@ public class SDFactory implements Factory {
 									   HasRelationships provider,
 									   HasRelationships client) {
     Collection contractPreferences = relay.getServiceContract().getServicePreferences();
-    long start = (long) getPreference(contractPreferences, AspectType.START_TIME);
-    // Use beginning of time as default
+    long start = 
+      (long) getPreference(contractPreferences, AspectType.START_TIME);
     if (start == -1) {
-      start = TimeSpan.MIN_VALUE;
+      IllegalArgumentException iae = 
+	new IllegalArgumentException(" ServiceContractRelay - " +
+				     relay +
+				     " - does not have a start time preference.");
+      throw iae;
     }
 
-    long end = (long) getPreference(contractPreferences, AspectType.END_TIME);
-    // Use end of time as defaults
+    long end = 
+      (long) getPreference(contractPreferences, AspectType.END_TIME);
     if (end == -1) {
-      end = TimeSpan.MAX_VALUE;
+      IllegalArgumentException iae = 
+	new IllegalArgumentException(" ServiceContractRelay - " +
+				     relay +
+				     " - does not have an end time preference.");
+      throw iae;
     }
 
     return new ServiceContractRelationshipImpl(start, end,
@@ -330,49 +338,6 @@ public class SDFactory implements Factory {
 
     return preference;
   }
-
-  public ServiceContract getCompatibleServiceContract(ServiceContract proposedContract,
-      ServiceRequest serviceRequest) {
-
-    Role role = serviceRequest.getServiceRole();
-    Collection proposedPreferences = proposedContract.getServicePreferences();
-    Collection requestedPreferences = serviceRequest.getServicePreferences();
-    ArrayList prefs = new ArrayList();
-    //if the requested and proposed role are not the same, use the requested role but
-    //with a start time == end time
-    if(!role.equals(proposedContract.getServiceRole())) {
-      Preference start = findPreference(requestedPreferences, Preference.START_TIME);
-      Preference end = myLDM.getFactory().newPreference(Preference.END_TIME, start.getScoringFunction());
-      prefs.add(start);
-      prefs.add(end);
-    }
-    //otherwise, use the agreed upon role and the max start time and min end time
-    else {
-      //if the requested start is earlier or the same as the proposed start,
-      //used the proposed start
-      if(getPreference(serviceRequest.getServicePreferences(), Preference.START_TIME) <=
-         getPreference(proposedContract.getServicePreferences(), Preference.START_TIME)) {
-        prefs.add(findPreference(proposedContract.getServicePreferences(), Preference.START_TIME));
-      }
-      //otherwise, use the requested start time
-      else {
-        prefs.add(findPreference(serviceRequest.getServicePreferences(), Preference.START_TIME));
-      }
-      //if the requested end is later or the same as the proposed end,
-      //used the proposed end
-      if(getPreference(serviceRequest.getServicePreferences(), Preference.END_TIME) >=
-         getPreference(proposedContract.getServicePreferences(), Preference.END_TIME)) {
-        prefs.add(findPreference(proposedContract.getServicePreferences(), Preference.END_TIME));
-      }
-      //otherwise, use the requested start time
-      else {
-        prefs.add(findPreference(serviceRequest.getServicePreferences(), Preference.END_TIME));
-      }
-    }
-
-    return newServiceContract(proposedContract.getProvider(), role, prefs);
-  }
-
 }
 
 

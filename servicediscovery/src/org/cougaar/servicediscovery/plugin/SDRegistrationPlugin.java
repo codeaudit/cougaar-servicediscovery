@@ -40,13 +40,17 @@ import org.cougaar.planning.ldm.plan.Disposition;
 import org.cougaar.planning.ldm.plan.Role;
 import org.cougaar.planning.ldm.plan.PlanElement;
 import org.cougaar.planning.ldm.plan.Schedule;
+import org.cougaar.planning.ldm.plan.ScheduleElement;
+import org.cougaar.planning.ldm.plan.ScheduleElementImpl;
 import org.cougaar.planning.ldm.plan.Task;
 import org.cougaar.planning.plugin.legacy.SimplePlugin;
 import org.cougaar.planning.plugin.util.PluginHelper;
 
 import org.cougaar.servicediscovery.Constants;
+import org.cougaar.servicediscovery.description.AvailabilityChangeMessage;
 import org.cougaar.servicediscovery.description.LineageList;
 import org.cougaar.servicediscovery.description.LineageListWrapper;
+import org.cougaar.servicediscovery.description.ProviderCapability;
 import org.cougaar.servicediscovery.description.ProviderCapabilities;
 import org.cougaar.servicediscovery.description.ProviderDescription;
 import org.cougaar.servicediscovery.description.ProviderDescriptionImpl;
@@ -54,7 +58,6 @@ import org.cougaar.servicediscovery.description.ServiceCategory;
 import org.cougaar.servicediscovery.description.ServiceClassification;
 import org.cougaar.servicediscovery.description.ServiceClassificationImpl;
 import org.cougaar.servicediscovery.description.ServiceProfile;
-import org.cougaar.servicediscovery.description.StatusChangeMessage;
 import org.cougaar.servicediscovery.service.RegistrationService;
 import org.cougaar.servicediscovery.util.UDDIConstants;
 import org.cougaar.servicediscovery.transaction.DAMLReadyRelay;
@@ -98,7 +101,7 @@ public class SDRegistrationPlugin extends SimplePlugin implements PrivilegedClai
   //private AgentIdentificationService ais;
 
   private IncrementalSubscription supportLineageSubscription;
-  private IncrementalSubscription statusChangeSubscription;
+  private IncrementalSubscription availabilityChangeSubscription;
   private IncrementalSubscription registerTaskSubscription;
 
   private boolean isRegistered = false;
@@ -129,9 +132,9 @@ public class SDRegistrationPlugin extends SimplePlugin implements PrivilegedClai
     }
   };
 
-  private UnaryPredicate statusChangePredicate = new UnaryPredicate() {
+  private UnaryPredicate availabilityChangePredicate = new UnaryPredicate() {
     public boolean execute(Object o) {
-      return (o instanceof StatusChangeMessage);
+      return (o instanceof AvailabilityChangeMessage);
     }
   };
 
@@ -141,6 +144,19 @@ public class SDRegistrationPlugin extends SimplePlugin implements PrivilegedClai
 	      (((Task) o).getVerb().equals(org.cougaar.glm.ldm.Constants.Verb.RegisterServices)));
     }
   };
+
+  private UnaryPredicate providerCapabilitiesPredicate = 
+  new UnaryPredicate() {
+    public boolean execute(Object o) {
+      if (o instanceof ProviderCapabilities) {
+	ProviderCapabilities providerCapabilities = (ProviderCapabilities) o;
+	return (providerCapabilities.getProviderName().equals(getAgentIdentifier().toString()));
+      } else {
+	return false;
+      }
+    }
+  };
+
 
   public void setLoggingService(LoggingService log) {
     this.log = log;
@@ -192,8 +208,8 @@ public class SDRegistrationPlugin extends SimplePlugin implements PrivilegedClai
   protected void setupSubscriptions() {
     supportLineageSubscription =
       (IncrementalSubscription) subscribe(supportLineagePredicate);
-    statusChangeSubscription =
-      (IncrementalSubscription) subscribe(statusChangePredicate);
+    availabilityChangeSubscription =
+      (IncrementalSubscription) subscribe(availabilityChangePredicate);
     registerTaskSubscription =
       (IncrementalSubscription) subscribe(registerTaskPredicate);
 
@@ -294,9 +310,9 @@ public class SDRegistrationPlugin extends SimplePlugin implements PrivilegedClai
 	}
       }
 
-      if (statusChangeSubscription.hasChanged()) {
-	Collection adds = statusChangeSubscription.getAddedCollection();
-	handleStatusChange(adds);
+      if (availabilityChangeSubscription.hasChanged()) {
+	Collection adds = availabilityChangeSubscription.getAddedCollection();
+	handleAvailabilityChange(adds);
       }
     }
 
@@ -627,84 +643,257 @@ public class SDRegistrationPlugin extends SimplePlugin implements PrivilegedClai
   }
 
   // Handle a change to our registration status
-  protected void handleStatusChange(StatusChangeMessage message) {
-    final StatusChangeMessage statusChange = message;
-    synchronized (statusChange) {
-      switch (statusChange.getStatus()) {
-        case StatusChangeMessage.REQUESTED:
-        {
-          if (isProvider() && isRegistered) {
-            Collection serviceClassifications = new ArrayList(1);
-            ServiceClassification sca =
-                new ServiceClassificationImpl(statusChange.getRole(),
-                statusChange.getRole(),
-                UDDIConstants.MILITARY_SERVICE_SCHEME);
-            serviceClassifications.add(sca);
+  protected void handleAvailabilityChange(AvailabilityChangeMessage availabilityChange) {
+    synchronized (availabilityChange) {
+      if (!isProvider()) {
+	if (log.isDebugEnabled()) {
+	  log.debug(getAgentIdentifier() + " not a provider. " +
+		    "Ignoring AvailabiltyChangeMessage - " + 
+		    availabilityChange);
+	}
+	return;
+      }
 
-            RegistrationService.Callback cb =
-                new RegistrationService.Callback() {
-              public void invoke(Object o) {
-                boolean success = ((Boolean) o).booleanValue();
-                synchronized(statusChange) {
-                  statusChange.setStatus(StatusChangeMessage.COMPLETED);
-                }
-                wake();
-              }
-              public void handle(Exception e) {
-                log.error("handleStatusChange", e);
-                synchronized(statusChange) {
-                  statusChange.setStatus(StatusChangeMessage.ERROR);
-                }
-                wake();
-              }
-            };
-          registrationService.deleteServiceDescription(ypAgent,
-						       getAgentIdentifier().toString(),
-                                                       serviceClassifications,
-                                                       cb);
-          }
-        }
-        break;
-      case StatusChangeMessage.PENDING:
+      if (log.isDebugEnabled()) {
+	log.debug(getAgentIdentifier() + 
+		  " handling AvailabiltyChangeMessage. Status = " + 
+		  availabilityChange.getStatus());
+      }
+
+      switch (availabilityChange.getStatus()) {
+      case AvailabilityChangeMessage.REQUESTED:
+	  updateProviderCapability(availabilityChange);
+	  break;
+      case AvailabilityChangeMessage.PENDING:
         // let it go.  might want to check to see if it takes a very long time...
         break;
-      case StatusChangeMessage.COMPLETED:
-        statusChange.setRegistryUpdated(true);
-        publishChange(statusChange);
+      case AvailabilityChangeMessage.COMPLETED:
+        availabilityChange.setRegistryUpdated(true);
+        publishChange(availabilityChange);
         break;
-      case StatusChangeMessage.DONE:
+      case AvailabilityChangeMessage.DONE:
         // should drop it from the list;
         break;
-      case StatusChangeMessage.ERROR:
+      case AvailabilityChangeMessage.ERROR:
         // retry, perhaps?
         break;
       }
     }
   }
 
-  private void handleStatusChange(Collection statusChanges) {
-    for (Iterator iterator = statusChanges.iterator(); iterator.hasNext();) {
-      StatusChangeMessage statusChange = (StatusChangeMessage) iterator.next();
-      handleStatusChange(statusChange);
+  private void handleAvailabilityChange(Collection availabilityChanges) {
+    for (Iterator iterator = availabilityChanges.iterator(); iterator.hasNext();) {
+      AvailabilityChangeMessage availabilityChange = (AvailabilityChangeMessage) iterator.next();
+      handleAvailabilityChange(availabilityChange);
     }
-
-    // Handle statusChangeMessage as trumping the presence of DAML file.
+    
+    // Handle availabilityChangeMessage as trumping the presence of DAML file.
     // Don't change isRegistered flag because that would assume that we
     // should reregister.
     //isRegistered = false;
     return;
   }
+  
+  private void removeRegisteredRole(final AvailabilityChangeMessage availabilityChange) {
+    Collection serviceClassifications = new ArrayList(1);
+    ServiceClassification sca =
+      new ServiceClassificationImpl(availabilityChange.getRole().toString(),
+				    availabilityChange.getRole().toString(),
+				    UDDIConstants.MILITARY_SERVICE_SCHEME);
+    serviceClassifications.add(sca);
+    
+    RegistrationService.Callback cb =
+      new RegistrationService.Callback() {
+      public void invoke(Object o) {
+	boolean success = ((Boolean) o).booleanValue();
+	synchronized(availabilityChange) {
+	  availabilityChange.setStatus(AvailabilityChangeMessage.COMPLETED);
+	}
+	wake();
+      }
+      public void handle(Exception e) {
+	log.error("handleAvailabilityChange", e);
+	synchronized(availabilityChange) {
+	  availabilityChange.setStatus(AvailabilityChangeMessage.ERROR);
+	}
+	wake();
+      }
+    };
+    registrationService.deleteServiceDescription(ypAgent,
+						 getAgentIdentifier().toString(),
+						 serviceClassifications,
+						 cb);
+  }
+
+  private void addRegisteredRole(final AvailabilityChangeMessage availabilityChange) {
+    Collection serviceClassifications = new ArrayList(1);
+    ServiceClassification sca =
+      new ServiceClassificationImpl(availabilityChange.getRole().toString(),
+				    availabilityChange.getRole().toString(),
+				    UDDIConstants.MILITARY_SERVICE_SCHEME);
+    serviceClassifications.add(sca);
+    
+    RegistrationService.Callback cb =
+      new RegistrationService.Callback() {
+      public void invoke(Object o) {
+	boolean success = ((Boolean) o).booleanValue();
+	synchronized(availabilityChange) {
+	  availabilityChange.setStatus(AvailabilityChangeMessage.COMPLETED);
+	}
+	wake();
+      }
+      public void handle(Exception e) {
+	log.error("handleAvailabilityChange", e);
+	synchronized(availabilityChange) {
+	  availabilityChange.setStatus(AvailabilityChangeMessage.ERROR);
+	}
+	wake();
+      }
+    };
+    registrationService.updateServiceDescription(ypAgent,
+						 getAgentIdentifier().toString(),
+						 serviceClassifications,
+						 cb);
+  }
+
+  private void updateProviderCapability(AvailabilityChangeMessage availabilityChange) {
+    Collection pcCollection = query(providerCapabilitiesPredicate);
+
+    if (log.isDebugEnabled()) {
+      log.debug(getAgentIdentifier() + ": updateProviderCapability handling " +
+		availabilityChange);
+    }
+
+
+    for (Iterator iterator = pcCollection.iterator();
+	 iterator.hasNext();) {
+      ProviderCapabilities capabilities = 
+	(ProviderCapabilities) iterator.next();
+
+      ProviderCapability capability = 
+	  capabilities.getCapability(availabilityChange.getRole());
+
+      if (capability != null) {
+	TimeSpan timeSpan = availabilityChange.getTimeSpan();
+	Schedule currentAvailability = 
+	  capability.getAvailableSchedule();
+
+	if (log.isDebugEnabled()) {
+	  log.debug(getAgentIdentifier() + 
+		    ": found matching ProviderCapability handling " +
+		    capability + 
+		    " with current availability " + currentAvailability);
+	}
+	
+	PlanningFactory planningFactory = 
+	  (PlanningFactory) getFactory("planning");
+	Schedule newAvailability = 
+	  planningFactory.newSchedule(currentAvailability.getAllScheduleElements());
+	
+	Collection overlaps = 
+	  currentAvailability.getOverlappingScheduleElements(timeSpan.getStartTime(),
+							     timeSpan.getEndTime());
+
+	if (log.isDebugEnabled()) {
+	  log.debug(getAgentIdentifier() + 
+		    ": overlaps found - " + overlaps);
+	}
+	
+	boolean change = false;
+	if (overlaps.size() == 0) {
+	  if (availabilityChange.isAvailable()) {
+
+	    newAvailability.add(timeSpan);
+	    change = true;
+	  }
+	} else {
+	  change = true;
+
+	  ScheduleElement earliest = null;
+	  ScheduleElement latest = null;
+
+	  for (Iterator overlap = overlaps.iterator();
+	       overlap.hasNext();) {
+	    latest = (ScheduleElement) overlap.next();
+	    if (earliest == null) {
+	      earliest = latest;
+	    }
+	    newAvailability.remove(latest);
+	  }
+	 
+	  if (availabilityChange.isAvailable()) {
+	    // Construct ScheduleElement to fill the entire period.
+	    long newStart = Math.min(earliest.getStartTime(), 
+				     timeSpan.getStartTime());
+	    long newEnd = Math.max(latest.getEndTime(), 
+				   timeSpan.getEndTime());
+	    ScheduleElementImpl newScheduleElement = 
+	      new ScheduleElementImpl(newStart, newEnd);
+	    newAvailability.add(newScheduleElement);
+	  } else {
+	    // Construct ScheduleElements to bracket the unavailable time
+	    
+	    if (earliest.getStartTime() < timeSpan.getStartTime()) {
+	      ScheduleElementImpl newEarliest = 
+		new ScheduleElementImpl(earliest.getStartTime(), 
+					timeSpan.getStartTime());
+	      newAvailability.add(newEarliest);
+	    }
+
+	    if (latest.getEndTime() > timeSpan.getEndTime()) {
+	      ScheduleElementImpl newLatest = 
+		new ScheduleElementImpl(timeSpan.getEndTime(), 
+					latest.getEndTime());
+	      newAvailability.add(newLatest);
+	    }
+	  }
+	}
+
+
+	if (change) {
+	  if (log.isDebugEnabled()) {
+	    log.debug(getAgentIdentifier() + 
+		      " provider availability after change " + 
+		      newAvailability);
+	  }
+
+
+	  capability.setAvailableSchedule(newAvailability);
+	  publishChange(capabilities);
+
+	  
+	  if (newAvailability.size() == 0) {
+	    // Provider never available so remove registration
+	    removeRegisteredRole(availabilityChange);
+	  } else if (currentAvailability.size() == 0) {
+	    // Provider changing from never available so add registration
+	    addRegisteredRole(availabilityChange);	
+	  }
+
+	} else {
+	  if (log.isDebugEnabled()) {
+	    log.debug(getAgentIdentifier() + 
+		      " ignoring AvailabilityChangeMessage " + 
+		      availabilityChange +
+		      " information already included in ProviderCapability " +
+		      capability);
+	  }
+	}
+      }
+    }
+  }
 
   // Is this Agent a service provider?
   private boolean isProvider() {
-      return getProviderFile().exists();
+    return getProviderFile().exists();
   }
-
+  
   // Get the DAML service provider file
   private File getProviderFile() {
-      String damlFileName = getAgentIdentifier().toString() + DAML_IDENTIFIER;
-      return new File(org.cougaar.servicediscovery.Constants.getServiceProfileURL().getFile() +
-		      damlFileName);
+    String damlFileName = getAgentIdentifier().toString() + DAML_IDENTIFIER;
+    return new File(org.cougaar.servicediscovery.Constants.getServiceProfileURL().getFile() +
+		    damlFileName);
   }
 }
+
 

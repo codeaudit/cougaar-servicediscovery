@@ -48,6 +48,12 @@ public interface ProviderCapability extends java.io.Serializable {
    */
   public Schedule getAvailableSchedule();
 
+  /**
+   * @param availableSchedule Schedule detailing when Provider is available
+   * to provide the specified capability.
+   */
+  public void setAvailableSchedule(Schedule availableSchedule);
+
 }
 
 

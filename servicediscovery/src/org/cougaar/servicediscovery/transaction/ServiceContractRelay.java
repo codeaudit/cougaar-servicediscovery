@@ -112,20 +112,33 @@ public class ServiceContractRelay extends RelayAdapter {
    * service request.
    */
   private boolean isContractCompatibleWithRequest(ServiceContract serviceContract) {
-    boolean ret = getServiceRequest().getServiceRole().equals(serviceContract.getServiceRole());
-    if(ret) {
+    boolean compatible = getServiceRequest().getServiceRole().equals(serviceContract.getServiceRole());
+    if (compatible) {
       Collection requestPreferences = getServiceRequest().getServicePreferences();
       Collection contractPreferences = serviceContract.getServicePreferences();
       double requestEnd = SDFactory.getPreference(requestPreferences, Preference.END_TIME);
       double contractEnd = SDFactory.getPreference(contractPreferences, Preference.END_TIME);
-      ret = ret && contractEnd <= requestEnd;
-      if(ret) {
+      
+      // Must specify end time preference
+      if ((requestEnd == -1) && (contractEnd == -1)) {
+	return false;
+      }
+
+      compatible = compatible && contractEnd <= requestEnd;
+
+      if(compatible) {
         double requestStart = SDFactory.getPreference(requestPreferences, Preference.START_TIME);
         double contractStart = SDFactory.getPreference(contractPreferences, Preference.START_TIME);
-        ret = ret && contractStart >= requestStart;
+
+	// Must specify start time preference
+	if ((requestStart == -1) && (contractStart == -1)) {
+	  return false;
+	}
+	
+        compatible = compatible && contractStart >= requestStart;
       }
     }
-    return ret;
+    return compatible;
   }
 
   /**

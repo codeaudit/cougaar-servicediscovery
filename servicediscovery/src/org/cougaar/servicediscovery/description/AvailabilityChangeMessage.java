@@ -128,5 +128,12 @@ public class AvailabilityChangeMessage implements Serializable {
     return available;
   }
 
+  public String toString() {
+    return super.toString() + 
+      " role = " + role + 
+      ", status = " + status +
+      ", timespan = " + span + 
+      " , available = " + available;
+  }
 
 }

@@ -350,19 +350,16 @@ public final class MatchmakerStubPlugin extends SimplePlugin {
 
     for (Iterator iterator = pcCollection.iterator();
 	 iterator.hasNext();) {
-      ProviderCapabilities providerCapabilities = 
+      ProviderCapabilities capabilities = 
 	(ProviderCapabilities) iterator.next();
 
-      for (Iterator capabilities = 
-	     providerCapabilities.getCapabilities().iterator();
-	   capabilities.hasNext();) {
-	ProviderCapability providerCapability = 
-	  (ProviderCapability) capabilities.next();
-	if (providerCapability.getRole().equals(role)) {
-	  providedEchelonIndex = 
-	    Constants.MilitaryEchelon.echelonOrder(providerCapability.getEchelon());
-	  
-	}
+      ProviderCapability providerCapability = 
+	  capabilities.getCapability(role);
+      
+      if (providerCapability != null) {
+	providedEchelonIndex = 
+	  Constants.MilitaryEchelon.echelonOrder(providerCapability.getEchelon());
+	break;
       }
     }
     
