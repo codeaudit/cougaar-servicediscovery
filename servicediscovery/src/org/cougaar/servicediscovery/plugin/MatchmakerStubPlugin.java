@@ -438,7 +438,7 @@ public class MatchmakerStubPlugin extends SimplePlugin {
 	    }
 	    return lineage;
 	  } else {
-	    myLoggingService.warning(myAgentName + 
+	    myLoggingService.warn(myAgentName + 
 				   ": getLineage() requested timeSpan " +
 				   new Date(timeSpan.getStartTime()) + 
 				   " - " +
@@ -667,8 +667,8 @@ public class MatchmakerStubPlugin extends SimplePlugin {
 	  " no Operation lineage for " +
 	  new Date(r.query.getTimeSpan().getStartTime()) +
 	  " to " +
-	  new Date(r.query.getTimeSpan().getEndTime()));
-	IllegalStateException ise = new IllegalStateException()
+	  new Date(r.query.getTimeSpan().getEndTime());
+	IllegalStateException ise = new IllegalStateException();
 	retryErrorLog(r,errorMessage, ise);
 	return;
       }
