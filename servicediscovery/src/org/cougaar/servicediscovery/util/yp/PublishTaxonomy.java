@@ -29,6 +29,9 @@ package org.cougaar.servicediscovery.util.yp;
 import java.io.File;
 import java.io.FileInputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.Vector;
 
 import org.apache.xerces.parsers.DOMParser;
@@ -157,13 +160,14 @@ public class PublishTaxonomy extends ComponentSupport {
     }
   }
 
+  public void initialize() {
+    super.initialize();
+
+    setTModelNames(Arrays.asList(TMODELNAMES));
+  }
+
   public void load() {
     super.load();
-
-    myTModelNames = new ArrayList(TMODELNAMES.length);
-    for (int index = 0; index < TMODELNAMES.length; index++) {
-      addTModelName(TMODELNAMES[index]);
-    }
 
     // Don't mess around with community based lookup. 
     // Assume component loaded in the same agent as the YPServer
@@ -186,6 +190,29 @@ public class PublishTaxonomy extends ComponentSupport {
     
     return myWarningCutoffTime;
   }
+
+  public void setTModelNames(Collection tModelNames) {
+    if (myStateMachine != null) {
+      StateMachine.State current = myStateMachine.getState();
+      if (!current.equals(StateMachine.UNINITIALIZED) && 
+	  !current.getKey().equals("START")) {
+	getLoggingService().warn("setTModelNames: TModelNames " + 
+				 tModelNames +
+				 " specified after the process of loading " +
+				 " taxonomies has started. Will not be added " + 
+				 " to the registry.");
+	return;
+      }
+    }
+
+    myTModelNames = new ArrayList(tModelNames.size());
+    for (Iterator iterator = tModelNames.iterator();
+	 iterator.hasNext();) {
+      String tModelName = (String) iterator.next();
+      addTModelName(tModelName);
+    }
+  }
+  
 
   public void addTModelName(String tModelName) {
     // Don't add if we've already started.
@@ -370,7 +397,13 @@ public class PublishTaxonomy extends ComponentSupport {
     }
   }
 
-  TModel createTaxonomy(String name, String file, String tModelKey) throws java.io.IOException, org.xml.sax.SAXException, org.uddi4j.UDDIException {
+  private TModel createTaxonomy(String name, String file, String tModelKey) throws java.io.IOException, org.xml.sax.SAXException, org.uddi4j.UDDIException {
+    if (getLoggingService().isDebugEnabled()) {
+      getLoggingService().debug("createTaxonomy: name = " + name +
+			      ", file = " + file +
+			      ", tModelKey = " + tModelKey);
+    }
+
     FileInputStream fis = new FileInputStream(file);
     DOMParser parser = new DOMParser();
     parser.parse(new InputSource(fis));
@@ -388,7 +421,7 @@ public class PublishTaxonomy extends ComponentSupport {
     return tModel;
   }    
 
-  TModel addCougaarBinding(TModel tm) {
+  protected TModel addCougaarBinding(TModel tm) {
     CategoryBag categoryBag = new CategoryBag();
     KeyedReference wsdlKr = new KeyedReference("uddi-org:types", "wsdlSpec");
     wsdlKr.setTModelKey(tm.getTModelKey());
@@ -399,7 +432,7 @@ public class PublishTaxonomy extends ComponentSupport {
     return tm;
   }
 
-  TModel addSoapBinding(TModel tm) {
+  protected TModel addSoapBinding(TModel tm) {
     CategoryBag categoryBag = new CategoryBag();
     KeyedReference soapKr = new KeyedReference("uddi-org:types", "soapSpec");
     soapKr.setTModelKey(tm.getTModelKey());
