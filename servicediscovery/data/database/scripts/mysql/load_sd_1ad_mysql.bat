@@ -37,7 +37,7 @@ GOTO L_END
 
 REM Check arguments. If got none, display usage
 IF NOT "%3" == "" GOTO L_3
-ECHO Usage: load_1ad_mysql.bat [Config DB Username] [Password] [MySQL Config DB database name]
+ECHO Usage: load_sd_1ad_mysql.bat [Config DB Username] [Password] [MySQL Config DB database name]
 GOTO L_END
 
 :L_3

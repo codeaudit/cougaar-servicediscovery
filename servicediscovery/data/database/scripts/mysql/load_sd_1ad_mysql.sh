@@ -61,12 +61,12 @@ echo $COUGAAR_INSTALL_PATH | tr '\\' '/' > newcip.txt
 sed s/:cip/$(cat newcip.txt | sed 's/\//\\\//g')/ $COUGAAR_INSTALL_PATH/servicediscovery/data/database/scripts/mysql/sql/sd-db.load-mysql-tables.sql > load_mysql_db_new.sql
 rm newcip.txt
 
-if [ ! -e "$COUGAAR_INSTALL_PATH/servicediscovery/data/database/scripts/mysql/sedscr.sh" ]; then
-    echo "Cannot find $COUGAAR_INSTALL_PATH/servicediscovery/data/database/scripts/mysql/sedscr.sh"
+if [ ! -e "$COUGAAR_INSTALL_PATH/csmart/data/database/scripts/mysql/sedscr.sh" ]; then
+    echo "Cannot find $COUGAAR_INSTALL_PATH/csmart/data/database/scripts/mysql/sedscr.sh"
     exit
 else
     #Replace potential '\r\n' combo in all .csv files with only '\n' to match load script
-    $COUGAAR_INSTALL_PATH/servicediscovery/data/database/scripts/mysql/sedscr.sh $COUGAAR_INSTALL_PATH/servicediscovery/data/database/csv/*.csv
+    $COUGAAR_INSTALL_PATH/csmart/data/database/scripts/mysql/sedscr.sh $COUGAAR_INSTALL_PATH/servicediscovery/data/database/csv/*.csv
 fi
 
 if [ "$4" = "local" ]; then
@@ -85,9 +85,9 @@ fi
 echo "Creating indexes in database tables."
 mysql -u$1 -p$2 $3 < $COUGAAR_INSTALL_PATH/servicediscovery/data/database/scripts/mysql/sql/sd-db.create-mysql-indexes.sql
 
-#rm load_mysql_db_new.sql
-#rm -f load_mysql_db_new_orig.sql
-#rm $COUGAAR_INSTALL_PATH/servicediscovery/data/database/csv/*.tmp
+rm load_mysql_db_new.sql
+rm -f load_mysql_db_new_orig.sql
+rm $COUGAAR_INSTALL_PATH/servicediscovery/data/database/csv/*.tmp
 
 echo "Done."
 
