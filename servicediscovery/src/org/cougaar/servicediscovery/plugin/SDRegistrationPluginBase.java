@@ -30,8 +30,10 @@ import java.util.Iterator;
 import org.cougaar.core.agent.service.alarm.Alarm;
 import org.cougaar.core.blackboard.IncrementalSubscription;
 import org.cougaar.core.plugin.ComponentPlugin;
+import org.cougaar.core.service.AgentIdentificationService;
 import org.cougaar.core.service.DomainService;
 import org.cougaar.core.service.LoggingService;
+import org.cougaar.core.service.QuiescenceReportService;
 import org.cougaar.planning.ldm.PlanningFactory;
 import org.cougaar.planning.ldm.plan.AllocationResult;
 import org.cougaar.planning.ldm.plan.Disposition;
@@ -72,16 +74,9 @@ public abstract class SDRegistrationPluginBase extends ComponentPlugin {
   protected static final String DAML_IDENTIFIER = ".profile.daml";
 
   protected LoggingService log;
-
   protected RegistrationService registrationService = null;
-
   protected DomainService domainService = null;
-
-  /**
-   * Quiescence preparedness
-   */
-  //private QuiescenceReportService qrs;
-  //private AgentIdentificationService ais;
+  protected QuiescenceReportService quiescenceReportService = null;
 
   protected IncrementalSubscription supportLineageSubscription;
   protected IncrementalSubscription availabilityChangeSubscription;
@@ -134,7 +129,7 @@ public abstract class SDRegistrationPluginBase extends ComponentPlugin {
   };
 
   public void setDomainService(DomainService ds) {
-    this.domainService = ds;
+    domainService = ds;
   }
 
 
@@ -142,8 +137,18 @@ public abstract class SDRegistrationPluginBase extends ComponentPlugin {
     this.log = log;
   }
 
+  public void setQuiescenceReportService(QuiescenceReportService qrs) {
+    quiescenceReportService = qrs;
+
+  }
+
   public void setRegistrationService(RegistrationService rs) {
     registrationService = rs;
+  }
+
+  public AgentIdentificationService getAgentIdentificationService() {
+    // Service established down in BlackboardClientComponent
+    return agentIdentificationService;
   }
 
 
@@ -161,17 +166,13 @@ public abstract class SDRegistrationPluginBase extends ComponentPlugin {
     }
   }
 
-  /* Quiescence reporting support should we decide we need it */
-//   public void load() {
-//     super.load();
-//     // Set up the QuiescenceReportService so that while waiting for the YP we
-//     // dont go quiescent by mistake
-//     this.ais = (AgentIdentificationService) getBindingSite().getServiceBroker().getService(this, AgentIdentificationService.class, null);
-//     this.qrs = (QuiescenceReportService) getBindingSite().getServiceBroker().getService(this, QuiescenceReportService.class, null);
+  public void load() {
+    super.load();
 
-//     if (qrs != null)
-//       qrs.setAgentIdentificationService(ais);
-//   }
+    if (getAgentIdentificationService() != null) {
+      quiescenceReportService.setAgentIdentificationService(getAgentIdentificationService());
+    }
+  }
 
   public void unload() {
     if (registrationService != null) {
@@ -181,20 +182,13 @@ public abstract class SDRegistrationPluginBase extends ComponentPlugin {
       registrationService = null;
     }
 
-  /* Quiescence reporting support should we decide we need it */
-//     if (qrs != null) {
-//       getBindingSite().getServiceBroker().releaseService(this,
-//                                                          QuiescenceReportService.class,
-//                                                          qrs);
-//       qrs = null;
-//     }
-
-//     if (ais != null) {
-//       getBindingSite().getServiceBroker().releaseService(this,
-//                                                          AgentIdentificationService.class,
-//                                                          ais);
-//       ais = null;
-//     }
+    /* Quiescence reporting support should we decide we need it */
+    if (quiescenceReportService != null) {
+      getBindingSite().getServiceBroker().releaseService(this,
+							 QuiescenceReportService.class,
+							 quiescenceReportService);
+	quiescenceReportService = null;
+    }
 
     if ((log != null) && (log != LoggingService.NULL)) {
       getBindingSite().getServiceBroker().releaseService(this, LoggingService.class, log);
@@ -383,6 +377,31 @@ public abstract class SDRegistrationPluginBase extends ComponentPlugin {
     }
 
     return providerCapabilities;
+  }
+
+  private boolean quiescentState = false;
+
+  protected void updateQuiescenceService() {
+    if (quiescenceReportService != null) {
+      if (registrationComplete()) {
+	// Tell the Q Service I'm quiescent
+	quiescenceReportService.setQuiescentState();
+	if (log.isInfoEnabled()) {
+	  log.info(getAgentIdentifier() + " done with SDRegistration. Now quiescent.");
+	  quiescentState = true;
+	}
+      } else {
+	// May be waiting on a callback or a community or an SCA. Say not Q
+	quiescenceReportService.clearQuiescentState();
+	if (log.isInfoEnabled()) {
+	  if (quiescentState == true) {
+	    log.info(getAgentIdentifier() + " toggling quiescent state from true to false.");
+	    quiescentState = false;
+	  }
+	  log.info(getAgentIdentifier() + " waiting to complete registration - not quiescent.");
+	}
+      }
+    }
   }
 
 

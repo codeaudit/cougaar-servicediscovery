@@ -41,12 +41,6 @@ public class SDRegistrationPlugin extends SDRegistrationPluginBase {
   private static String ypAgent = 
   System.getProperty("org.cougaar.yp.ypAgent", "NCA");
 
-  /**
-   * Quiescence preparedness
-   */
-  //private QuiescenceReportService qrs;
-  //private AgentIdentificationService ais;
-
   private int outstandingSCAUpdates = 0;
 
   private boolean isRegistered = false;
@@ -56,46 +50,11 @@ public class SDRegistrationPlugin extends SDRegistrationPluginBase {
   /** true iff we've got the callback successfully, but need to notify everyone else **/
   private boolean isPending = false;
 
-
-  /* Quiescence reporting support should we decide we need it */
-//   public void load() {
-//     super.load();
-//     // Set up the QuiescenceReportService so that while waiting for the YP we
-//     // dont go quiescent by mistake
-//     this.ais = (AgentIdentificationService) getBindingSite().getServiceBroker().getService(this, AgentIdentificationService.class, null);
-//     this.qrs = (QuiescenceReportService) getBindingSite().getServiceBroker().getService(this, QuiescenceReportService.class, null);
-
-//     if (qrs != null)
-//       qrs.setAgentIdentificationService(ais);
-//   }
+  public void load() {
+    super.load();
+  }
 
   public void unload() {
-    if (registrationService != null) {
-      getBindingSite().getServiceBroker().releaseService(this,
-                                                         RegistrationService.class,
-                                                         registrationService);
-      registrationService = null;
-    }
-
-  /* Quiescence reporting support should we decide we need it */
-//     if (qrs != null) {
-//       getBindingSite().getServiceBroker().releaseService(this,
-//                                                          QuiescenceReportService.class,
-//                                                          qrs);
-//       qrs = null;
-//     }
-
-//     if (ais != null) {
-//       getBindingSite().getServiceBroker().releaseService(this,
-//                                                          AgentIdentificationService.class,
-//                                                          ais);
-//       ais = null;
-//     }
-
-    if ((log != null) && (log != LoggingService.NULL)) {
-      getBindingSite().getServiceBroker().releaseService(this, LoggingService.class, log);
-      log = null;
-    }
     super.unload();
   }
 
@@ -175,35 +134,13 @@ public class SDRegistrationPlugin extends SDRegistrationPluginBase {
       }
     }
 
-
     // No harm since publish change only occurs if the conf rating has changed.
     updateRegisterTaskDispositions();
-    
-    // Not enabling this quiescent reporting yet -- currently
-    // configuration change to ignore SDRegistrationPlugin appears to avoid
-    // quiescence toggling. See bug# 3289
 
-//     // Quiescence reporting
-//     // Providers with outstanding registration attempts, or who will be waking themselves
-//     // up to try to register again later, or who still need to register, are nonquiescent.
-//     // Others are quiescent.
-//     if (qrs != null) {
-//       if (isProvider() && (!registrationComplete() || outstandingSCAUpdates > 0)) {
-// 	qrs.clearQuiescentState();
-// 	if (log.isInfoEnabled())
-// 	  log.info(getAgentIdentifier() + " has outstanding YP Registrations. Not quiescent.");
-// 	if (log.isDebugEnabled()) {
-// 	  if (outstandingSCAUpdates > 0)
-// 	    log.debug("                " + outstandingSCAUpdates + " SCA updates outstanding");
-// 	  if (!registrationComplete()) 
-// 	    log.debug("                 Registration is not complete.");
-// 	}
-//       } else {
-// 	qrs.setQuiescentState();
-// 	if (log.isInfoEnabled())
-// 	  log.info(getAgentIdentifier() + " finished any YP Registrations. Now quiescent.");
-//       }
-//     }
+    // This PI is capable of exiting the execute method while still having
+    // work to do -- hence it must tell the QuiescenceReportService
+    // that it has outstanding work
+    updateQuiescenceService();
   }
 
   private void updateRegistration(Collection scas) {
@@ -301,7 +238,7 @@ public class SDRegistrationPlugin extends SDRegistrationPluginBase {
 
   protected boolean registrationComplete() {
     //return ((outstandingSCAUpdates == 0) && (isRegistered));
-    return (isRegistered);
+    return (!isProvider()) || (isRegistered);
   }
   
   protected void removeRegisteredRole(final AvailabilityChangeMessage availabilityChange) {

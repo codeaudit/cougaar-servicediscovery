@@ -128,8 +128,14 @@ public class SDCommunityBasedRegistrationPlugin extends SDRegistrationPluginBase
       }
     }
 
+
     // No harm since publish change only occurs if the conf rating has changed.
     updateRegisterTaskDispositions();
+
+    // This PI is capable of exiting the execute method while still having
+    // work to do -- hence it must tell the QuiescenceReportService
+    // that it has outstanding work
+    updateQuiescenceService();
   }
 
   private void initialRegister(final SCAInfo scaInfo) {
@@ -263,6 +269,9 @@ public class SDCommunityBasedRegistrationPlugin extends SDRegistrationPluginBase
   }
 
   protected boolean registrationComplete() {
+    if (!isProvider()) {
+      return true;
+    }
 
     // Have all the known SCAs reported in?
     if (scaHash.size() < knownSCAs) {
