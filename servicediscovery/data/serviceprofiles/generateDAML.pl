@@ -54,7 +54,7 @@ sub setup_descriptions{
     "PackagedPOLSupplyProvider" => "Provide packaged POL supply. ",
     "AmmunitionProvider" => "Provide ammunition supply. ",
     "MaterielTransportProvider" => "Transport materiel. ",
-    "StrategicTransportationProvider" => "Transport strategic assets. ",
+    "StrategicTransportationProvider" => "Provide strategic transportation. ",
     "AircraftMaintenanceProvider" => "Maintain aircraft ",
     "none" => "No description found. "
     );		    
