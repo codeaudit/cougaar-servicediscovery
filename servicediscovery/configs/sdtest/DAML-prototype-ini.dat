@@ -15,7 +15,7 @@ Nomenclature                    String               "MCCGlobalMode Cluster"
 AlternateTypeIdentification     String               "SRC/87004L100100"
 
 [ClusterPG]
-ClusterIdentifier	ClusterIdentifier "MCCGlobalMode"
+MessageAddress	MessageAddress "MCCGlobalMode"
 
 [CommunityPG]
 TimeSpan             TimeSpan   "startTime=03/25/1989 11:00 am, endTime=06/30/2010 4:00 pm" 

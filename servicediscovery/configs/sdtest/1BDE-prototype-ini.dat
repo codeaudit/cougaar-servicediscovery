@@ -14,7 +14,7 @@ Nomenclature                String  "1st BDE"
 AlternateTypeIdentification String  "SRC/87042L200"
 
 [ClusterPG]
-ClusterIdentifier	ClusterIdentifier "1BDE"
+MessageAddress	MessageAddress "1BDE"
 
 [CommunityPG]
 TimeSpan             TimeSpan   "startTime=03/25/1989 11:00 am, endTime=06/30/2010 4:00 pm" 

@@ -16,7 +16,7 @@ Nomenclature                String  "3rd Infantry Division"
 AlternateTypeIdentification String  "SRC/87004L200"
 
 [ClusterPG]
-ClusterIdentifier	ClusterIdentifier "3ID"
+MessageAddress	MessageAddress "3ID"
 
 [OrganizationPG]
 Roles                Collection<Role>   "StrategicTransportationProvider"
