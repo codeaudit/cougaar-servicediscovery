@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <tModel>
-  <tModelKey>uuid:f0f45111-5af0-f451-8a06-0d5979065559</tModelKey>
   <name>MilitaryEchelonScheme</name>
   <description>Echelon level of service</description>
   <categoryBag>

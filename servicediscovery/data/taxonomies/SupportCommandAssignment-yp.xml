@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <tModel>
-  <tModelKey>uuid:059c66d0-f1bc-11d6-a353-b8a03c50a862</tModelKey>
   <name>SupportCommandAssignment</name>
   <description>The command organization supported and its subordinates</description>
   <categoryBag></categoryBag>
