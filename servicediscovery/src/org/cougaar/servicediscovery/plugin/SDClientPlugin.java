@@ -923,6 +923,18 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
     
     NonOverlappingTimeSpanSet currentOPCONSchedule = buildOPCONSchedule();
     
+    if (currentOPCONSchedule.isEmpty()) {
+      if (myLoggingService.isDebugEnabled()) {
+	myLoggingService.debug(getAgentIdentifier() + 
+			       ": handleChangedLineage() " +
+			       " unable to build OPCON schedule from the current lineages.");
+      }
+
+      // Don't replace the existing OPCON schedule. Wait until we have consistent OPCON 
+      // info. Assumption is that LineagePlugin is modifying lineages and will trigger 
+      // another round of processing via a publish add/change/remove.
+      return false;
+    }
     
     if (currentOPCONSchedule.equals(getOPCONSchedule())) {
       if (myLoggingService.isDebugEnabled()) {
@@ -1233,10 +1245,26 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
 	
 	for (Iterator scheduleIterator = lineageSchedule.iterator();
 	     scheduleIterator.hasNext();) {
-	  ScheduleElement element = (ScheduleElement) scheduleIterator.next();
+	  try {
+	    ScheduleElement element = (ScheduleElement) scheduleIterator.next();
 	    opconSchedule.add(new LineageTimeSpan(lineage, 
 						  element.getStartTime(),
 						  element.getEndTime()));
+	  } catch (IllegalArgumentException iae) {
+	    // Handle as a transient error - we're looking at lineages while the LineagePlugin
+	    // is modifying. Next publish change of a Lineage will put us back in this code - 
+	    // hopefully with consistent lineages.
+	    if (myLoggingService.isWarnEnabled()) {
+	      myLoggingService.warn(getAgentIdentifier() + 
+				    " Overlapping OPCON lineages - " +
+				    lineageSchedule + 
+				    " - will retry the next time the lineage subscription changes.");
+	    }
+
+	    // Return empty schedule since I have no way of knowing what's correct.
+	    opconSchedule = new NonOverlappingTimeSpanSet();
+	    break;
+	  } 
 	}
       }
     }
@@ -1414,11 +1442,12 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
       }
 
       if (obsolete) {
-	if (myLoggingService.isDebugEnabled()) 
+	if (myLoggingService.isDebugEnabled()) {
 	  myLoggingService.debug(getAgentIdentifier() + 
 				 ": verifyOutstandingRequest() " + 
 				 " publish change MMQueryRequest = " + 
 				 request.getUID());
+	}
 	query.setObsolete(true);
 	publishChange(request);
       }
