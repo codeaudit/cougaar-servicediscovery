@@ -71,7 +71,6 @@ public class PublishTaxonomy extends ComponentSupport {
   private long myWarningCutoffTime = -1;
 
   private YPProxy myYPProxy;
-  private AuthToken myAuthToken;
 
   private PublishTaxonomyMachine myStateMachine;
 

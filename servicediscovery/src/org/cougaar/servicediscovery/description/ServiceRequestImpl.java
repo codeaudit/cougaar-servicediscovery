@@ -32,9 +32,11 @@ import java.util.Collections;
 
 import org.cougaar.planning.ldm.asset.Asset;
 import org.cougaar.planning.ldm.plan.Role;
+
+/*
 import org.cougaar.util.log.Logger;
 import org.cougaar.util.log.Logging;
-
+*/
 
 /**
  * The ServiceRequest describes the particular service which the client agent
@@ -42,7 +44,7 @@ import org.cougaar.util.log.Logging;
  */
 
 public class ServiceRequestImpl implements ServiceRequest, java.io.Serializable {
-  private static Logger logger = Logging.getLogger(ServiceRequestImpl.class);
+  //private static Logger logger = Logging.getLogger(ServiceRequestImpl.class);
 
   private Asset myClient;
   private Role myServiceRole;

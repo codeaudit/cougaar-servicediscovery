@@ -149,7 +149,6 @@ public final class UDDI4JRegistryQueryServiceComponent extends GenericStateModel
     implements RegistryQueryService 
   {
     private int maxRows = 100;
-    private HashMap tModelNameCache = new HashMap();
 
     public RegistryQueryServiceImpl() {
       super(UDDI4JRegistryQueryServiceComponent.this.log, 

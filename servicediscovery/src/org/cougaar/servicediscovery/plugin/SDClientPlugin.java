@@ -326,8 +326,6 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
       }
     } else {
       String providerName = serviceDescription.getProviderName();
-      long startTime = interval.getStartTime();
-      long endTime = interval.getEndTime();
       ServiceRequest request =
           mySDFactory.newServiceRequest(getSelfOrg(),
 					role,
@@ -726,7 +724,6 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
   protected boolean alreadyAskedForContractWithProvider(Role role, 
                                                         String providerName,
                                                         TimeInterval timeInterval) {
-    boolean foundContract = false;
     for (Iterator relayIterator = myServiceContractRelaySubscription.iterator();
          relayIterator.hasNext();) {
       ServiceContractRelay relay =

@@ -32,9 +32,11 @@ import java.util.Collections;
 
 import org.cougaar.planning.ldm.asset.Asset;
 import org.cougaar.planning.ldm.plan.Role;
+
+/*
 import org.cougaar.util.log.Logger;
 import org.cougaar.util.log.Logging;
-
+*/
 
 /**
  * The ServiceContract describes the particular service which the client agent
@@ -42,7 +44,7 @@ import org.cougaar.util.log.Logging;
  */
 
 public class ServiceContractImpl implements ServiceContract, java.io.Serializable {
-  private static Logger logger = Logging.getLogger(ServiceContractImpl.class);
+  // private static Logger logger = Logging.getLogger(ServiceContractImpl.class);
 
   private Asset myProvider;
   private Role myServiceRole;

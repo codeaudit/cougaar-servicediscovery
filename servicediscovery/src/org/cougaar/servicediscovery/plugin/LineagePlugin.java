@@ -450,7 +450,6 @@ public class LineagePlugin extends SimplePlugin
 			       relayLineage);
       }
       
-      boolean publishChange = false;
       Lineage localLineage = findExactMatch(relayLineage, localLineages);
 
       if (localLineage != null) {
@@ -461,7 +460,6 @@ public class LineagePlugin extends SimplePlugin
 	// Modify local lineage schedule if necessary
 	Schedule relaySchedule = relayLineage.getSchedule();
 	Schedule localSchedule = localLineage.getSchedule();
-	boolean scheduleChange = false;
 	
 	if (!relaySchedule.equals(localSchedule)) {
 	  Schedule modifiedSchedule = updateLineageSchedule(localLineage, 
@@ -493,8 +491,6 @@ public class LineagePlugin extends SimplePlugin
 			       relayLineage.getList());
       }
       
-      boolean publishChange = false;
-
       LineageImpl localLineage = 
 	(LineageImpl) findMatch(relayLineage, localLineages);
       boolean newLineage = (localLineage == null);
@@ -1010,7 +1006,3 @@ public class LineagePlugin extends SimplePlugin
   }
     
 }
-
-
-
-

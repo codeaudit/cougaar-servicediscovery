@@ -127,16 +127,9 @@ public final class UDDI4JRegistrationServiceComponent
   protected void execute() {}
 
   private class RegistrationServiceProviderImpl implements ServiceProvider {
-    private RegistrationServiceImpl regService;
 
     public Object getService(ServiceBroker sb, Object requestor, Class serviceClass) {
       if (serviceClass == RegistrationService.class) {
-        /* 
-	if (regService == null) {
-	  regService = new RegistrationServiceImpl();
-	}
-        return regService;
-        */
         return new RegistrationServiceImpl();
       } else {
         return null;
