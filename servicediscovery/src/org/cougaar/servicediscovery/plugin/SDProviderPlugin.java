@@ -255,10 +255,7 @@ public class SDProviderPlugin extends SimplePlugin
 	      }
 	      SDFactory.revokeServiceContract(contract);
 	      changeRequired = true;
-	    } else if (!(currentContractTimeSpan.getStartTime() ==
-			 contractTimeSpan.getStartTime()) ||
-		       !(currentContractTimeSpan.getEndTime() == 
-			 contractTimeSpan.getEndTime())) {
+	    } else if (!(currentContractTimeSpan.equals(contractTimeSpan))) {
 	      if (myLoggingService.isInfoEnabled()) {
 		myLoggingService.info(getAgentIdentifier() +
 				      " changing contract availability to match " +
