@@ -27,5 +27,9 @@
       keyName="BRIGADE"
       keyValue="BRIGADE" >
     </keyedReference>
+    <keyedReference
+      keyName="BATTALION"
+      keyValue="BATTALION" >
+    </keyedReference>
   </categoryBag>
 </tModel>
