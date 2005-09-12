@@ -30,6 +30,7 @@ import com.hp.hpl.jena.ontology.OntDocumentManager;
 import com.hp.hpl.jena.ontology.OntModelSpec;
 import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.ontology.OntResource;
+import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.RDFException;
 import com.hp.hpl.jena.rdf.model.RDFNode; 
@@ -171,84 +172,90 @@ public class ProviderDescriptionImpl implements ProviderDescription {
     }
 
     model = ModelFactory.createOntologyModel();
-    OntDocumentManager mgr = model.getDocumentManager();
-
-    String prefix = "file:";
-    if(cougaarInstallPath.length()>0) {
-        prefix = prefix + cougaarInstallPath + File.separator;
-    }
-    prefix = prefix + "servicediscovery" + File.separator + "data" +
-            File.separator + "cached" + File.separator;
-
-    OntModelSpec s = new OntModelSpec( OntModelSpec.OWL_MEM);
-    s.setDocumentManager( mgr );
-
-    mgr.addAltEntry("http://cougaar.owl",
-              prefix + "cougaar.owl");
-    mgr.addAltEntry("http://www.w3.org/1999/02/22-rdf-syntax-ns",
-              prefix + "rdfSyntaxNS.rdf");
-    mgr.addAltEntry("http://www.w3.org/2000/01/rdf-schema",
-              prefix + "rdfSchema.rdf");
-    mgr.addAltEntry("http://www.w3.org/2002/07/owl",
-              prefix + "owl.rdf");
-    mgr.addAltEntry("http://www.w3.org/2000/10/XMLSchema.xsd",
-              prefix + "XMLSchema.xsd");
-    mgr.addAltEntry("http://www.daml.org/services/owl-s/1.0/Service.owl",
-              prefix + "Service.owl");
-    mgr.addAltEntry("http://www.daml.org/services/owl-s/1.0/Process.owl",
-              prefix + "Process.owl");
-    mgr.addAltEntry("http://www.daml.org/services/owl-s/1.0/Profile.owl",
-              prefix + "Profile.owl");
-    mgr.addAltEntry("http://www.ai.sri.com/daml/ontologies/sri-basic/1-0/Time.daml",
-              prefix + "Time.daml");
-
+    
     try {
+      model.enterCriticalSection(Model.WRITE);
+      OntDocumentManager mgr = model.getDocumentManager();
+
+      String prefix = "file:";
+      if(cougaarInstallPath.length()>0) {
+        prefix = prefix + cougaarInstallPath + File.separator;
+      }
+      prefix = prefix + "servicediscovery" + File.separator + "data" +
+	File.separator + "cached" + File.separator;
+      
+      OntModelSpec s = new OntModelSpec( OntModelSpec.OWL_MEM);
+      s.setDocumentManager( mgr );
+      
+      mgr.addAltEntry("http://cougaar.owl",
+		      prefix + "cougaar.owl");
+      mgr.addAltEntry("http://www.w3.org/1999/02/22-rdf-syntax-ns",
+		      prefix + "rdfSyntaxNS.rdf");
+      mgr.addAltEntry("http://www.w3.org/2000/01/rdf-schema",
+		      prefix + "rdfSchema.rdf");
+      mgr.addAltEntry("http://www.w3.org/2002/07/owl",
+		      prefix + "owl.rdf");
+      mgr.addAltEntry("http://www.w3.org/2000/10/XMLSchema.xsd",
+		      prefix + "XMLSchema.xsd");
+      mgr.addAltEntry("http://www.daml.org/services/owl-s/1.0/Service.owl",
+		      prefix + "Service.owl");
+      mgr.addAltEntry("http://www.daml.org/services/owl-s/1.0/Process.owl",
+		      prefix + "Process.owl");
+      mgr.addAltEntry("http://www.daml.org/services/owl-s/1.0/Profile.owl",
+		      prefix + "Profile.owl");
+      mgr.addAltEntry("http://www.ai.sri.com/daml/ontologies/sri-basic/1-0/Time.daml",
+		      prefix + "Time.daml");
+      
+      try {
         model.read(in, "");
-    } catch (RDFException e1) {
-      String helpMessage =
-        "If the following StackTrace includes \"IO error while reading URL:\"\n" +
-        " you should examine the URL and confirm that it exists and\n" +
-        " is currently accessible. If the URL includes www.daml.org,\n" +
-        " this error means the daml site is temporarily unavailable.\n" +
-        " If the URL is a filepath or includes \"cougaar.owl\", this error\n" +
-        " probably means that your profile.owl files are inconsistent with\n" +
-        " your installation. One common way for this to happen is to have\n" +
-        " generated your profile.owl files from a perl script using an\n" +
-        " agent-input.txt file containing an incorrect or incorrectly formatted\n" +
-        " cougaarInstallPath. Alternatively, you may have generated your\n" +
-        " profile.owl files from a ruby script while your %COUGAAR_INSTALL_PATH%\n" +
-        " environment variable was not set correctly. Check these things and try\n" +
-        " regenerating your profile.owl files. \n";
-      logger.error(helpMessage + "Error parsing OWL file [" + fileName + "]\n" +
-		"  Error Number: " + e1.getErrorCode() + "\n" +
-		"  Error Message: " + e1.getMessage() + "\n" +
-		"  Error StackTrace: " + e1.getStackTrace() + "\n" +
-		"  File: " + fileName, e1);
-    } catch (JenaException eJ){
-      logger.error("JenaException in "+ fileName + " " + eJ.getMessage());
+      } catch (RDFException e1) {
+	String helpMessage =
+	  "If the following StackTrace includes \"IO error while reading URL:\"\n" +
+	  " you should examine the URL and confirm that it exists and\n" +
+	  " is currently accessible. If the URL includes www.daml.org,\n" +
+	  " this error means the daml site is temporarily unavailable.\n" +
+	  " If the URL is a filepath or includes \"cougaar.owl\", this error\n" +
+	  " probably means that your profile.owl files are inconsistent with\n" +
+	  " your installation. One common way for this to happen is to have\n" +
+	  " generated your profile.owl files from a perl script using an\n" +
+	  " agent-input.txt file containing an incorrect or incorrectly formatted\n" +
+	  " cougaarInstallPath. Alternatively, you may have generated your\n" +
+	  " profile.owl files from a ruby script while your %COUGAAR_INSTALL_PATH%\n" +
+	  " environment variable was not set correctly. Check these things and try\n" +
+	  " regenerating your profile.owl files. \n";
+	logger.error(helpMessage + "Error parsing OWL file [" + fileName + "]\n" +
+		     "  Error Number: " + e1.getErrorCode() + "\n" +
+		     "  Error Message: " + e1.getMessage() + "\n" +
+		     "  Error StackTrace: " + e1.getStackTrace() + "\n" +
+		     "  File: " + fileName, e1);
+      } catch (JenaException eJ){
+	logger.error("JenaException in "+ fileName + " " + eJ.getMessage());
+      }
+
+      if (logger.isDebugEnabled()) {
+	logger.debug("ProviderDescription.parseOWL for " + 
+		     owlFileName + " model  == " +  model);
+	Statement serviceProvider = getServiceProvider();
+	logger.debug("\n serviceProvider = " + serviceProvider + 
+		     " resource = " + serviceProvider.getResource() +
+		     " resource class = " + 
+		     serviceProvider.getResource().getClass());
+	logger.debug("\n serviceProviderName = " + getProviderName());
+	
+	Collection serviceProfiles = getServiceProfiles();
+	for (Iterator iterator = serviceProfiles.iterator();
+	     iterator.hasNext();) { 
+	  ServiceProfile serviceProfile = (ServiceProfile) iterator.next();
+	  
+	  logger.debug("\n serviceProfile = " + serviceProfile);
+	}
+	logger.debug("\n organizationType  = " + getOrganizationType());
+      }	
+    } finally {
+      model.leaveCriticalSection();
+      LOCKED = Boolean.FALSE;
     }
 
-    if (logger.isDebugEnabled()) {
-      logger.debug("ProviderDescription.parseOWL for " + 
-		   owlFileName + " model  == " +  model);
-      Statement serviceProvider = getServiceProvider();
-      logger.debug("\n serviceProvider = " + serviceProvider + 
-		   " resource = " + serviceProvider.getResource() +
-		   " resource class = " + 
-		   serviceProvider.getResource().getClass());
-      logger.debug("\n serviceProviderName = " + getProviderName());
-      
-      Collection serviceProfiles = getServiceProfiles();
-      for (Iterator iterator = serviceProfiles.iterator();
-	   iterator.hasNext();) { 
-	ServiceProfile serviceProfile = (ServiceProfile) iterator.next();
-	
-	logger.debug("\n serviceProfile = " + serviceProfile);
-      }
-      logger.debug("\n organizationType  = " + getOrganizationType());
-    }	
-
-    LOCKED = Boolean.FALSE;
     return true;
   }
 
@@ -339,50 +346,64 @@ public class ProviderDescriptionImpl implements ProviderDescription {
   }
 
   private Collection getServicePs() {
-    Resource serviceProfileResource = 
-      model.getResource(Profile.SERVICEPROFILE.getURI());
     ArrayList serviceProfiles = new ArrayList();
 
-    for (Iterator iterator = model.listObjects();
-	 iterator.hasNext();) { 
-      RDFNode rdfNode = (RDFNode) iterator.next();
-      if (rdfNode instanceof Resource) {
-	Resource resource = (Resource) rdfNode;
-	if (resource.hasProperty(RDF.type, serviceProfileResource)) {
-	  serviceProfiles.add(resource);
+    try {
+      model.enterCriticalSection(Model.READ);
+      Resource serviceProfileResource = 
+	model.getResource(Profile.SERVICEPROFILE.getURI());
+
+      
+      for (Iterator iterator = model.listObjects();
+	   iterator.hasNext();) { 
+	RDFNode rdfNode = (RDFNode) iterator.next();
+	if (rdfNode instanceof Resource) {
+	  Resource resource = (Resource) rdfNode;
+	  if (resource.hasProperty(RDF.type, serviceProfileResource)) {
+	    serviceProfiles.add(resource);
+	  }
 	}
       }
+      
+      if (serviceProfiles.isEmpty() && logger.isInfoEnabled()) {
+	logger.info("Info: getServicePs() for [" + fileName + "] is returning an empty collection.\n" +
+		    "Model does not contain: " + Profile.SERVICEPROFILE.getURI());
+      }
+    } finally {
+      model.leaveCriticalSection();
     }
 
-    if (serviceProfiles.isEmpty() && logger.isInfoEnabled()) {
-      logger.info("Info: getServicePs() for [" + fileName + "] is returning an empty collection.\n" +
-               "Model does not contain: " + Profile.SERVICEPROFILE.getURI());
-    }
-    
     return serviceProfiles;
   }
   
   private Collection getServiceGroundings() {
-    Resource groundingResource = 
-      model.getResource(Profile.GROUNDING.getURI());
     ArrayList serviceGroundings = new ArrayList();
 
-    for (Iterator iterator = model.listObjects();
-	 iterator.hasNext();) { 
-      RDFNode rdfNode = (RDFNode) iterator.next();
-      if (rdfNode instanceof Resource) {
-	Resource resource = (Resource) rdfNode;
-	if (resource.hasProperty(RDF.type, groundingResource)) {
-	  serviceGroundings.add(resource);
+    try {
+      model.enterCriticalSection(Model.READ);
+      Resource groundingResource = 
+	model.getResource(Profile.GROUNDING.getURI());
+      
+      
+      for (Iterator iterator = model.listObjects();
+	   iterator.hasNext();) { 
+	RDFNode rdfNode = (RDFNode) iterator.next();
+	if (rdfNode instanceof Resource) {
+	  Resource resource = (Resource) rdfNode;
+	  if (resource.hasProperty(RDF.type, groundingResource)) {
+	    serviceGroundings.add(resource);
+	  }
 	}
       }
+      
+      if (serviceGroundings.isEmpty() && logger.isInfoEnabled()) {
+	logger.info("Info: getServiceGroundings() for [" +  fileName + "] is returning an empty collection.\n" +
+		    "Model does not contain: " + Profile.GROUNDING.getURI());
+      }
+    } finally {
+      model.leaveCriticalSection();
     }
-
-    if (serviceGroundings.isEmpty() && logger.isInfoEnabled()) {
-      logger.info("Info: getServiceGroundings() for [" +  fileName + "] is returning an empty collection.\n" +
-               "Model does not contain: " + Profile.GROUNDING.getURI());
-    }
-
+    
     return serviceGroundings;
   }
 
