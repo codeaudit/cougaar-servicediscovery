@@ -203,9 +203,14 @@ public class ProviderDescriptionImpl implements ProviderDescription {
 		      prefix + "Process.owl");
       mgr.addAltEntry("http://www.daml.org/services/owl-s/1.0/Profile.owl",
 		      prefix + "Profile.owl");
-      mgr.addAltEntry("http://www.ai.sri.com/daml/ontologies/sri-basic/1-0/Time.daml",
-		      prefix + "Time.daml");
+      mgr.addAltEntry("http://www.daml.org/services/owl-s/1.0/Grounding.owl",
+		      prefix + "Grounding.owl");
+      mgr.addAltEntry("http://www.isi.edu/~pan/damltime/time-entry.owl", 
+		      prefix + "time-entry.owl");
+      mgr.addAltEntry("http://www.isi.edu/~pan/damltime/timezone-ont.owl", 
+		      prefix + "timezone-ont.owl");
       
+
       try {
         model.read(in, "");
       } catch (RDFException e1) {
