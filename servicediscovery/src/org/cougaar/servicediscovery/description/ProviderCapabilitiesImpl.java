@@ -28,6 +28,8 @@ package org.cougaar.servicediscovery.description;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.Iterator;
 
 import org.cougaar.core.util.UID;
 import org.cougaar.planning.ldm.plan.Role;
@@ -132,5 +134,27 @@ public class ProviderCapabilitiesImpl implements ProviderCapabilities {
 
   public UID getUID() {
     return myUID;
+  }
+
+  public String getDebugString() {
+    StringBuffer buf = new StringBuffer();
+    buf.append("(ProviderCapabilities");
+    buf.append("\n  uid=").append(myUID);
+    buf.append("\n  providerName=").append(myProviderName);
+    int n = (myCapabilities == null ? -1 : myCapabilities.size());
+    buf.append("\n  capabilities[").append(n).append("]");
+    if (n > 0) {
+      buf.append("= {");
+      for (Iterator iter = myCapabilities.entrySet().iterator(); iter.hasNext(); ) {
+        Map.Entry me = (Map.Entry) iter.next();
+        buf.append("\n    ");
+        buf.append(me.getKey());
+        buf.append(" -> ");
+        buf.append(me.getValue());
+      }
+      buf.append("\n  }");
+    }
+    buf.append("\n)");
+    return buf.toString();
   }
  }

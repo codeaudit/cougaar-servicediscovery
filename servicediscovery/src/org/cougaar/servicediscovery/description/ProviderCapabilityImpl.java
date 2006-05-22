@@ -104,8 +104,10 @@ public class ProviderCapabilityImpl implements ProviderCapability {
   public void setAvailableSchedule(Schedule availableSchedule) {
     myAvailableSchedule = availableSchedule;
   }
- }
 
-
-
-
+  public String toString() {
+    return
+      "(ProviderCapability role="+myRole+" echelon="+myEchelon+
+      " schedule="+myAvailableSchedule+")";
+  }
+}
