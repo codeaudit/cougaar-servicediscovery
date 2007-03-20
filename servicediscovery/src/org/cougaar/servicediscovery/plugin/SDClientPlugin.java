@@ -136,57 +136,57 @@ public class SDClientPlugin extends SimplePlugin implements GLSConstants {
 
   private boolean myNeedToFindProviders = true;
 
-  private static UnaryPredicate mySelfOrgPred = new UnaryPredicate() {
+  private static final UnaryPredicate mySelfOrgPred = new SelfOrgPredicate();
+  private static final class SelfOrgPredicate implements UnaryPredicate {
     public boolean execute(Object o) {
-      if (o instanceof Organization) {
-        Organization org = (Organization) o;
-        if (org.isLocal()) {
-          return true;
-        }
-      }
-      return false;
+      return (o instanceof Organization) && ((Organization) o).isLocal();
     }
-  };
+  }
 
   // Subscription to ServiceContractRelays for which I am the client!
-  private UnaryPredicate myServiceContractRelayPred = new UnaryPredicate() {
+  private final UnaryPredicate myServiceContractRelayPred = 
+    new ServiceContractRelayPredicate();
+  private final class ServiceContractRelayPredicate implements UnaryPredicate {
     public boolean execute(Object o) {
-      if (o instanceof ServiceContractRelay) {
-	ServiceContractRelay relay = (ServiceContractRelay) o;
-        return relay.getClient().equals(getSelfOrg());
-      } else {
-	return false;
-      }
+      return
+        ((o instanceof ServiceContractRelay) &&
+         ((ServiceContractRelay) o).getClient().equals(getSelfOrg()));
     }
-  };
+  }
 
-
-  private static UnaryPredicate myMMRequestPred = new UnaryPredicate() {
+  private static final UnaryPredicate myMMRequestPred = new MMRequestPredicate();
+  private static final class MMRequestPredicate implements UnaryPredicate {
     public boolean execute(Object o) {
       return (o instanceof MMQueryRequest);
     }
-  };
+  }
 
-  private static UnaryPredicate myFindProvidersTaskPred = new UnaryPredicate() {
+  private static final UnaryPredicate myFindProvidersTaskPred =
+    new FindProvidersTaskPredicate();
+  private static final class FindProvidersTaskPredicate implements UnaryPredicate {
     public boolean execute(Object o) {
-      return ((o instanceof Task) &&
-	      (((Task) o).getVerb().equals(Constants.Verb.FindProviders)));
+      return 
+        ((o instanceof Task) &&
+         (((Task) o).getVerb().equals(Constants.Verb.FindProviders)));
     }
-  };
+  }
 
-  private static UnaryPredicate myLineagePred = new UnaryPredicate() {
+  private static final UnaryPredicate myLineagePred = new OpconLineagePredicate();
+  private static final class OpconLineagePredicate implements UnaryPredicate {
     public boolean execute(Object o) {
-      return ((o instanceof Lineage) &&
-	      (((Lineage) o).getType() == Lineage.OPCON));
+      return 
+        ((o instanceof Lineage) &&
+         (((Lineage) o).getType() == Lineage.OPCON));
     }
-  };
+  }
 
-  private UnaryPredicate myProviderCapabilitiesPred = 
-  new UnaryPredicate() {
+  private static final UnaryPredicate myProviderCapabilitiesPred = 
+    new ProviderCapabilitiesPredicate();
+  private static final class ProviderCapabilitiesPredicate implements UnaryPredicate {
     public boolean execute(Object o) {
       return (o instanceof ProviderCapabilities);
     }
-  };
+  }
 
   protected void setupSubscriptions() {
     mySelfOrgSubscription = 

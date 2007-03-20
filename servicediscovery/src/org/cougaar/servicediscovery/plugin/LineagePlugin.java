@@ -69,48 +69,41 @@ public class LineagePlugin extends SimplePlugin
   private ArrayList myExecuteRemoves;
   private ArrayList myExecuteChanges;
 
-  private UnaryPredicate myLineagePred = new UnaryPredicate() {
+  private static final UnaryPredicate myLineagePred = new LineagePredicate();
+  private static final class LineagePredicate implements UnaryPredicate {
     public boolean execute(Object o) {
-      if (o instanceof Lineage) {
-	return true;
-      } else {
-	return false;
-      }
+      return (o instanceof Lineage);
     }
-  };
+  }
 
-  private UnaryPredicate myReportForDutyPred = new UnaryPredicate() {
+  private static final UnaryPredicate myReportForDutyPred = new ReportForDutyPredicate();
+  private static final class ReportForDutyPredicate implements UnaryPredicate {
     public boolean execute(Object o) {
-      if (o instanceof Task) {
-	Task task = (Task) o;
-	return task.getVerb().equals(org.cougaar.glm.ldm.Constants.Verb.ReportForDuty);
-      } else {
-        return false;
-      }
+      return 
+        (o instanceof Task &&
+         ((Task) o).getVerb().equals(org.cougaar.glm.ldm.Constants.Verb.ReportForDuty));
     }
-  };
+  }
 
-  private UnaryPredicate mySubordinateLineageRelayPred = new UnaryPredicate() {
+  private final UnaryPredicate mySubordinateLineageRelayPred =
+    new SubordinateLineageRelayPredicate();
+  private final class SubordinateLineageRelayPredicate implements UnaryPredicate {
     public boolean execute(Object o) {
-      if (o instanceof LineageRelay) {
-	LineageRelay relay = (LineageRelay) o;
-	return (relay.getAgentName().equals(myAgentName));
-      } else {
-	return false;
-      }
+      return
+        (o instanceof LineageRelay &&
+         ((LineageRelay) o).getAgentName().equals(myAgentName));
     }
-  };
+  }
 
-  private UnaryPredicate mySuperiorLineageRelayPred = new UnaryPredicate() {
+  private final UnaryPredicate mySuperiorLineageRelayPred =
+    new SuperiorLineageRelayPredicate();
+  private final class SuperiorLineageRelayPredicate implements UnaryPredicate {
     public boolean execute(Object o) {
-      if (o instanceof LineageRelay) {
-	LineageRelay relay = (LineageRelay) o;
-	return (!relay.getAgentName().equals(myAgentName));
-      } else {
-	return false;
-      }
+      return
+        (o instanceof LineageRelay &&
+         !((LineageRelay) o).getAgentName().equals(myAgentName));
     }
-  };
+  }
 
   public void setLoggingService(LoggingService loggingService) {
     myLoggingService = loggingService;

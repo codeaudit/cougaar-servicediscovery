@@ -74,40 +74,34 @@ public class SDProviderPlugin extends SimplePlugin
 
   protected SDFactory mySDFactory;
 
-  private UnaryPredicate myServiceContractRelayPred = new UnaryPredicate() {
+  private final UnaryPredicate myServiceContractRelayPred =
+    new ServiceContractRelayPredicate();
+  private final class ServiceContractRelayPredicate implements UnaryPredicate {
     public boolean execute(Object o) {
-      if (o instanceof ProviderServiceContractRelay) {
-	ServiceContractRelay relay = (ServiceContractRelay) o;
-	return (relay.getProviderName().equals(myAgentName));
-      } else {
-	return false;
-      }
+      return 
+        ((o instanceof ProviderServiceContractRelay) &&
+         ((ServiceContractRelay) o).getProviderName().equals(myAgentName));
     }
-  };
+  }
 
-  private UnaryPredicate mySelfOrgPred = new UnaryPredicate() {
+  private static final UnaryPredicate mySelfOrgPred = new SelfOrgPredicate();
+  private static final class SelfOrgPredicate implements UnaryPredicate {
     public boolean execute(Object o) {
-      if (o instanceof Organization) {
-	Organization org = (Organization) o;
-	if (org.isLocal()) {
-	  return true;
-	}
-      }
-      return false;
+      return (o instanceof Organization) && ((Organization) o).isLocal();
     }
-  };
+  }
 
-  private UnaryPredicate myProviderCapabilitiesPred = 
-  new UnaryPredicate() {
+  private final UnaryPredicate myProviderCapabilitiesPred = 
+    new ProviderCapabilitiesPredicate();
+  private final class ProviderCapabilitiesPredicate implements UnaryPredicate {
     public boolean execute(Object o) {
       if (o instanceof ProviderCapabilities) {
 	ProviderCapabilities providerCapabilities = (ProviderCapabilities) o;
 	return (providerCapabilities.getProviderName().equals(getAgentIdentifier().toString()));
-      } else {
-	return false;
       }
+      return false;
     }
-  };
+  }
 
   protected void setupSubscriptions() {
     myLoggingService =
