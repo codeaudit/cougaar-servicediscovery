@@ -169,7 +169,7 @@
     
     <!-- jarfiles required by this module, relative to various other paths -->
     <!-- WARNING: Only relative paths work here. -->
-    <property name="compile.jarlist" value="${target.lib}/core.jar,${target.lib}/util.jar,${target.lib}/glm.jar,${target.lib}/planning.jar,${target.lib}/yp.jar,${target.sys}/xercesImpl.jar,${target.sys}/xml-apis.jar,${target.sys}/jena.jar,${target.sys}/servlet.jar,${target.sys}/uddi4j.jar"/>
+    <property name="compile.jarlist" value="${target.lib}/core.jar,${target.lib}/util.jar,${target.lib}/planning.jar,${target.lib}/yp.jar,${target.sys}/xercesImpl.jar,${target.sys}/xml-apis.jar,${target.sys}/jena.jar,${target.sys}/servlet.jar,${target.sys}/uddi4j.jar"/>
     <!-- Put absolute paths on this list, in the form of a path. -->
     <property name="compile.abs.jarlist" value=""/>
 
@@ -178,7 +178,7 @@
 
     <!-- Extra jars needed at run / unit-test time. -->
     <!-- WARNING: Only relative paths work here. -->
-    <property name="run.jarlist" value="${target.lib}/core.jar,${target.lib}/util.jar,${target.lib}/glm.jar,${target.lib}/planning.jar,${target.lib}/yp.jar,${target.sys}/xercesImpl.jar,${target.sys}/xml-apis.jar,${target.sys}/jena.jar,${target.sys}/servlet.jar,${target.sys}/uddi4j.jar,${target.sys}/icu4j.jar,${target.sys}/rdf-api-2001-01-19.jar,${target.sys}/jakarta-oro-2.0.5.jar,${target.sys}/antlr.jar"/>
+    <property name="run.jarlist" value="${target.lib}/core.jar,${target.lib}/util.jar,${target.lib}/planning.jar,${target.lib}/yp.jar,${target.sys}/xercesImpl.jar,${target.sys}/xml-apis.jar,${target.sys}/jena.jar,${target.sys}/servlet.jar,${target.sys}/uddi4j.jar,${target.sys}/icu4j.jar,${target.sys}/rdf-api-2001-01-19.jar,${target.sys}/jakarta-oro-2.0.5.jar,${target.sys}/antlr.jar"/>
     <!-- Put absolute paths on this list, in the form of a path. -->
     <property name="run.abs.jarlist" value=""/>
     

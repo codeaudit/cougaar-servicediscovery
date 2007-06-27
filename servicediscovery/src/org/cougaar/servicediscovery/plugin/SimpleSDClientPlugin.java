@@ -32,7 +32,6 @@ import org.cougaar.core.service.DomainService;
 import org.cougaar.core.service.LoggingService;
 import org.cougaar.planning.ldm.PlanningDomain;
 import org.cougaar.planning.ldm.PlanningFactory;
-import org.cougaar.planning.ldm.asset.Asset;
 import org.cougaar.planning.ldm.asset.Entity;
 import org.cougaar.planning.ldm.plan.AllocationResult;
 import org.cougaar.planning.ldm.plan.Disposition;
@@ -40,9 +39,7 @@ import org.cougaar.planning.ldm.plan.PrepositionalPhrase;
 import org.cougaar.planning.ldm.plan.Role;
 import org.cougaar.planning.ldm.plan.Task;
 import org.cougaar.planning.plugin.util.PluginHelper;
-
-import org.cougaar.glm.ldm.Constants; // for FindProviders...
-
+import org.cougaar.servicediscovery.Constants;
 import org.cougaar.servicediscovery.SDDomain;
 import org.cougaar.servicediscovery.SDFactory;
 import org.cougaar.servicediscovery.description.MMRoleQuery;
@@ -58,9 +55,7 @@ import org.cougaar.servicediscovery.util.UDDIConstants;
 import org.cougaar.util.TimeSpan;
 import org.cougaar.util.UnaryPredicate;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Enumeration;
 import java.util.Iterator;
 
 /**
@@ -141,7 +136,7 @@ public class SimpleSDClientPlugin extends ComponentPlugin {
     mySDFactory = (SDFactory) getDomainService().getFactory(SDDomain.SD_NAME);
     myPlanningFactory = (PlanningFactory) getDomainService().getFactory(PlanningDomain.PLANNING_NAME);
   }
-  
+
   /** Release any services retrieved during load() -- in this case, the LoggingService and DomainService*/
   public void unload() {
     if (myLoggingService != LoggingService.NULL) {
@@ -190,12 +185,12 @@ public class SimpleSDClientPlugin extends ComponentPlugin {
       Collection adds = myFindProvidersTaskSubscription.getAddedCollection();
 
       for (Iterator addIterator = adds.iterator(); addIterator.hasNext();) {
-	// Grab the task
+        // Grab the task
         Task findProviderTask = (Task) addIterator.next();
-	// Get the requested role from the Task.
+        // Get the requested role from the Task.
         Role taskRole = getRole(findProviderTask);
 
-	// Send the query for the given Role, because of the given Task.
+        // Send the query for the given Role, because of the given Task.
         queryServices(taskRole, findProviderTask);
       }
 
@@ -204,57 +199,57 @@ public class SimpleSDClientPlugin extends ComponentPlugin {
         Collection changes = myFindProvidersTaskSubscription.getChangedCollection();
         Collection removes = myFindProvidersTaskSubscription.getRemovedCollection();
         if (!changes.isEmpty() || !removes.isEmpty()) {
-          myLoggingService.debug("execute: ignoring changed/deleted FindProvider tasks - " + 
-				 " changes = " + changes +
-                                 ", removes = " + removes);
+          myLoggingService.debug("execute: ignoring changed/deleted FindProvider tasks - " +
+            " changes = " + changes +
+            ", removes = " + removes);
         }
       }
     } // end of block to handle FindProviders Tasks
 
     // Look for responses on our queries to the Matchmaker for YP lookups
     if (myMMRequestSubscription.hasChanged()) {
-      for (Iterator iterator = myMMRequestSubscription.getChangedCollection().iterator(); 
-	   iterator.hasNext();) {
+      for (Iterator iterator = myMMRequestSubscription.getChangedCollection().iterator();
+           iterator.hasNext();) {
         MMQueryRequest mmRequest = (MMQueryRequest) iterator.next();
 
         if (myLoggingService.isDebugEnabled()) {
           myLoggingService.debug("execute: MMQueryRequest has changed." + mmRequest);
         }
 
-	// Get the request
-	Collection services = mmRequest.getResult();
+        // Get the request
+        Collection services = mmRequest.getResult();
         if (services != null) {
           // Debugging: print all results
           if (myLoggingService.isDebugEnabled()) {
 
             myLoggingService.debug("Results for query " + mmRequest.getQuery().toString());
             for (Iterator serviceIterator = services.iterator(); serviceIterator.hasNext();) {
-              ScoredServiceDescription serviceDescription = 
-		(ScoredServiceDescription) serviceIterator.next();
+              ScoredServiceDescription serviceDescription =
+                (ScoredServiceDescription) serviceIterator.next();
               myLoggingService.debug("Score " + serviceDescription.getScore());
               myLoggingService.debug("Provider name " + serviceDescription.getProviderName());
               myLoggingService.debug("*********");
             }
           } /// End of debugging....
 
-	  // For each service
+          // For each service
           for (Iterator serviceIterator = services.iterator(); serviceIterator.hasNext();) {
-            ScoredServiceDescription serviceDescription = 
-	      (ScoredServiceDescription) serviceIterator.next();
+            ScoredServiceDescription serviceDescription =
+              (ScoredServiceDescription) serviceIterator.next();
 
-	    // Debugging...
+            // Debugging...
             if (myLoggingService.isDebugEnabled()) {
               myLoggingService.debug("execute: - provider: " +
-                                     serviceDescription.getProviderName() + 
-				     " score: " + serviceDescription.getScore());
+                serviceDescription.getProviderName() +
+                " score: " + serviceDescription.getScore());
             } // end debug
 
-	    // Request a Service Contract for it
+            // Request a Service Contract for it
             requestServiceContract(serviceDescription);
-	    
+
             // only want one contract, no matter how many are in loop
-	    if (myLoggingService.isDebugEnabled() && serviceIterator.hasNext())
-	      myLoggingService.debug("Had more than one service: " + services.size());
+            if (myLoggingService.isDebugEnabled() && serviceIterator.hasNext())
+              myLoggingService.debug("Had more than one service: " + services.size());
             break;
           }
 
@@ -272,7 +267,7 @@ public class SimpleSDClientPlugin extends ComponentPlugin {
       if (changedRelays.size() > 0) {
         if (myLoggingService.isDebugEnabled()) {
           myLoggingService.debug("changedRelays.size = " + changedRelays.size() +
-                                 ", updateFindProvidersTaskDispositions");
+            ", updateFindProvidersTaskDispositions");
         }
         updateFindProvidersTaskDispositions(changedRelays);
       }
@@ -362,15 +357,15 @@ public class SimpleSDClientPlugin extends ComponentPlugin {
 
       // Create a ServiceRequest from the self Entity, for the given Role,
       // for the specified time period (forever)
-      ServiceRequest request = 
-	getSDFactory().newServiceRequest(getLocalEntity(), 
-					 role,
-					 getSDFactory().createTimeSpanPreferences(timeSpan));
+      ServiceRequest request =
+        getSDFactory().newServiceRequest(getLocalEntity(),
+          role,
+          getSDFactory().createTimeSpanPreferences(timeSpan));
 
       // Send that ServiceRequest in a Relay to the given Provider
-      ServiceContractRelay relay = 
-	getSDFactory().newServiceContractRelay(MessageAddress.getMessageAddress(providerName),
-					       request);
+      ServiceContractRelay relay =
+        getSDFactory().newServiceContractRelay(MessageAddress.getMessageAddress(providerName),
+          request);
       getBlackboardService().publishAdd(relay);
     }
   } // end of requestServiceContract
@@ -385,8 +380,8 @@ public class SimpleSDClientPlugin extends ComponentPlugin {
    */
   protected Role getRole(ServiceDescription serviceDescription) {
     // A serviceDescription may have multiple Classifications
-    for (Iterator iterator = serviceDescription.getServiceClassifications().iterator(); 
-	 iterator.hasNext();) {
+    for (Iterator iterator = serviceDescription.getServiceClassifications().iterator();
+         iterator.hasNext();) {
       ServiceClassification serviceClassification = (ServiceClassification) iterator.next();
       // We have placed the Roles providers are registering in the CommercialServiceScheme
       if (serviceClassification.getClassificationSchemeName().equals(UDDIConstants.COMMERCIAL_SERVICE_SCHEME)) {
@@ -404,16 +399,16 @@ public class SimpleSDClientPlugin extends ComponentPlugin {
   protected Entity getLocalEntity() {
     if (mySelfEntity == null) {
       Collection entities = getBlackboardService().query(new UnaryPredicate() {
-	public boolean execute(Object o) {
-	  if (o instanceof Entity) {
-	    return ((Entity)o).isLocal();
-	  }
-	  return false;
-	}
+        public boolean execute(Object o) {
+          if (o instanceof Entity) {
+            return ((Entity)o).isLocal();
+          }
+          return false;
+        }
       });
-      
+
       if (!entities.isEmpty()) {
-	mySelfEntity = (Entity)entities.iterator().next();
+        mySelfEntity = (Entity)entities.iterator().next();
       }
     }
     return mySelfEntity;
@@ -434,7 +429,7 @@ public class SimpleSDClientPlugin extends ComponentPlugin {
       // Nothing to update
       return;
     }
-    
+
     // For each answered Relay
     for (Iterator relayIterator = changedServiceContractRelays.iterator(); relayIterator.hasNext();) {
       ServiceContractRelay relay = (ServiceContractRelay) relayIterator.next();
@@ -443,34 +438,34 @@ public class SimpleSDClientPlugin extends ComponentPlugin {
       if (relay.getServiceContract() != null) {
         Role relayRole = relay.getServiceContract().getServiceRole();
 
-	// Look through my FindProviders Tasks
+        // Look through my FindProviders Tasks
         for (Iterator taskIterator = myFindProvidersTaskSubscription.iterator(); taskIterator.hasNext();) {
           Task findProvidersTask = (Task) taskIterator.next();
 
           Disposition disposition = (Disposition) findProvidersTask.getPlanElement();
 
-	  // I'm looking for an incomplete one
+          // I'm looking for an incomplete one
           if (disposition == null) {
-	    // Get the Role that this was looking for
+            // Get the Role that this was looking for
             Role taskRole = getRole(findProvidersTask);
 
             // Assuming only 1 open (un-disposed) task per Role.
             if (taskRole.equals(relayRole)) {
-	      // So - they asked for a Role for which we now have a Service Contract.
-	      // Create a Disposition for the Task, with an EstimatedResult saying success
+              // So - they asked for a Role for which we now have a Service Contract.
+              // Create a Disposition for the Task, with an EstimatedResult saying success
 
-	      // The estAR is for the findProvidersTask, created by the planningFactory,
-	      // with a confidence of 1.0, success=true
-              AllocationResult estResult = 
-		PluginHelper.createEstimatedAllocationResult(findProvidersTask,
-							     getPlanningFactory(), 
-							     1.0, true);
-	      // The disposition should be the same Plan as the Task, for the findProvidersTask,
-	      // and include the new success estimatedResult
-              disposition = 
-		getPlanningFactory().createDisposition(findProvidersTask.getPlan(), 
-						       findProvidersTask,
-						       estResult);
+              // The estAR is for the findProvidersTask, created by the planningFactory,
+              // with a confidence of 1.0, success=true
+              AllocationResult estResult =
+                PluginHelper.createEstimatedAllocationResult(findProvidersTask,
+                  getPlanningFactory(),
+                  1.0, true);
+              // The disposition should be the same Plan as the Task, for the findProvidersTask,
+              // and include the new success estimatedResult
+              disposition =
+                getPlanningFactory().createDisposition(findProvidersTask.getPlan(),
+                  findProvidersTask,
+                  estResult);
 
               getBlackboardService().publishAdd(disposition);
             }
@@ -503,17 +498,17 @@ public class SimpleSDClientPlugin extends ComponentPlugin {
    * domain-specific Verb Constant.
    *<b>
    * Note that it is not a constant, just so it can be over-ridden.
-   */ 
+   */
   protected UnaryPredicate getFindProvidersPredicate() {
     return new UnaryPredicate() {
-	public boolean execute(Object o) {
-	  if (o instanceof Task) {
-	    return ((Task) o).getVerb().equals(Constants.Verb.FindProviders);
-	  } else {
-	    return false;
-	  }
-	}
-      };
+      public boolean execute(Object o) {
+        if (o instanceof Task) {
+          return ((Task) o).getVerb().equals(Constants.Verbs.FindProviders);
+        } else {
+          return false;
+        }
+      }
+    };
   }
 }
 

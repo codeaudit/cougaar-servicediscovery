@@ -26,12 +26,13 @@
 
 package org.cougaar.servicediscovery.description;
 
+import org.cougaar.planning.ldm.asset.Asset;
+import org.cougaar.planning.ldm.plan.Role;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-
-import org.cougaar.planning.ldm.asset.Asset;
-import org.cougaar.planning.ldm.plan.Role;
+import java.util.Iterator;
 
 /*
 import org.cougaar.util.log.Logger;
@@ -130,8 +131,21 @@ public class ServiceContractImpl implements ServiceContract, java.io.Serializabl
   }
 
   public String toString() {
-    if (myToString == null)
-      myToString = "<ServiceContractImpl: Provider=" + getProvider() + ", Role=" + getServiceRole() + ", # Service Preferences=" + getServicePreferences().size() + ", Revoked? " + isRevoked() + ">";
+    if (myToString == null) {
+      StringBuffer buf = new StringBuffer();
+      buf.append("[");
+      for (Iterator iterator = getServicePreferences().iterator(); iterator.hasNext();) {
+        Object o = iterator.next();
+        buf.append(o);
+        if (iterator.hasNext())
+          buf.append(",");
+      }
+      buf.append("]");
+      myToString = "<ServiceContractImpl: Provider=" + getProvider() +
+        ", Role=" + getServiceRole() +
+        ", Preferences=" + getServicePreferences().size() + " : " + buf + 
+        (isRevoked() ? " Revoked " : "") + ">";
+    }
     return myToString;
   }
 }

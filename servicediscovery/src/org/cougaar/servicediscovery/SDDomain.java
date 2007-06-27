@@ -26,9 +26,6 @@
 
 package org.cougaar.servicediscovery;
 
-import java.util.ArrayList;
-import java.util.Collection;
-
 import org.cougaar.core.component.ServiceBroker;
 import org.cougaar.core.domain.DomainAdapter;
 import org.cougaar.core.domain.RootPlan;
@@ -42,6 +39,8 @@ import org.cougaar.planning.ldm.PlanningFactory;
 import org.cougaar.planning.service.LDMService;
 import org.cougaar.servicediscovery.lp.ServiceContractLP;
 
+import java.util.ArrayList;
+import java.util.Collection;
 
 /**
  * Service discovery Domain package definition.
@@ -82,7 +81,7 @@ public class SDDomain extends DomainAdapter {
 
   public void initialize() {
     super.initialize();
-    Constants.Role.init();    // Insure that our Role constants are initted
+    Constants.Roles.init();    // Insure that our Role constants are initted
   }
 
   public void unload() {

@@ -26,12 +26,12 @@
 package org.cougaar.servicediscovery.description;
 
 
-import java.util.List;
-
 import org.cougaar.core.util.UniqueObject;
-
 import org.cougaar.planning.ldm.plan.Role;
 import org.cougaar.planning.ldm.plan.Schedule;
+import org.cougaar.servicediscovery.Constants;
+
+import java.util.List;
 
 /**
  * A Collection which maintains an ordered list of agent names - reflecting
@@ -52,26 +52,26 @@ public abstract class Lineage implements java.io.Serializable, UniqueObject {
   public static final String SUPPORT_STRING = "SUPPORT";
 
   /* returns null if type is not recognized */
-  public static Role typeToRole(int type) { 
+  public static Role typeToRole(int type) {
     switch (type) {
-    case ADCON:
-      return org.cougaar.glm.ldm.Constants.Role.ADMINISTRATIVESUPERIOR;
-    case OPCON:
-      return org.cougaar.glm.ldm.Constants.Role.OPERATIONALSUPERIOR;
-    case SUPPORT:
-      return org.cougaar.glm.ldm.Constants.Role.SUPPORTSUPERIOR;
-    default:
-      return null;
+      case ADCON:
+        return Constants.Roles.ADMINISTRATIVESUPERIOR;
+      case OPCON:
+        return Constants.Roles.OPERATIONALSUPERIOR;
+      case SUPPORT:
+        return Constants.Roles.SUPPORTSUPERIOR;
+      default:
+        return null;
     }
   }
 
-  public static int roleToType(Role role) { 
-    if ((role.equals(org.cougaar.glm.ldm.Constants.Role.ADMINISTRATIVESUPERIOR)) ||
-	(role.equals(org.cougaar.glm.ldm.Constants.Role.SUPERIOR))) {
+  public static int roleToType(Role role) {
+    if ((role.equals(Constants.Roles.ADMINISTRATIVESUPERIOR)) ||
+      (role.equals(Constants.Roles.SUPERIOR))) {
       return ADCON;
-    } else if (role.equals(org.cougaar.glm.ldm.Constants.Role.OPERATIONALSUPERIOR)) {
+    } else if (role.equals(Constants.Roles.OPERATIONALSUPERIOR)) {
       return OPCON;
-    } else if (role.equals(org.cougaar.glm.ldm.Constants.Role.SUPPORTSUPERIOR)) {
+    } else if (role.equals(Constants.Roles.SUPPORTSUPERIOR)) {
       return SUPPORT;
     } else {
       return UNDEFINED;
@@ -80,23 +80,23 @@ public abstract class Lineage implements java.io.Serializable, UniqueObject {
 
   public static boolean validType(int lineageType) {
     switch (lineageType) {
-    case (ADCON):
-    case (OPCON):
-    case (SUPPORT):
-      return true;
-    default:
-      return false;
+      case (ADCON):
+      case (OPCON):
+      case (SUPPORT):
+        return true;
+      default:
+        return false;
     }
   }
 
   public static int countHops(List lineageList, String startingAgent, String endingAgent) {
     int listSize = lineageList.size();
-    String leaf = (String) ((listSize > 0) ? 
-		   (lineageList.get(listSize - 1)) : null);
+    String leaf = (String) ((listSize > 0) ?
+      (lineageList.get(listSize - 1)) : null);
     String root = (String) ((listSize > 0) ? lineageList.get(0) : null);
 
     if (startingAgent.equals(leaf) &&
-	endingAgent.equals(root)) {
+      endingAgent.equals(root)) {
       return listSize - 1;
     }
 
@@ -120,23 +120,23 @@ public abstract class Lineage implements java.io.Serializable, UniqueObject {
 
   /**
    * @return the name of the agent at the end of the lineage.
-   */ 
+   */
   abstract public String getLeaf();
 
   /**
    * @return the name of the agent at the root of the lineage.
-   */ 
+   */
   abstract public String getRoot();
 
   /**
    * @return the number of links in the lineage between the two agents. 
    * Returns -1 if the agents are not linked.
-   */ 
+   */
   abstract public int countHops(String startingAgent, String endingAgent);
 
   /**
    * @return an unmodifiable list of agents in the lineage
-   */ 
+   */
   abstract public List getList();
 
   /**

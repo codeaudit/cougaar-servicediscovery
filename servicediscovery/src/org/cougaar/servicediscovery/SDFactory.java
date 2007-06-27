@@ -26,15 +26,8 @@
 
 package org.cougaar.servicediscovery;
 
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-
 import org.cougaar.core.domain.Factory;
 import org.cougaar.core.mts.MessageAddress;
-
 import org.cougaar.planning.ldm.LDMServesPlugin;
 import org.cougaar.planning.ldm.asset.Asset;
 import org.cougaar.planning.ldm.plan.AspectType;
@@ -42,12 +35,10 @@ import org.cougaar.planning.ldm.plan.AspectValue;
 import org.cougaar.planning.ldm.plan.HasRelationships;
 import org.cougaar.planning.ldm.plan.Preference;
 import org.cougaar.planning.ldm.plan.Role;
-import org.cougaar.planning.ldm.plan.ScheduleElementImpl;
 import org.cougaar.planning.ldm.plan.Schedule;
 import org.cougaar.planning.ldm.plan.ScheduleImpl;
 import org.cougaar.planning.ldm.plan.ScoringFunction;
 import org.cougaar.planning.ldm.plan.TimeAspectValue;
-
 import org.cougaar.servicediscovery.description.Lineage;
 import org.cougaar.servicediscovery.description.LineageImpl;
 import org.cougaar.servicediscovery.description.LineageScheduleElement;
@@ -66,32 +57,38 @@ import org.cougaar.servicediscovery.transaction.MMQueryRequest;
 import org.cougaar.servicediscovery.transaction.MMQueryRequestImpl;
 import org.cougaar.servicediscovery.transaction.ServiceContractRelay;
 import org.cougaar.servicediscovery.transaction.ServiceContractRelayImpl;
+import org.cougaar.util.MutableTimeSpan;
+import org.cougaar.util.NewTimeSpan;
+import org.cougaar.util.TimeSpan;
 import org.cougaar.util.log.Logger;
 import org.cougaar.util.log.Logging;
-import org.cougaar.util.MutableTimeSpan;
-import org.cougaar.util.TimeSpan;
+
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * Service discovery factory Domain package definition.
  **/
 
 public class SDFactory implements Factory {
-  private static Logger myLogger = Logging.getLogger(SDFactory.class);
+  private static final Logger myLogger = Logging.getLogger(SDFactory.class);
 
-  private static Calendar myCalendar = Calendar.getInstance();
-
-  public static final long DEFAULT_START_TIME;
-  public static final long DEFAULT_END_TIME;
-
+  public static final TimeSpan DEFAULT_TIME_SPAN;
 
   static {
-    myCalendar.set(2000, 0, 1, 0, 0, 0);
-    myCalendar.set(Calendar.MILLISECOND, 0);
-    DEFAULT_START_TIME = myCalendar.getTime().getTime();
+    Calendar calendar = Calendar.getInstance();
 
-    myCalendar.set(2010, 0, 1, 0, 0, 0);
-    myCalendar.set(Calendar.MILLISECOND, 0);
-    DEFAULT_END_TIME = myCalendar.getTime().getTime();
+    long DEFAULT_START_TIME = 0l;// 1970 midnight
+
+    calendar.set(2500, 0, 1, 0, 0, 0);
+    calendar.set(Calendar.MILLISECOND, 0);
+    long DEFAULT_END_TIME = calendar.getTime().getTime();
+
+    DEFAULT_TIME_SPAN = new MutableTimeSpan();
+    ((NewTimeSpan)DEFAULT_TIME_SPAN).setTimeSpan(DEFAULT_START_TIME, DEFAULT_END_TIME);
   }
 
   private LDMServesPlugin myLDM;
@@ -134,7 +131,7 @@ public class SDFactory implements Factory {
 
       ScheduleImpl schedule = (ScheduleImpl) newLineageSchedule();
       ((LineageImpl) lineage).setSchedule(schedule);
-      
+
     }
 
     return lineage;
@@ -163,8 +160,8 @@ public class SDFactory implements Factory {
 
     if (lineage != null) {
       ScheduleImpl schedule = (ScheduleImpl) lineage.getSchedule();
-      LineageScheduleElement scheduleElement = 
-	newLineageScheduleElement(timeSpan);
+      LineageScheduleElement scheduleElement =
+  newLineageScheduleElement(timeSpan);
       schedule.add(scheduleElement);
     }
 
@@ -218,7 +215,7 @@ public class SDFactory implements Factory {
     * @return LineageScheduleElement
     **/
   public static LineageScheduleElement newLineageScheduleElement(long startTime,
-								 long endTime) {
+                                                                 long endTime) {
     return new LineageScheduleElementImpl(startTime, endTime);
   }
 
@@ -243,10 +240,10 @@ public class SDFactory implements Factory {
     * @return a ServiceRequest
     **/
   public ServiceRequest newServiceRequest(Asset client, Role serviceRole,
-					  Collection servicePreferences) {
+                                          Collection servicePreferences) {
     ServiceRequest serviceRequest =
       new ServiceRequestImpl(myLDM.getFactory().cloneInstance(client),
-			     serviceRole, servicePreferences);
+           serviceRole, servicePreferences);
     return serviceRequest;
   }
 
@@ -254,10 +251,10 @@ public class SDFactory implements Factory {
     * @return a ServiceContract
     **/
   public ServiceContract newServiceContract(Asset provider, Role serviceRole,
-					    Collection servicePreferences) {
+                                            Collection servicePreferences) {
     ServiceContract serviceContract =
       new ServiceContractImpl(myLDM.getFactory().cloneInstance(provider),
-			     serviceRole, servicePreferences);
+           serviceRole, servicePreferences);
     return serviceContract;
   }
 
@@ -273,7 +270,7 @@ public class SDFactory implements Factory {
     * @return ServiceContractRelay
     **/
   public ServiceContractRelay newServiceContractRelay(MessageAddress provider,
-						      ServiceRequest request) {
+                                                      ServiceRequest request) {
     ServiceContractRelayImpl serviceContractRelay =
       new ServiceContractRelayImpl(request);
     serviceContractRelay.setUID(myLDM.getUIDServer().nextUID());
@@ -285,16 +282,16 @@ public class SDFactory implements Factory {
     * @return ServiceContractRelationship
     **/
   static public ServiceContractRelationship newServiceContractRelationship(ServiceContractRelay relay,
-									   HasRelationships provider,
-									   HasRelationships client) {
+                                                                           HasRelationships provider,
+                                                                           HasRelationships client) {
     Collection contractPreferences = relay.getServiceContract().getServicePreferences();
 
     TimeSpan timeSpan = getTimeSpanFromPreferences(contractPreferences);
 
     return new ServiceContractRelationshipImpl(timeSpan.getStartTime(),
-					       timeSpan.getEndTime(),
-					       relay.getServiceContract().getServiceRole(),
-					       provider, client, relay);
+                 timeSpan.getEndTime(),
+                 relay.getServiceContract().getServiceRole(),
+                 provider, client, relay);
   }
 
   /** Return the value associated with a Preference with the
@@ -313,11 +310,11 @@ public class SDFactory implements Factory {
       Object next = iterator.next();
 
       if (next instanceof Preference) {
-	Preference testPreference = (Preference) next;
-	if (testPreference.getAspectType() == aspectType) {
-	  preference = testPreference;
-	  break;
-	}
+  Preference testPreference = (Preference) next;
+  if (testPreference.getAspectType() == aspectType) {
+    preference = testPreference;
+    break;
+  }
       }
     }
 
@@ -327,7 +324,7 @@ public class SDFactory implements Factory {
     return result;
   }
 
-  /** 
+  /**
    * Return the (long) value associated with a Time Preference with the
    * specified AspectType, avoiding long->double->long type conversion.
    *
@@ -344,11 +341,11 @@ public class SDFactory implements Factory {
       Object next = iterator.next();
 
       if (next instanceof Preference) {
-	Preference testPreference = (Preference) next;
-	if (testPreference.getAspectType() == aspectType) {
-	  preference = testPreference;
-	  break;
-	}
+  Preference testPreference = (Preference) next;
+  if (testPreference.getAspectType() == aspectType) {
+    preference = testPreference;
+    break;
+  }
       }
     }
 
@@ -380,49 +377,49 @@ public class SDFactory implements Factory {
   public static TimeSpan getTimeSpanFromPreferences(Collection preferences) {
     long preferenceStart = getTimePreference(preferences, Preference.START_TIME);
     long preferenceEnd = getTimePreference(preferences, Preference.END_TIME);
-    
+
     if ((preferenceEnd == -1) ||
-	(preferenceStart == -1)) {
-      myLogger.error("getTimeSpanFromPreferences: " + 
-		     " unable to handle start and/or end time " +
-		     " preferences from " + preferences);
+  (preferenceStart == -1)) {
+      myLogger.error("getTimeSpanFromPreferences: " +
+         " unable to handle start and/or end time " +
+         " preferences from " + preferences);
       return null;
     }
-    
+
 
     if (preferenceStart >= preferenceEnd) {
-	myLogger.error("getTimeSpanFromPreferences: preferences  - " +
-		       preferences + 
-		       " - do specify a valid time span.\n" +
-		       "Start - " + preferenceStart + 
-		       "- >= End - " + preferenceEnd +
-		       " Returning null."); 
-	return null;
+  myLogger.error("getTimeSpanFromPreferences: preferences  - " +
+           preferences +
+           " - do specify a valid time span.\n" +
+           "Start - " + preferenceStart +
+           "- >= End - " + preferenceEnd +
+           " Returning null.");
+  return null;
     }
 
     MutableTimeSpan timeSpan = new MutableTimeSpan();
     timeSpan.setTimeSpan(preferenceStart, preferenceEnd);
-    
+
     return timeSpan;
   }
 
   public Collection createTimeSpanPreferences(TimeSpan timeSpan) {
     ArrayList preferences = new ArrayList(2);
 
-    AspectValue startTAV = TimeAspectValue.create(AspectType.START_TIME, 
-						  timeSpan.getStartTime());
+    AspectValue startTAV = TimeAspectValue.create(AspectType.START_TIME,
+              timeSpan.getStartTime());
     ScoringFunction startScoreFunc =
       ScoringFunction.createStrictlyAtValue(startTAV);
     Preference startPreference =
       myLDM.getFactory().newPreference(AspectType.START_TIME, startScoreFunc);
 
-    AspectValue endTAV = TimeAspectValue.create(AspectType.END_TIME, 
-						timeSpan.getEndTime());
+    AspectValue endTAV = TimeAspectValue.create(AspectType.END_TIME,
+            timeSpan.getEndTime());
     ScoringFunction endScoreFunc =
       ScoringFunction.createStrictlyAtValue(endTAV);
     Preference endPreference =
       myLDM.getFactory().newPreference(AspectType.END_TIME, endScoreFunc );
-    
+
     preferences.add(startPreference);
     preferences.add(endPreference);
 

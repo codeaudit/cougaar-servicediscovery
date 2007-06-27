@@ -25,13 +25,10 @@
  */
 package org.cougaar.servicediscovery.plugin;
 
-import org.cougaar.core.component.ServiceBroker;
-import org.cougaar.core.service.DomainService;
-import org.cougaar.glm.ldm.Constants;
 import org.cougaar.planning.ldm.PlanningDomain;
 import org.cougaar.planning.ldm.PlanningFactory;
 import org.cougaar.planning.ldm.plan.NewTask;
-import org.cougaar.planning.ldm.plan.Verb;
+import org.cougaar.servicediscovery.Constants;
 
 /**
  * Self publishes the FindProviders task. Uses a timer to defer publication so that
@@ -40,7 +37,7 @@ import org.cougaar.planning.ldm.plan.Verb;
  */
 public class SDMiniClientPlugin extends SDClientPlugin {
   protected boolean publishedFindProviders = false;
-  
+
   public void load() {
     super.load();
 
@@ -56,12 +53,10 @@ public class SDMiniClientPlugin extends SDClientPlugin {
     }
 
     if (!publishedFindProviders) {
-      DomainService domainService = (DomainService) getBindingSite().getServiceBroker().getService(this, DomainService.class, null);
-
-      PlanningFactory planningFactory = 
-	(PlanningFactory) getDomainService().getFactory(PlanningDomain.PLANNING_NAME);
+      PlanningFactory planningFactory =
+        (PlanningFactory) getDomainService().getFactory(PlanningDomain.PLANNING_NAME);
       NewTask task = planningFactory.newTask();
-      task.setVerb(Constants.Verb.FindProviders);
+      task.setVerb(Constants.Verbs.FindProviders);
       getBlackboardService().publishAdd(task);
       publishedFindProviders = true;
     }

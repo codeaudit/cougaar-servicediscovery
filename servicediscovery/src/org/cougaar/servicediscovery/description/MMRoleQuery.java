@@ -31,12 +31,10 @@ import org.cougaar.util.log.Logger;
 import org.cougaar.util.log.Logging;
 import org.cougaar.util.TimeSpan;
 
-public class MMRoleQuery implements MMQuery, java.io.Serializable {
+public class MMRoleQuery extends  MMRoleQueryBase {
   private static Logger logger = Logging.getLogger(MMRoleQuery.class);
-  private Role myRole = null;
-  private TimeSpan myTimeSpan = null;
+
   private ServiceInfoScorer myServiceInfoScorer = null;
-  private boolean myObsolete = false;
 
   private static ServiceInfoScorer DEFAULT_SCORER = new ServiceInfoScorer() {
     public int scoreServiceInfo(ServiceInfo serviceInfo) {
@@ -45,44 +43,14 @@ public class MMRoleQuery implements MMQuery, java.io.Serializable {
   };
 
   public MMRoleQuery(Role role, ServiceInfoScorer serviceInfoScorer) {
-    myRole = role;
+    super(role);
     myServiceInfoScorer = serviceInfoScorer;
   }
 
   public MMRoleQuery(Role role, ServiceInfoScorer serviceInfoScorer,
 		     TimeSpan timeSpan) {
-    this(role, serviceInfoScorer);
-    myTimeSpan = timeSpan;
-  }
-
-  public MMRoleQuery() {
-    super();
-  }
-
-  public void setRole(Role role) {
-    if (role != null) {
-      logger.warn("setRole: ignoring attempt to change Role from " + 
-		  myRole + " to " + role);
-    } else {
-      myRole = role;
-    }
-  }
-
-  public Role getRole() {
-    return myRole;
-  }
-
-  public void setTimeSpan(TimeSpan timeSpan) {
-    if (timeSpan != null) {
-      logger.warn("setTimeSpan: ignoring attempt to change TimeSpan from " + 
-		  myTimeSpan + " to " + timeSpan);
-    } else {
-    myTimeSpan = timeSpan;
-    }
-  }
-
-  public TimeSpan getTimeSpan() {
-    return myTimeSpan;
+    super(role, timeSpan);
+    myServiceInfoScorer = serviceInfoScorer;
   }
 
   public ServiceInfoScorer getServiceInfoScorer() {
@@ -102,35 +70,20 @@ public class MMRoleQuery implements MMQuery, java.io.Serializable {
     }
   }
 
-  public boolean getObsolete() {
-    return myObsolete;
-  }
-
-  public void setObsolete(boolean obsoleteFlag) {
-    if ((myObsolete) && (!obsoleteFlag)) {
-      logger.warn("setObsolete: ignoring attempt to toggle obsolete " +
-		  "back to false." );
-    } else {
-      myObsolete = obsoleteFlag;
-    }
-  }
-
   public String toString() {
-    return "Role: " + myRole + " ServiceInfoScorer: " + myServiceInfoScorer +
-      " TimeSpan: " + myTimeSpan + " Obsolete: " + myObsolete;
+    return "Role: " + getRole() +
+      " ServiceInfoScorer: " + myServiceInfoScorer +
+      " TimeSpan: " + getTimeSpan() + " Obsolete: " + getObsolete();
   }
 
   public boolean equals(Object o) {
     if (o instanceof MMRoleQuery) {
       MMRoleQuery query = (MMRoleQuery) o;
-      return ((query.getObsolete() == myObsolete) &&
-	      (query.getRole().equals(myRole)) &&
-	      (query.getTimeSpan().getStartTime() == myTimeSpan.getStartTime()) &&
-	      (query.getTimeSpan().getEndTime() == myTimeSpan.getEndTime()) &&
+      return ((super.equals(o))&&
 	      (query.getServiceInfoScorer().equals(myServiceInfoScorer)));
-    } else {
-      return false;
-    }
+    } 
+    return false;
+    
   }
 }
 

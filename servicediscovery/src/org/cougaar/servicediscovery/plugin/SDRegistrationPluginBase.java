@@ -27,9 +27,10 @@
 package org.cougaar.servicediscovery.plugin;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
+import java.util.*;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.text.ParseException;
 
 import org.cougaar.core.agent.service.alarm.Alarm;
 import org.cougaar.core.blackboard.IncrementalSubscription;
@@ -50,6 +51,7 @@ import org.cougaar.planning.ldm.plan.Task;
 import org.cougaar.planning.plugin.util.PluginHelper;
 import org.cougaar.servicediscovery.SDDomain;
 import org.cougaar.servicediscovery.SDFactory;
+import org.cougaar.servicediscovery.Constants;
 import org.cougaar.servicediscovery.description.AvailabilityChangeMessage;
 import org.cougaar.servicediscovery.description.Lineage;
 import org.cougaar.servicediscovery.description.ProviderCapabilities;
@@ -89,9 +91,15 @@ public abstract class SDRegistrationPluginBase extends ComponentPlugin {
   protected long warningCutoffTime = 0;
   protected static final String REGISTRATION_GRACE_PERIOD_PROPERTY = 
                 "org.cougaar.servicediscovery.plugin.RegistrationGracePeriod";
+  private static final long DATE_ERROR = Long.MIN_VALUE;
+  private static final long HOUR_IN_MILLIS = 3600000;
+  private static final long DAY_IN_MILLIS = 86400000;
 
   protected Alarm retryAlarm;
   protected int knownSCAs = 0;
+  long initialTime = parseInitialTime(); //should be 8/10/05 00:05:00
+  long parsedAvailStart = DEFAULT_START;
+  long parsedAvailEnd = DEFAULT_END;
 
   protected boolean rehydrated;
 
@@ -115,7 +123,7 @@ public abstract class SDRegistrationPluginBase extends ComponentPlugin {
   private UnaryPredicate registerTaskPredicate = new UnaryPredicate() {
     public boolean execute(Object o) {
       return ((o instanceof Task) &&
-	      (((Task) o).getVerb().equals(org.cougaar.glm.ldm.Constants.Verb.RegisterServices)));
+	      (((Task) o).getVerb().equals(Constants.Verbs.RegisterServices)));
     }
   };
 
@@ -203,22 +211,44 @@ public abstract class SDRegistrationPluginBase extends ComponentPlugin {
 
   protected void setupSubscriptions() {
     supportLineageSubscription =
-      (IncrementalSubscription) getBlackboardService().subscribe(supportLineagePredicate);
+        (IncrementalSubscription) getBlackboardService().subscribe(supportLineagePredicate);
     availabilityChangeSubscription =
-      (IncrementalSubscription) getBlackboardService().subscribe(availabilityChangePredicate);
+        (IncrementalSubscription) getBlackboardService().subscribe(availabilityChangePredicate);
     registerTaskSubscription =
-      (IncrementalSubscription) getBlackboardService().subscribe(registerTaskPredicate);
+        (IncrementalSubscription) getBlackboardService().subscribe(registerTaskPredicate);
 
     Collection params = getParameters();
+    // Optional parameters to this plugin are the number of known sca's - i.e. an int
+    // and the start and end time representing the availability of a provider
+    //   i.e. AvailabilityStart:0   and AvailabilityEnd:14
+    // where the value is an offset from C0 (i.e. 8/15/00 00:00:00) in even hour increments.
+    // Currently does NOT handle non even hour offsets.
 
     if (params.size() > 0) {
-	String numStr = (String) params.iterator().next();
-      try {
-	knownSCAs = Integer.parseInt(numStr);
-      } catch (NumberFormatException nfe) {
-        knownSCAs = 0;
-	log.error(getAgentIdentifier() + " invalid SCA count parameter - " + numStr,
-		  nfe);
+      Iterator it = params.iterator();
+      while (it.hasNext()) {
+        String nextParam =(String) it.next();
+        //String numStr = (String) params.iterator().next();
+        if (!nextParam.startsWith("Availability")) {
+          try {
+            knownSCAs = Integer.parseInt(nextParam);
+          } catch (NumberFormatException nfe) {
+            knownSCAs = 0;
+            log.error(getAgentIdentifier() + " invalid SCA count parameter - " + nextParam,
+                nfe);
+          }
+        }
+        else {
+          int tokenIndex = nextParam.indexOf(":");
+          String availabilityParam = nextParam.substring(tokenIndex+1);
+          long parsedAvailability =  Long.parseLong(availabilityParam);
+          if (nextParam.startsWith("AvailabilityStart")) {
+            parsedAvailStart = parsedAvailability;
+          }
+          else {
+            parsedAvailEnd = parsedAvailability;
+          }
+        }
       }
     } else {
       knownSCAs = 0;
@@ -227,9 +257,9 @@ public abstract class SDRegistrationPluginBase extends ComponentPlugin {
     rehydrated = getBlackboardService().didRehydrate();
 
     if (rehydrated) {
-      Collection pcCollection = 
-	getBlackboardService().query(providerCapabilitiesPredicate);
-      
+      Collection pcCollection =
+          getBlackboardService().query(providerCapabilitiesPredicate);
+
       publishProviderCapabilities = (pcCollection.isEmpty());
     } else {
       publishProviderCapabilities = true;
@@ -378,6 +408,11 @@ public abstract class SDRegistrationPluginBase extends ComponentPlugin {
       return null;
     }
 
+    long localC0 = initialTime + (5 * DAY_IN_MILLIS) - 300000;  //take off 5 minutes to get to midnight
+
+    long availabilityStart = localC0 + (parsedAvailStart * HOUR_IN_MILLIS);
+    long availabilityEnd =  localC0 + (parsedAvailEnd * HOUR_IN_MILLIS);
+
     Collection serviceProfiles = pd.getServiceProfiles();
 
     PlanningFactory planningFactory = 
@@ -409,10 +444,21 @@ public abstract class SDRegistrationPluginBase extends ComponentPlugin {
 
 	if ((role != null) &&
 	    (echelon != null)) {
-	  Schedule defaultSchedule = 
-	    planningFactory.newSimpleSchedule(DEFAULT_START, DEFAULT_END);
-	  providerCapabilities.addCapability(role, echelon, defaultSchedule);
-	  break;
+          Schedule defaultSchedule = null;
+          if (parsedAvailStart == DEFAULT_START) {
+            defaultSchedule = planningFactory.newSimpleSchedule(DEFAULT_START, DEFAULT_END);
+          }
+          else {
+            if (log.isInfoEnabled()) {
+              log.info("availabilityStart is " + new Date(availabilityStart)
+                       + " and availabilityEnd is " +new Date(availabilityEnd)
+                       + "for agent "+getAgentIdentifier());
+            }
+            defaultSchedule = planningFactory.newSimpleSchedule(availabilityStart, availabilityEnd);
+          }
+          
+          providerCapabilities.addCapability(role, echelon, defaultSchedule);
+          break;
 	}
       }
     }
@@ -565,6 +611,41 @@ public abstract class SDRegistrationPluginBase extends ComponentPlugin {
       }
     }
   }
+
+  private long parseInitialTime() {
+    String propertyName = "org.cougaar.initTime";
+    long date = DATE_ERROR;
+    long time = DATE_ERROR;
+    String value = System.getProperty(propertyName);
+    if (value != null) {
+      try {
+        DateFormat f = (new SimpleDateFormat("MM/dd/yyy H:mm:ss"));
+        f.setTimeZone(TimeZone.getTimeZone("GMT"));
+        time = f.parse(value).getTime();
+        // get midnight of specified date
+        Calendar c = f.getCalendar();
+        c.setTimeInMillis(time);
+        c.set(Calendar.HOUR, 0);
+        c.set(Calendar.MINUTE, 0);
+        c.set(Calendar.SECOND, 0);
+        c.set(Calendar.MILLISECOND, 0);
+        date = c.getTimeInMillis();
+      } catch (ParseException e) {
+        // try with just the date
+        try {
+          DateFormat f = (new SimpleDateFormat("MM/dd/yyy"));
+          f.setTimeZone(TimeZone.getTimeZone("GMT"));
+          time = f.parse(value).getTime();
+        } catch (ParseException e1) {
+          if (log.isDebugEnabled())
+            log.debug("Failed to parse property " + propertyName + " as date+time or just time: " + value, e1);
+        }
+      }
+    }
+
+   return time;
+  }
+
 
   // Handle a change to our registration status
   protected void handleAvailabilityChange(AvailabilityChangeMessage availabilityChange) {

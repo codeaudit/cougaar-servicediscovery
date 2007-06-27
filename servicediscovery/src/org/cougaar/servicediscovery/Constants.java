@@ -26,26 +26,43 @@
 
 package org.cougaar.servicediscovery;
 
-import java.net.URL;
-
+import org.cougaar.planning.ldm.plan.RelationshipType;
+import org.cougaar.planning.ldm.plan.Role;
+import org.cougaar.planning.ldm.plan.Verb;
 import org.cougaar.servicediscovery.description.LineageScheduleElement;
-
-import org.cougaar.glm.ldm.Constants.RelationshipType;
 import org.cougaar.util.Configuration;
 import org.cougaar.util.log.Logger;
 import org.cougaar.util.log.Logging;
 
-public class Constants implements org.cougaar.planning.Constants {
+import java.net.URL;
+
+public class Constants {
   private static Logger logger = Logging.getLogger(Constants.class);
 
   private Constants() {}
 
   public interface SDScheduleElementType {
-  
+
     Class LINEAGE = LineageScheduleElement.class;
   }
 
-  public static class Role {
+  public interface Verbs {
+    public static final String REPORTFORDUTY = "ReportForDuty";
+    public static final String REPORTFORSERVICE = "ReportForService";
+    public static final String FINDPROVIDERS = "FindProviders";
+    public static final String REGISTERSERVICES = "RegisterServices";
+
+    public static final Verb ReportForDuty = Verb.get(REPORTFORDUTY);
+    public static final Verb ReportForService = Verb.get(REPORTFORSERVICE);
+    public static final Verb FindProviders = Verb.get(FINDPROVIDERS);
+    public static final Verb RegisterServices = Verb.get(REGISTERSERVICES);
+  }
+
+  public static interface Prepositions {
+    public static final String FOR_OPLAN_STAGES = "ForOplanStages";
+  }
+
+  public static class Roles {
     /**
      * Insure that Role constants are initialized. Actually does
      * nothing, but the classloader insures that all static
@@ -56,78 +73,43 @@ public class Constants implements org.cougaar.planning.Constants {
     }
 
     static {
-      org.cougaar.planning.ldm.plan.Role.create("Support", RelationshipType.SUPERIOR);
-      org.cougaar.planning.ldm.plan.Role.create("AircraftMaintenance", RelationshipType.PROVIDER);
-      org.cougaar.planning.ldm.plan.Role.create("FixedWingAircraftMaintenance", RelationshipType.PROVIDER);
-      org.cougaar.planning.ldm.plan.Role.create("RotaryWingAircraftMaintenance", RelationshipType.PROVIDER);
-      org.cougaar.planning.ldm.plan.Role.create("GroundVehicleMaintenance", RelationshipType.PROVIDER);
-      org.cougaar.planning.ldm.plan.Role.create("WheeledVehicleMaintenance", RelationshipType.PROVIDER);
-      org.cougaar.planning.ldm.plan.Role.create("TrackedVehicleMaintenance", RelationshipType.PROVIDER);
-      org.cougaar.planning.ldm.plan.Role.create("DryCargoTransport", RelationshipType.PROVIDER);
-      org.cougaar.planning.ldm.plan.Role.create("Part", RelationshipType.PROVIDER);
+      Role.create("Self", "Self");
+      Role.create("", RelationshipTypes.SUPERIOR);
+      Role.create("Administrative", RelationshipTypes.SUPERIOR);
+      Role.create("Operational", RelationshipTypes.SUPERIOR);
+      Role.create("Support", RelationshipTypes.SUPERIOR);
+
+      Role.create("AircraftMaintenance", RelationshipTypes.PROVIDER);
+      Role.create("FixedWingAircraftMaintenance", RelationshipTypes.PROVIDER);
+      Role.create("RotaryWingAircraftMaintenance", RelationshipTypes.PROVIDER);
+      Role.create("GroundVehicleMaintenance", RelationshipTypes.PROVIDER);
+      Role.create("WheeledVehicleMaintenance", RelationshipTypes.PROVIDER);
+      Role.create("TrackedVehicleMaintenance", RelationshipTypes.PROVIDER);
+      Role.create("DryCargoTransport", RelationshipTypes.PROVIDER);
+      Role.create("Part", RelationshipTypes.PROVIDER);
     }
 
 
-    // Support Command Hierarchy
-    public static final org.cougaar.planning.ldm.plan.Role SUPPORTSUPERIOR =
-      org.cougaar.planning.ldm.plan.Role.getRole("Support" +
-                                RelationshipType.SUPERIOR_SUFFIX);
-    public static final org.cougaar.planning.ldm.plan.Role SUPPORTSUBORDINATE =
-      org.cougaar.planning.ldm.plan.Role.getRole("Support" +
-                                RelationshipType.SUBORDINATE_SUFFIX);
-
-    public static final org.cougaar.planning.ldm.plan.Role AIRCRAFTMAINTENANCEPROVIDER =
-      org.cougaar.planning.ldm.plan.Role.getRole("AircraftMaintenance" +
-                                                 RelationshipType.PROVIDER_SUFFIX);
-    public static final org.cougaar.planning.ldm.plan.Role AIRCRAFTMAINTENANCECUSTOMER =
-      org.cougaar.planning.ldm.plan.Role.getRole("AircraftMaintenance" +
-                                                 RelationshipType.CUSTOMER_SUFFIX);
-
-    public static final org.cougaar.planning.ldm.plan.Role FIXEDWINGAIRCRAFTMAINTNENANCEPROVIDER =
-      org.cougaar.planning.ldm.plan.Role.getRole("FixedWingAircraftMaintenance" +
-                                                 RelationshipType.PROVIDER_SUFFIX);
-    public static final org.cougaar.planning.ldm.plan.Role FIXEDWINGAIRCRAFTMAINTENANCECUSTOMER =
-      org.cougaar.planning.ldm.plan.Role.getRole("FixedWingAircraftMaintenance" +
-                                                 RelationshipType.CUSTOMER_SUFFIX);
-
-    public static final org.cougaar.planning.ldm.plan.Role ROTARTYWINGAIRCRAFTMAINTNENANCEPROVIDER =
-      org.cougaar.planning.ldm.plan.Role.getRole("RotaryWingAircraftMaintenance" +
-                                                 RelationshipType.PROVIDER_SUFFIX);
-    public static final org.cougaar.planning.ldm.plan.Role ROTARYWINGAIRCRAFTMAINTENANCECUSTOMER =
-      org.cougaar.planning.ldm.plan.Role.getRole("RotaryWingAircraftMaintenance" +
-                                                 RelationshipType.CUSTOMER_SUFFIX);
-
-    public static final org.cougaar.planning.ldm.plan.Role GROUNDVEHICLEMAINTNENANCEPROVIDER =
-      org.cougaar.planning.ldm.plan.Role.getRole("GroundVehicleMaintenance" +
-                                                 RelationshipType.PROVIDER_SUFFIX);
-    public static final org.cougaar.planning.ldm.plan.Role GROUNDVEHICLEMAINTENANCECUSTOMER =
-      org.cougaar.planning.ldm.plan.Role.getRole("GroundVehicleMaintenance" +
-                                                 RelationshipType.CUSTOMER_SUFFIX);
-
-    public static final org.cougaar.planning.ldm.plan.Role WHEELEDVEHICLEMAINTNENANCEPROVIDER =
-      org.cougaar.planning.ldm.plan.Role.getRole("WheeledVehicleMaintenance" +
-                                                 RelationshipType.PROVIDER_SUFFIX);
-    public static final org.cougaar.planning.ldm.plan.Role WHEELEDVEHICLEMAINTENANCECUSTOMER =
-      org.cougaar.planning.ldm.plan.Role.getRole("WheeledVehicleMaintenance" +
-                                                 RelationshipType.CUSTOMER_SUFFIX);
-
-    public static final org.cougaar.planning.ldm.plan.Role DRYCARGOTRANSPORTPROVIDER =
-      org.cougaar.planning.ldm.plan.Role.getRole("DryCargoTransport" +
-                                                 RelationshipType.PROVIDER_SUFFIX);
-    public static final org.cougaar.planning.ldm.plan.Role DRYCARGOTRANSPORTCUSTOMER =
-      org.cougaar.planning.ldm.plan.Role.getRole("DryCargoTransport" +
-                                                 RelationshipType.CUSTOMER_SUFFIX);
-
-
-    public static final org.cougaar.planning.ldm.plan.Role PARTPROVIDER =
-      org.cougaar.planning.ldm.plan.Role.getRole("Part" +
-                                                 RelationshipType.PROVIDER_SUFFIX);
-    public static final org.cougaar.planning.ldm.plan.Role PARTCUSTOMER =
-      org.cougaar.planning.ldm.plan.Role.getRole("Part" +
-                                                 RelationshipType.CUSTOMER_SUFFIX);
+    public static final Role SUPERIOR = Role.getRole(RelationshipTypes.SUPERIOR_SUFFIX);
+    public static final Role SUBORDINATE = Role.getRole(RelationshipTypes.SUBORDINATE_SUFFIX);
+    public static final Role ADMINISTRATIVESUPERIOR = Role.getRole("Administrative" + RelationshipTypes.SUPERIOR_SUFFIX);
+    public static final Role ADMINISTRATIVESUBORDINATE = Role.getRole("Administrative" + RelationshipTypes.SUBORDINATE_SUFFIX);
+    public static final Role OPERATIONALSUPERIOR = Role.getRole("Operational" + RelationshipTypes.SUPERIOR_SUFFIX);
+    public static final Role OPERATIONALSUBORDINATE = Role.getRole("Operational" + RelationshipTypes.SUBORDINATE_SUFFIX);
+    public static final Role SUPPORTSUPERIOR = Role.getRole("Support" + RelationshipTypes.SUPERIOR_SUFFIX);
+    public static final Role SUPPORTSUBORDINATE = Role.getRole("Support" + RelationshipTypes.SUBORDINATE_SUFFIX);
 
   }
 
+  public interface RelationshipTypes {
+    String SUPERIOR_SUFFIX = "Superior";
+    String SUBORDINATE_SUFFIX = "Subordinate";
+    RelationshipType SUPERIOR = RelationshipType.create(SUPERIOR_SUFFIX, SUBORDINATE_SUFFIX);
+
+    String PROVIDER_SUFFIX = "Provider";
+    String CUSTOMER_SUFFIX = "Customer";
+    RelationshipType PROVIDER = RelationshipType.create(PROVIDER_SUFFIX, CUSTOMER_SUFFIX);
+  }
 
   public static class MilitaryEchelon {
     public static final String UNDEFINED = "UNDEFINED";
@@ -157,11 +139,11 @@ public class Constants implements org.cougaar.planning.Constants {
     public static String mapToMilitaryEchelon(String echelonValue) {
       // Upcase for comparison
       String upCase = echelonValue.toUpperCase();
-	  
+
       if (validMilitaryEchelon(upCase)) {
-	return upCase;
+        return upCase;
       } else {
-	return UNDEFINED;
+        return UNDEFINED;
       }
     }
 
@@ -170,26 +152,24 @@ public class Constants implements org.cougaar.planning.Constants {
       String upCase = echelonValue.toUpperCase();
 
       for (int index = 0; index < ECHELON_ORDER.length; index++) {
-	if (upCase.equals(ECHELON_ORDER[index])) {
-	  return index;
-	}
+        if (upCase.equals(ECHELON_ORDER[index])) {
+          return index;
+        }
       }
-      
+
       return -1;
     }
   }
 
-  
   public static URL getServiceProfileURL() {
     try {
-      return new URL(Configuration.getInstallURL(), 
-		     "servicediscovery/data/serviceprofiles/");
+      return new URL(Configuration.getInstallURL(), "servicediscovery/data/serviceprofiles/");
     } catch (java.net.MalformedURLException mue) {
       logger.error("Exception constructing service profile URL: " , mue);
       return null;
     }
   }
-    
+
 }
 
 

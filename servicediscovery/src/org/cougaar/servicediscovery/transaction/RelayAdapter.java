@@ -32,6 +32,10 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
+import java.io.Serializable;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 
 import org.cougaar.core.mts.MessageAddress;
 import org.cougaar.core.relay.Relay;
@@ -45,7 +49,10 @@ import org.cougaar.core.util.UniqueObject;
  **/
 abstract public class RelayAdapter implements Relay.Source, Relay.Target, UniqueObject, Cloneable {
 
-  protected Set myTargetSet = null;
+  // this is the target set which is synchronized using
+  // a copy-on-write pattern.
+  private final Object lock = new Serializable() {};
+  protected transient Set myTargetSet = null;
 
   protected UID myUID = null;
   protected MessageAddress mySource = null;
@@ -55,10 +62,12 @@ abstract public class RelayAdapter implements Relay.Source, Relay.Target, Unique
    * @param target the address of the target agent.
    **/
   public void addTarget(MessageAddress target) {
-    if (myTargetSet == null) {
-      myTargetSet = new HashSet();
+    synchronized(lock) {
+      if (myTargetSet == null) {
+        myTargetSet = new HashSet();
+      }
+      myTargetSet.add(target);
     }
-    myTargetSet.add(target);
   }
 
   /**
@@ -66,13 +75,15 @@ abstract public class RelayAdapter implements Relay.Source, Relay.Target, Unique
    * @param targets Collection of target agent addresses.
    **/
   public void addAllTargets(Collection targets) {
-    for (Iterator iterator = targets.iterator(); iterator.hasNext();) {
-      Object target = iterator.next();
-      if (target instanceof MessageAddress) {
-        addTarget((MessageAddress) target);
-      } else {
-        throw new IllegalArgumentException("Invalid target class: " + target.getClass() +
-                                           " all targets must extend MessageAddress.");
+    synchronized(lock) {
+      for (Iterator iterator = targets.iterator(); iterator.hasNext();) {
+        Object target = iterator.next();
+        if (target instanceof MessageAddress) {
+          addTarget((MessageAddress) target);
+        } else {
+          throw new IllegalArgumentException("Invalid target class: " + target.getClass() +
+          " all targets must extend MessageAddress.");
+        }
       }
     }
   }
@@ -82,13 +93,17 @@ abstract public class RelayAdapter implements Relay.Source, Relay.Target, Unique
    * @param target the address of the target agent to be removed.
    **/
   public void removeTarget(MessageAddress target) {
-    if (myTargetSet != null) {
-      myTargetSet.remove(target);
+    synchronized(lock) {
+      if (myTargetSet != null) {
+        myTargetSet.remove(target);
+      }
     }
   }
 
   public void clearTargets() {
-    myTargetSet = null;
+    synchronized(lock) {
+      myTargetSet = null;
+    }
   }
 
   // UniqueObject interface
@@ -138,9 +153,11 @@ abstract public class RelayAdapter implements Relay.Source, Relay.Target, Unique
    * should be sent.
    **/
   public Set getTargets() {
-    Set targets = (myTargetSet == null) ? Collections.EMPTY_SET
-                                        : Collections.unmodifiableSet(myTargetSet);
-    return targets;
+    synchronized(lock) {      
+      Set targets = (myTargetSet == null) ? Collections.EMPTY_SET
+        : Collections.unmodifiableSet(myTargetSet);
+      return targets;
+    }
   }
 
   /**
@@ -267,5 +284,16 @@ abstract public class RelayAdapter implements Relay.Source, Relay.Target, Unique
       clone.addAllTargets(getTargets());
     }
     return clone;
+  }
+
+  private void writeObject(ObjectOutputStream stream) throws IOException {
+    stream.defaultWriteObject();
+    synchronized (lock) {
+      stream.writeObject(myTargetSet);
+    }
+  }
+  private void readObject(ObjectInputStream stream) throws ClassNotFoundException, IOException {
+    stream.defaultReadObject();
+    myTargetSet = (Set) stream.readObject();
   }
 }
