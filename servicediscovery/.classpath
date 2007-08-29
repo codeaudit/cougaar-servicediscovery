@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/core"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/glm"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/planning"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/util"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/yp"/>
+	<classpathentry kind="lib" path="/jars/lib/antlr.jar"/>
+	<classpathentry kind="lib" path="/jars/lib/concurrent.jar"/>
+	<classpathentry kind="lib" path="/jars/lib/icu4j.jar"/>
+	<classpathentry kind="lib" path="/jars/lib/jakarta-oro-2.0.5.jar"/>
+	<classpathentry kind="lib" path="/jars/lib/jena.jar"/>
+	<classpathentry kind="lib" path="/jars/lib/rdf-api-2001-01-19.jar"/>
+	<classpathentry kind="lib" path="/jars/lib/servlet.jar"/>
+	<classpathentry kind="lib" path="/jars/lib/uddi4j.jar"/>
+	<classpathentry kind="lib" path="/jars/lib/xercesImpl.jar"/>
+	<classpathentry kind="lib" path="/jars/lib/xml-apis.jar"/>
+	<classpathentry kind="output" path="tmp/classes"/>
+</classpath>
