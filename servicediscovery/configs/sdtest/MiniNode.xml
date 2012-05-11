@@ -30,7 +30,6 @@
       <vm_parameter>-Dorg.cougaar.system.path="$COUGAAR_INSTALL_PATH/sys"</vm_parameter>
       <vm_parameter>-Dorg.cougaar.workspace=$COUGAAR_INSTALL_PATH/workspace</vm_parameter>
       <vm_parameter>-Duser.timezone=GMT</vm_parameter>
-      <vm_parameter>-Xbootclasspath/p:"$COUGAAR_INSTALL_PATH/lib/javaiopatch.jar"</vm_parameter>
       <vm_parameter>-Xms100m</vm_parameter>
       <vm_parameter>-Xmx300m</vm_parameter>
       <component 

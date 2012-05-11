@@ -45,7 +45,7 @@ OS=`uname`
 #if [ "$OS" == "Linux" ]; then
 #  MYPROPERTIES="-green"
 #fi
-MYPROPERTIES="-Xbootclasspath/p:$COUGAAR_INSTALL_PATH/lib/javaiopatch.jar $MYPROPERTIES $MYDOMAINS  -Dorg.cougaar.system.path=$COUGAAR3RDPARTY -Dorg.cougaar.install.path=$COUGAAR_INSTALL_PATH -Dorg.cougaar.workspace=$COUGAAR_WORKSPACE -Dorg.cougaar.config.path=%COUGAAR_INSTALL_PATH%/servicediscovery/configs/common;%COUGAAR_INSTALL_PATH%/configs/common;%COUGAAR_INSTALL_PATH%/servicediscovery/data/serviceprofiles;%COUGAAR_INSTALL_PATH%/servicediscovery/configs/sdtest  -Dorg.cougaar.yp.ypAgent=3ID"
+MYPROPERTIES="$MYPROPERTIES $MYDOMAINS  -Dorg.cougaar.system.path=$COUGAAR3RDPARTY -Dorg.cougaar.install.path=$COUGAAR_INSTALL_PATH -Dorg.cougaar.workspace=$COUGAAR_WORKSPACE -Dorg.cougaar.config.path=%COUGAAR_INSTALL_PATH%/servicediscovery/configs/common;%COUGAAR_INSTALL_PATH%/configs/common;%COUGAAR_INSTALL_PATH%/servicediscovery/data/serviceprofiles;%COUGAAR_INSTALL_PATH%/servicediscovery/configs/sdtest  -Dorg.cougaar.yp.ypAgent=3ID"
 
 MYPROPERTIES="$MYPROPERTIES -Duser.timezone=GMT -Dorg.cougaar.core.useBootstrapper=true "
 
