@@ -64,8 +64,7 @@ public interface RegistryQueryService extends Service, YPServiceAdapter {
    * Returns providers matching the attributes in the RegistryQuery 
    * object. Uses single step YPService search. Query is applied to the
    * YP server for the specified agent. Currently requires that agent 
-   * also be a YPServer. Bug in CommunityService 
-   * (http://bugs.cougaar.org/show_bug.cgi?id=3585) prevents a more general
+   * also be a YPServer. Bug 3585 in CommunityService prevents a more general
    * implementation.
    * 
    * @param agentName Name of the agent whose YP server should be queried
@@ -107,8 +106,7 @@ public interface RegistryQueryService extends Service, YPServiceAdapter {
    * Returns all services matching the attributes in the RegistryQuery object.
    * Uses single step YPService search.  Query is applied to the
    * YP server for the specified agent. Currently requires that agent 
-   * also be a YPServer. Bug in CommunityService 
-   * (http://bugs.cougaar.org/show_bug.cgi?id=3585) prevents a more general
+   * also be a YPServer. Bug 3585 in CommunityService prevents a more general
    * implementation.
    *
    * @param agentName Name of the agent whose YP server should be queried
@@ -152,8 +150,7 @@ public interface RegistryQueryService extends Service, YPServiceAdapter {
    * object.
    * Uses single step YPService search. Query is applied to the
    * YP server for the specified agent. Currently requires that agent 
-   * also be a YPServer. Bug in CommunityService 
-   * (http://bugs.cougaar.org/show_bug.cgi?id=3585) prevents a more general
+   * also be a YPServer. Bug 3585 in CommunityService prevents a more general
    * implementation.
    *
    * @param agentName Name of the agent whose YP server should be queried
