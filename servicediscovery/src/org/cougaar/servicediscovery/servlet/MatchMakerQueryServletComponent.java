@@ -51,13 +51,13 @@ public class MatchMakerQueryServletComponent extends SimpleServletComponent {
 	MatchMakerQueryServlet mmServlet = new MatchMakerQueryServlet();
 	
 	LoggingService logService = (LoggingService)
-	    serviceBroker.getService(mmServlet,
+	    getService(mmServlet,
 				     LoggingService.class,
 				     null);
 
 
     DomainService domainService = (DomainService)
-	    serviceBroker.getService(mmServlet,
+	    getService(mmServlet,
 				     DomainService.class,
 				     null);
 
