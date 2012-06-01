@@ -40,7 +40,6 @@ public interface RegistrationService extends Service, YPServiceAdapter {
 
   /**
    * Registers a Service Provider with the Name Service.
-   * @return   True if operation was successful
    */
   void addProviderDescription(Object ypContext, ProviderDescription pd, Callback callback);
   void addProviderDescription(Object ypContext, ProviderDescription pd, Collection additionalServiceClassifications, Callback callback);
